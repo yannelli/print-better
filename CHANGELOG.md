@@ -4,10 +4,6 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
-### Changed
-
-- **remote printers:** a computer's **Printers on this computer** section names printers the way its print window does ("In the print window as “Upstairs laser”", "Right now it's HP LaserJet M404 (Print Better)") instead of by CUPS queue; the `pb_` queue id is a small detail under each printer. Devices report the descriptions of directly installed queues and of the default printer (`installedName`, `defaultName`).
-
 ## [0.1.3] - 2026-11-19
 
 ### Added
@@ -19,6 +15,7 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ### Changed
 
+- **remote printers:** a computer's **Printers on this computer** section names printers the way its print window does ("In the print window as “Upstairs laser”", "Right now it's HP LaserJet M404 (Print Better)") instead of by CUPS queue; the `pb_` queue id is a small detail under each printer. Devices report the descriptions of directly installed queues and of the default printer (`installedName`, `defaultName`).
 - **remote printers:** a printer a Mac or desktop also finds on its own network keeps its Print Better queue. Neither the device (Bonjour) nor the server (the device's own inventory) leaves it out anymore; the web app shows when it is also installed directly, and hiding it there is the user's call.
 - **remote printers:** a device's `pb_` queues are regenerated when the printer's options change, and once after this update so existing queues pick up the new options and supply levels.
 
