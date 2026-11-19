@@ -1,5 +1,6 @@
 import { CircleAlert } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { Link } from 'wouter'
 import { Logo } from '@/components/logo'
 import { useInstance } from '@/hooks/auth'
 import { cn } from '@/lib/utils'
@@ -55,3 +56,11 @@ export function FormError({ message }: { message: string | null }) {
 }
 
 export const linkClass = 'font-medium text-foreground underline underline-offset-4 hover:text-primary'
+
+export function DocsLink() {
+  return (
+    <Link href="~/docs" className={linkClass}>
+      Read the docs
+    </Link>
+  )
+}

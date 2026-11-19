@@ -1,4 +1,4 @@
-import { Bot, House, LaptopMinimal, ListChecks, type LucideIcon, Printer, Settings, ShieldCheck, Users } from 'lucide-react'
+import { BookOpen, Bot, House, LaptopMinimal, ListChecks, type LucideIcon, Printer, Settings, ShieldCheck, Users } from 'lucide-react'
 import { Link } from 'wouter'
 import { usePathname } from 'wouter/use-browser-location'
 import { StatusDot } from '@/components/status'
@@ -30,6 +30,7 @@ function useNavItems(ws: string): { main: NavItem[]; more: NavItem[] } {
     more: [
       { label: 'Connect AI', icon: Bot, href: '~/connect' },
       ...(user?.isAdmin ? [{ label: 'Server admin', icon: ShieldCheck, href: '~/admin' }] : []),
+      { label: 'Docs', icon: BookOpen, href: '~/docs' },
     ],
   }
 }
