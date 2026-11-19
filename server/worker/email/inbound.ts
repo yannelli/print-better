@@ -1,3 +1,4 @@
+import type { Role } from '../../shared/types'
 import { printerSettings, workspaceSettings } from '../db/map'
 import type { PrinterViewRow } from '../db/rows'
 import { MB } from '../http/body'
@@ -7,6 +8,7 @@ import { systemCtx } from '../services/context'
 import { docType } from '../services/doc-types'
 import { loadInstance } from '../services/instance-store'
 import { queueJob } from '../services/job-create'
+import { accessFor } from '../services/permissions'
 
 export interface InboundAttachment {
   fileName: string | null
@@ -51,13 +53,15 @@ function printable(mail: InboundMail, maxBytes: number) {
   return body ? [{ data: utf8(body).slice(0, maxBytes), contentType: 'text/plain' as const, fileName: null }] : []
 }
 
-/** Recipient alias selects the printer; the sender must be a verified member email or on the workspace allowlist. */
+/** Recipient alias selects the printer; the sender must be a verified member email or on the workspace allowlist,
+ *  and allowed to print there (a member as themselves, anyone else as Everyone). */
 export async function processInbound(env: Env, mail: InboundMail, channel: 'cloudflare' | 'resend', waitUntil: (p: Promise<unknown>) => void): Promise<InboundResult> {
   const inst = await loadInstance(env)
   if (inst.config.email.inbound !== channel) return { accepted: 0, rejected: 'Email-to-print is not enabled on this server' }
   if (mail.dmarc === 'fail') return { accepted: 0, rejected: 'The sender could not be verified (DMARC)' }
   const sender = mail.from.trim().toLowerCase()
   const domain = inst.config.email.inboundDomain
+  const ctx = systemCtx(env, '', waitUntil, { type: 'email', sender })
   let accepted = 0
   let reason = 'No printer accepts email at this address'
   for (const rcpt of new Set(mail.to.map((t) => t.trim().toLowerCase()))) {
@@ -74,14 +78,15 @@ export async function processInbound(env: Env, mail: InboundMail, channel: 'clou
     const settings = workspaceSettings(printer.ws_settings)
     if (!settings.emailToPrint.enabled) continue
     const member = settings.emailToPrint.allowMembers
-      ? await first<{ id: string }>(
+      ? await first<{ id: string; role: Role }>(
           env.DB,
-          'SELECT u.id FROM users u JOIN members m ON m.user_id = u.id WHERE m.workspace_id = ? AND u.email = ? AND u.email_verified = 1',
+          'SELECT u.id, m.role FROM users u JOIN members m ON m.user_id = u.id WHERE m.workspace_id = ? AND u.email = ? AND u.email_verified = 1',
           printer.workspace_id,
           sender,
         )
       : null
-    if (!member && !allowlisted(settings.emailToPrint.allowlist, sender)) {
+    const access = await accessFor(ctx, printer.workspace_id, member ? { kind: 'member', userId: member.id, role: member.role } : { kind: 'everyone' })
+    if ((!member && !allowlisted(settings.emailToPrint.allowlist, sender)) || !access.can(printer.id, 'print')) {
       reason = 'This sender is not allowed to print here'
       continue
     }
@@ -91,7 +96,6 @@ export async function processInbound(env: Env, mail: InboundMail, channel: 'clou
       reason = 'The message has nothing printable'
       continue
     }
-    const ctx = systemCtx(env, '', waitUntil, { type: 'email', sender })
     for (const doc of docs) {
       await queueJob(ctx, {
         workspaceId: printer.workspace_id,

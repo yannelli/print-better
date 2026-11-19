@@ -3,7 +3,7 @@
 Endpoint: `POST <origin>/mcp`, streamable HTTP, stateless, JSON responses only. Goal: an agent can do everything the web UI can, including a full first-time setup, with the same permission checks as the REST API (tools call the same service functions; no parallel logic). Code: `server/worker/mcp/` and `server/worker/oauth/`; background: `docs/research/mcp-auth.md`.
 
 ## Protocol eras
-- **2026-07-28 (modern)**: chosen when `params._meta` carries `io.modelcontextprotocol/protocolVersion` (or the `MCP-Protocol-Version` header says 2026-07-28). Every request must also carry `_meta["io.modelcontextprotocol/clientCapabilities"]` (missing → 400 `-32602`) and the headers `MCP-Protocol-Version` (= `_meta`), `Mcp-Method` (= `method`) and, for `tools/call`, `Mcp-Name` (= `params.name`, `=?base64?…?=` decoded); a mismatch is 400 `-32020`, another version 400 `-32022` with `data: { supported, requested }`. Methods: `server/discover`, `tools/list` (`ttlMs` 1 h, `cacheScope: "private"`), `tools/call`, `subscriptions/listen` (completes at once with nothing, since the tool set never changes at runtime). Every result has `resultType: "complete"` and `_meta["io.modelcontextprotocol/serverInfo"]`. Unknown method: 404 `-32601`.
+- **2026-07-28 (modern)**: chosen when `params._meta` carries `io.modelcontextprotocol/protocolVersion` (or the `MCP-Protocol-Version` header says 2026-07-28). Every request must also carry `_meta["io.modelcontextprotocol/clientCapabilities"]` (missing → 400 `-32602`) and the headers `MCP-Protocol-Version` (= `_meta`), `Mcp-Method` (= `method`) and, for `tools/call`, `Mcp-Name` (= `params.name`, `=?base64?…?=` decoded); a mismatch is 400 `-32020`, another version 400 `-32022` with `data: { supported, requested }`. Methods: `server/discover`, `tools/list` (`ttlMs` 1 h, `cacheScope: "private"`), `tools/call`, `subscriptions/listen` (completes at once with nothing; the tool list changes only when a server admin makes an extension available or unavailable, and clients see that on their next `tools/list`). Every result has `resultType: "complete"` and `_meta["io.modelcontextprotocol/serverInfo"]`. Unknown method: 404 `-32601`.
 - **2025-11-25, 2025-06-18, 2025-03-26 (legacy)**: `initialize` echoes a supported version, else answers 2025-11-25; no session id is ever minted. `ping` → `{}`; `tools/list`, `tools/call` as above without `resultType`/`ttlMs`/`cacheScope`. After `initialize`, a `MCP-Protocol-Version` header naming an unsupported version is 400 `-32022`. Unknown method: 200 with `-32601`.
 - Both: notifications get 202 with no body; JSON arrays (batches) are 400 `-32600`; GET and DELETE are 405; bodies over 16 MB are 413 `-32600` (base64 documents ride inside `tools/call`, so about 12 MB decoded).
 
@@ -71,5 +71,21 @@ Consent flow contract (Worker ↔ SPA):
 | `retry_job` | print | Print a failed or canceled job again while its document is still stored |
 | `get_instance_settings` | read | Instance admins: app name, signup, SSO, email (secrets reported as present/absent) |
 | `update_instance_settings` | write | Instance admins: deep-merged changes; secret fields are write-only (a string sets, `null` clears) |
+
+### Extension tools
+After the core tools, `tools/list` adds the tools of each extension a server admin has made available (docs/extensions.md). While the extension is off in the workspace, each call fails with a message that says how to turn it on. Printer access (docs/printer-access.md):
+
+| Tool | Scope | Purpose |
+|---|---|---|
+| `list_groups` | read | Groups of members and devices, with their members |
+| `create_group`, `update_group`, `delete_group` | write | Admins: create, rename or describe, delete (its grants go with it) |
+| `set_group_member` | write | Admins: add or remove a person (`user`) or device (`client`) |
+| `list_printer_roles` | read | Built-in and custom roles with their permissions |
+| `create_printer_role`, `update_printer_role`, `delete_printer_role` | write | Admins: custom roles; a role still in use can't be deleted |
+| `get_printer_access` | read | A printer's Everyone role and grants; without `printerId`, the workspace default role, roles and workspace-wide grants |
+| `set_printer_everyone_role` | write | A printer's Everyone role (a role, `none`, or `null` for the default); without `printerId`, the workspace default |
+| `grant_printer_access` | write | A role for a member, group or device on one printer, or on every printer without `printerId` (admins; Everyone allowed there) |
+| `revoke_printer_access` | write | Remove a grant |
+| `explain_printer_access` | read | Why a member, group, device or Everyone has their permissions on a printer |
 
 Resources and prompts: none in phase 1.

@@ -1,17 +1,19 @@
+import type { PrinterPermission } from '../../shared/access'
 import type { Job, Printer } from '../../shared/printing'
 import { JOB_VIEW, PRINTER_VIEW, printerSettings, toJob, toPrinter, workspaceSettings } from '../db/map'
-import type { JobViewRow, PrinterViewRow } from '../db/rows'
+import type { JobViewRow, PrinterViewRow, UserRow } from '../db/rows'
 import type { Json } from '../http/body'
 import { conflict, notFound } from '../http/errors'
 import { NAME, nullableStr, optBool, optObj, optStr } from '../http/validate'
 import { all, first, run } from '../lib/db'
-import { requireMember, requireScope } from './access'
+import { requireScope } from './access'
 import { audit } from './audit'
 import { sendCommand, type CommandResult } from './clients'
 import type { Ctx } from './context'
 import { hubFor, notifyHub } from './hub'
 import { parseJobOptions } from './job-options'
 import { queueJob, workspaceLimits } from './job-create'
+import { memberAccess, requirePermission } from './permissions'
 import { testPagePdf } from './test-page'
 import { loadWorkspace, saveWorkspaceSettings } from './workspaces'
 
@@ -23,9 +25,17 @@ export async function loadPrinter(env: Env, workspaceId: string, id: string): Pr
   return row
 }
 
+/** The printer, once the caller is known to hold `perm` on it (404 when they can't see it, 403 when they can). */
+async function printerFor(ctx: Ctx, workspaceId: string, id: string, perm: PrinterPermission): Promise<{ row: PrinterViewRow; user: UserRow }> {
+  const { user, access } = await memberAccess(ctx, workspaceId, perm)
+  const row = await loadPrinter(ctx.env, workspaceId, id)
+  requirePermission(access, row.id, perm)
+  return { row, user }
+}
+
 export async function listPrinters(ctx: Ctx, workspaceId: string, added?: string | null): Promise<Printer[]> {
   requireScope(ctx, 'read')
-  await requireMember(ctx, workspaceId)
+  const { access } = await memberAccess(ctx, workspaceId)
   const flag = added === 'true' ? 1 : added === 'false' ? 0 : null
   const rows = await all<PrinterViewRow>(
     ctx.env.DB,
@@ -34,13 +44,12 @@ export async function listPrinters(ctx: Ctx, workspaceId: string, added?: string
     flag,
     flag,
   )
-  return rows.map(toPrinter)
+  return rows.filter((r) => access.can(r.id, 'view')).map(toPrinter)
 }
 
 export async function getPrinter(ctx: Ctx, workspaceId: string, id: string): Promise<Printer> {
   requireScope(ctx, 'read')
-  await requireMember(ctx, workspaceId)
-  return toPrinter(await loadPrinter(ctx.env, workspaceId, id))
+  return toPrinter((await printerFor(ctx, workspaceId, id, 'view')).row)
 }
 
 /** A forgotten or removed default printer must not stay the workspace default. */
@@ -53,8 +62,7 @@ async function clearDefaultIf(ctx: Ctx, workspaceId: string, printerId: string):
 
 export async function patchPrinter(ctx: Ctx, workspaceId: string, id: string, body: Json): Promise<Printer> {
   requireScope(ctx, 'write')
-  await requireMember(ctx, workspaceId, 'admin')
-  const row = await loadPrinter(ctx.env, workspaceId, id)
+  const { row } = await printerFor(ctx, workspaceId, id, 'settings')
   const settings = printerSettings(row.settings)
   const patch = optObj(body, 'settings')
   if (patch) {
@@ -99,8 +107,7 @@ export async function patchPrinter(ctx: Ctx, workspaceId: string, id: string, bo
 /** Forgets the printer; open jobs are canceled (and the device told to stop). Rediscovery brings it back as discovered. */
 export async function deletePrinter(ctx: Ctx, workspaceId: string, id: string): Promise<void> {
   requireScope(ctx, 'write')
-  await requireMember(ctx, workspaceId, 'admin')
-  const row = await loadPrinter(ctx.env, workspaceId, id)
+  const { row } = await printerFor(ctx, workspaceId, id, 'settings')
   const open = await all<JobViewRow>(ctx.env.DB, `${JOB_VIEW} WHERE j.printer_id = ? AND j.status IN ('uploading', 'queued', 'dispatched', 'printing')`, id)
   const hub = hubFor(ctx.env, workspaceId)
   for (const job of open.filter((j) => j.status === 'dispatched' || j.status === 'printing')) {
@@ -127,10 +134,10 @@ export async function deletePrinter(ctx: Ctx, workspaceId: string, id: string): 
   })
 }
 
+/** Identifying makes the printer act, so it takes `print`; refreshing its status only `view`. */
 async function printerCommand(ctx: Ctx, workspaceId: string, id: string, name: 'identify' | 'refresh'): Promise<CommandResult> {
   requireScope(ctx, 'write')
-  await requireMember(ctx, workspaceId)
-  const row = await loadPrinter(ctx.env, workspaceId, id)
+  const { row } = await printerFor(ctx, workspaceId, id, name === 'identify' ? 'print' : 'view')
   return sendCommand(ctx, workspaceId, row.client_id, name, { key: row.key })
 }
 
@@ -139,8 +146,7 @@ export const refreshPrinter = (ctx: Ctx, workspaceId: string, id: string) => pri
 
 export async function printTestPage(ctx: Ctx, workspaceId: string, id: string): Promise<{ job: Job }> {
   requireScope(ctx, 'print')
-  const { user } = await requireMember(ctx, workspaceId)
-  const printer = await loadPrinter(ctx.env, workspaceId, id)
+  const { row: printer, user } = await printerFor(ctx, workspaceId, id, 'print')
   if (printer.added !== 1) throw conflict('Add this printer to the workspace before printing to it', 'printer_not_added')
   const pdf = testPagePdf({
     printerName: printer.name,

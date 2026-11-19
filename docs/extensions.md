@@ -30,7 +30,7 @@ Turning either switch off makes the extension inactive at once. Its data (groups
 | Catalog (ids, names, summaries) shared by the Worker and the web app | `server/shared/extensions.ts` |
 | Instance availability | `settings` table, key `extensions` (`{ "available": ["printer-access"] }`) |
 | Workspace state and config | `workspace_extensions` table (`workspace_id`, `extension_id`, `enabled`, `config` JSON, `updated_at`) |
-| Server registry and hooks | `server/worker/extensions/` (one folder per extension) |
+| Server registry and hooks | `server/worker/extensions/` (`hooks.ts`, `routes.ts`, `tools.ts`, and one folder per extension) |
 | Web app registry and slots | `server/src/extensions/` (one folder per extension) |
 
 ## API
@@ -40,15 +40,15 @@ Turning either switch off makes the extension inactive at once. Its data (groups
 | `GET /api/admin/extensions` | instance admins | `InstanceExtension[]`: availability and how many workspaces enabled each |
 | `PATCH /api/admin/extensions/:id` `{ "available": true }` | instance admins | Make an extension available or unavailable everywhere |
 | `GET /api/workspaces/:ws/extensions` | members | `WorkspaceExtension[]`: available, enabled, active |
-| `PATCH /api/workspaces/:ws/extensions/:id` `{ "enabled": true }` | workspace owners | Turn an available extension on or off for the workspace |
+| `PATCH /api/workspaces/:ws/extensions/:id` `{ "enabled": true }` | workspace owners | Turn an available extension on or off for the workspace (`409 extension_unavailable` while it isn't available) |
 
-Changing either switch sends an `access` event to the workspace's open browsers and refreshes what its devices see, so pages and print windows update without a reload.
+Changing either switch is audited (`extension.update`), sends an `access` event to the workspace's open browsers and refreshes what its devices see, so pages and print windows update without a reload. The instance switch does this for every workspace.
 
 ## Writing an extension
 
 1. Add its id and catalog entry to `server/shared/extensions.ts`.
 2. Add its tables in a new migration. Every row must cascade on workspace delete.
-3. Create `server/worker/extensions/<id>/` with an `index.ts` that registers its hooks, routes (under `/api/workspaces/:ws/...`), and MCP tools with the registry. Use `isActive(ctx, workspaceId, '<id>')` at every entry point.
+3. Create `server/worker/extensions/<id>/`, then list its hooks in `extensions/hooks.ts`, its routes (under `/api/workspaces/:ws/...`) in `extensions/routes.ts`, and its MCP tools in `extensions/tools.ts`. Use `isActive(ctx, workspaceId, '<id>')` or `requireActive` at every entry point.
 4. Create `server/src/extensions/<id>/` and register its UI with the slots it needs (for example a printer tab, a workspace settings section, a device page section). Slots render nothing while the extension is inactive.
 5. Write tests that prove the core is unchanged while the extension is off, then test the extension itself.
 6. Document it in `docs/<id>.md` and add it to the table above.

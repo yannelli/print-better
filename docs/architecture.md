@@ -12,8 +12,9 @@ Print Better has two programs: a **server** (one Cloudflare Worker that also ser
 server/                 Vite project: React SPA + Worker in one deployable
   wrangler.jsonc        bindings: DB (D1), FILES (R2), HUB (Durable Object), assets, cron (operators may add an EMAIL send binding)
   migrations/           D1 SQL migrations (0001_init.sql is the schema contract; 0002_oauth.sql adds api_tokens.resource)
-  shared/               types shared by SPA and Worker (types.ts, protocol.ts)
+  shared/               types shared by SPA and Worker (types.ts, protocol.ts, extensions.ts, access.ts)
   worker/               Worker: router, auth, api, hub, mcp, oauth, email, install scripts
+  worker/extensions/    optional modules (docs/extensions.md): switches, hook registries, one folder per extension
   src/                  SPA (React + shadcn)
 client/                 Cargo workspace
   crates/print          pb-print: model, IPP, discovery, conversion, backends, LAN share
@@ -27,10 +28,11 @@ docs/                   decisions, architecture, protocol, api, mcp, research no
 
 - **Worker** (`server/worker`): stateless HTTP. Authenticates every request: the REST API takes the session cookie or a `pbt_` personal token, `/mcp` takes a `pbt_` token or a `pbo_` OAuth access token issued for it, device endpoints take a `pbc_` client token. Permission checks (role and token scope) live in the service layer that REST and MCP share. Reads/writes D1, streams documents to/from R2, and calls the hub for anything realtime.
 - **WorkspaceHub Durable Object**: one per workspace (`idFromName(workspaceId)`). Holds the WebSockets of that workspace's clients and open browser tabs, using the hibernation API. Responsibilities: deliver jobs, relay commands and their results, apply client reports to D1, fan out change events to browsers, sweep stale sockets with an alarm. D1 stays the source of truth; the hub keeps only socket attachments and in-flight command promises.
-- **D1**: users, credentials, workspaces, clients, printers, jobs, tokens, OAuth clients, settings, audit log. Schema: `server/migrations/`.
+- **D1**: users, credentials, workspaces, clients, printers, jobs, tokens, OAuth clients, settings, audit log, extension switches (`workspace_extensions`; instance availability is the `extensions` settings row) and printer access groups, roles and grants. Schema: `server/migrations/`.
 - **R2** (`FILES`): `jobs/<workspaceId>/<jobId>` documents (purged by cron after `keepDocumentsHours`, default 24), `downloads/<version>/<file>` client builds plus `downloads/latest.json`.
 - **Cron** (every 15 min): purge documents past `keepDocumentsHours`; delete expired sessions, challenges, enrollment tokens, device codes, API/OAuth tokens and unaccepted invites; drop OAuth client records older than 30 days that have no tokens; fail uploads abandoned for an hour and jobs with no progress for `jobTimeoutHours`; mark clients offline whose sockets vanished.
 - **Email** (off by default): `email()` handler for Cloudflare Email Routing and `POST /api/hooks/resend` for Resend inbound. Outbound mail (invites, resets, alerts) uses Resend or Cloudflare's send-email binding when configured; without it, invite links are copy/paste and resets go through recovery codes or an admin.
+- **Extensions** (`server/worker/extensions/`): optional modules, active in a workspace only when a server admin made them available and an owner turned them on. The core asks them through hooks (for example the printer policy behind every printer and job check) and keeps its built-in rules when none is active.
 - **MCP** (`/mcp`): stateless streamable-HTTP MCP server speaking both 2026-07-28 and the 2025 `initialize` era; tools cover everything the UI can do (see `docs/mcp.md`). Auth: the built-in OAuth 2.1 server (for Claude/ChatGPT connectors) or a personal API token.
 - **Install endpoints**: `/install.sh`, `/install.ps1`, `/dl/<file>`, templated with the server origin. Tokens are passed as script arguments, never baked into cached responses.
 

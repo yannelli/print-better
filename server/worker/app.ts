@@ -4,6 +4,7 @@ import { clientRoutes, deviceRoutes } from './api/device-routes'
 import { meRoutes } from './api/me-routes'
 import { jobRoutes, printerRoutes } from './api/printer-routes'
 import { workspaceRoutes } from './api/workspace-routes'
+import { extensionRoutes } from './extensions/routes'
 import { assertSameOrigin, isMutation } from './http/authenticate'
 import { ApiError, errorBody, errorResponse, notFound } from './http/errors'
 import { Router, toResponse, type Http } from './http/router'
@@ -13,7 +14,7 @@ import { consentRoutes } from './oauth/consent'
 import { handleOAuth } from './oauth'
 
 const api = new Router()
-const ROUTES = [authRoutes, meRoutes, workspaceRoutes, deviceRoutes, clientRoutes, printerRoutes, jobRoutes, adminRoutes, hookRoutes, consentRoutes]
+const ROUTES = [authRoutes, meRoutes, workspaceRoutes, deviceRoutes, clientRoutes, printerRoutes, jobRoutes, adminRoutes, hookRoutes, consentRoutes, extensionRoutes]
 for (const register of ROUTES) register(api)
 
 /** Login CSRF guard: browser POSTs carry an Origin, which must be ours (device and webhook calls are exempt). */
