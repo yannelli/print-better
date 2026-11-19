@@ -35,9 +35,13 @@ struct StatusLine: View {
     let words: StatusWords
 
     var body: some View {
-        Label(words.label, systemImage: words.tone.symbol)
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(words.tone.color)
+        // A Label in a List takes the list's icon column, which leaves a wide gap before the word.
+        HStack(spacing: 4) {
+            Image(systemName: words.tone.symbol).accessibilityHidden(true)
+            Text(words.label)
+        }
+        .font(.subheadline.weight(.medium))
+        .foregroundStyle(words.tone.color)
     }
 }
 
