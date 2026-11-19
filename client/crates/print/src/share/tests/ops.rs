@@ -130,6 +130,20 @@ async fn get_jobs_filters_by_state() {
 }
 
 #[tokio::test]
+async fn a_job_that_finished_with_a_warning_says_so() {
+    let h = Harness::start().await;
+    let clean = print(&h, "application/pdf", PDF).await.unwrap();
+    let short = print(&h, "application/pdf", PDF).await.unwrap();
+    h.sink.set(101, SharedJobState::Completed);
+    h.sink.finish_with_warning(102, "The printer stopped after 4 of 11 pages. It didn't report an error.");
+    let clean = h.ipp.job_state(&h.uri(), clean).await.unwrap();
+    assert_eq!((clean.state, clean.reasons, clean.message), (JobStateKind::Completed, vec!["job-completed-successfully".into()], None));
+    let short = h.ipp.job_state(&h.uri(), short).await.unwrap();
+    assert_eq!((short.state, &short.reasons[..]), (JobStateKind::Completed, &["job-completed-with-warnings".to_string()][..]));
+    assert_eq!(short.message.as_deref(), Some("The printer stopped after 4 of 11 pages. It didn't report an error."));
+}
+
+#[tokio::test]
 async fn bad_requests_get_ipp_errors() {
     let h = Harness::start().await;
     let unknown = format!("ipp://{}/ipp/print/000000000000", h.addr);

@@ -1,11 +1,12 @@
 //! The print path: try routes in order, check the printer is ready, convert, submit, follow.
 
+use super::expect::{Expected, two_sided};
 use super::follow::{follow, timed};
 use super::{CancelFlag, Engine, PrintEvent, PrintOutcome, reasons, status};
 use crate::backends::{Events, Payload, lpd, pjl, socket};
 use crate::convert::{self, Channel, Plan, Prepared, Target};
 use crate::error::{Error, Result};
-use crate::ipp::{IppBody, IppJob};
+use crate::ipp::{IppBody, IppJob, PrinterAttrs};
 use crate::model::{DocFormat, Document, JobOptions, PrinterReport, Route, RouteKind};
 
 /// One conversion kept across routes, so falling back to a route with the same needs is free.
@@ -98,6 +99,8 @@ impl Attempt<'_> {
         }
         let target = Target::ipp(&attrs, cups);
         let prepared = self.prepare(&target, converted).await?;
+        // A CUPS queue counts pages from its own filters, which often don't match the paper.
+        let expected = if cups { None } else { count_expected(prepared, &attrs).await };
         let job = IppJob {
             name: self.doc.name.clone(),
             user: self.engine.opts.requesting_user.clone(),
@@ -110,7 +113,7 @@ impl Attempt<'_> {
             _ = self.cancel.canceled() => return Err(Error::Canceled),
         };
         self.emit(PrintEvent::Printing { pages_done: None });
-        follow(ipp, uri, id, self.route.kind, self.cancel, self.on_event).await
+        follow(ipp, uri, id, self.route.kind, expected, self.cancel, self.on_event).await
     }
 
     async fn raw(&self, converted: &mut Converted) -> Result<PrintOutcome> {
@@ -132,8 +135,13 @@ impl Attempt<'_> {
             RouteKind::Usb => usb_send(uri, &payload, self.cancel, self.on_event).await?,
             _ => socket::send(uri, &payload, self.cancel, self.on_event).await?,
         }
-        Ok(PrintOutcome { route: self.route.kind, pages: prepared.pages })
+        Ok(PrintOutcome { route: self.route.kind, pages: prepared.pages, warning: None })
     }
+}
+
+async fn count_expected(prepared: &Prepared, printer: &PrinterAttrs) -> Option<Expected> {
+    let pages = convert::payload_pages(prepared).await?;
+    Expected::new(pages, &prepared.options, two_sided(prepared.options.sides, printer))
 }
 
 #[cfg(not(windows))]

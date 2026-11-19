@@ -109,6 +109,17 @@ async fn a_waiting_job_names_the_offline_device_and_cancel_reaches_the_server() 
 }
 
 #[tokio::test]
+async fn a_job_that_printed_with_a_problem_keeps_the_warning() {
+    const WARNING: &str = "The printer stopped after 4 of 11 pages. It didn't report an error.";
+    let server = server(&[("printing", None), ("completed", Some(WARNING))]).await;
+    let dir = TempDir::new();
+    let sink = RemoteSink::new(daemon(&dir, &server.origin));
+    let id = sink.submit(job(&dir)).unwrap();
+    until("completion", || state(&sink, id).0 == SharedJobState::Completed).await;
+    assert_eq!(state(&sink, id).1.as_deref(), Some(WARNING));
+}
+
+#[tokio::test]
 async fn failures_carry_the_servers_message() {
     let server = server(&[("failed", Some("Out of paper"))]).await;
     let dir = TempDir::new();
@@ -168,7 +179,9 @@ fn server_states_map_to_ipp_states() {
         assert_eq!(ipp_state(&job(status, None), None), (SharedJobState::Pending, None));
     }
     assert_eq!(ipp_state(&job("printing", Some("Page 2")), Some(&online)), (SharedJobState::Processing, Some("Page 2".into())));
-    assert_eq!(ipp_state(&job("completed", Some("done")), Some(&offline)), (SharedJobState::Completed, None));
+    assert_eq!(ipp_state(&job("completed", None), Some(&offline)), (SharedJobState::Completed, None));
+    let short = Some("The printer stopped after 4 of 11 pages.".to_string());
+    assert_eq!(ipp_state(&job("completed", short.as_deref()), Some(&online)), (SharedJobState::Completed, short), "a warning");
     assert_eq!(ipp_state(&job("failed", Some("Jammed")), None), (SharedJobState::Aborted, Some("Jammed".into())));
     assert_eq!(ipp_state(&job("failed", None), None), (SharedJobState::Aborted, Some("The job failed.".into())));
     assert_eq!(ipp_state(&job("canceled", None), Some(&online)), (SharedJobState::Canceled, None));

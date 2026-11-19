@@ -44,7 +44,7 @@ fn watch(reply: &Value) -> Outcome {
         }
         match status {
             "completed" => {
-                println!("Printed.");
+                printed(message);
                 return Ok(());
             }
             "failed" if message.is_empty() => return Err(Failure::error("The job didn't print.")),
@@ -72,7 +72,7 @@ fn print_here(file: &Path, params: &HashMap<String, String>) -> Outcome {
         format,
         name: params.get("title").cloned().unwrap_or_else(|| "Document".into()),
     };
-    block_on(async {
+    let outcome = block_on(async {
         let printers = engine.discover(&settings::discover_options(&config.settings, None)).await;
         let printer = choose::printer(&printers, &added, params.get("printer").map(String::as_str)).map_err(Failure::error)?;
         let defaults = saved.printers.iter().find(|c| c.key == printer.key).map(|c| c.defaults.clone()).unwrap_or_default();
@@ -81,8 +81,13 @@ fn print_here(file: &Path, params: &HashMap<String, String>) -> Outcome {
         let options = options.over(&defaults);
         engine.print(printer, &document, &options, &CancelFlag::default(), &on_event).await.map_err(|e| Failure::error(print_error::sentence(&e)))
     })??;
-    println!("Printed.");
+    printed(outcome.warning.as_deref().unwrap_or_default());
     Ok(())
+}
+
+/// The last line for a finished job; a warning means some of it may not have printed.
+fn printed(warning: &str) {
+    if warning.is_empty() { println!("Printed.") } else { println!("Printed with a problem: {warning}") }
 }
 
 fn describe(event: &PrintEvent) -> String {

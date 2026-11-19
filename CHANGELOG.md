@@ -4,6 +4,15 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
+### Fixed
+
+- **printing:** a job the printer only partly printed no longer shows as a clean success. The client counts the pages it sends (PDFs, images, and text it lays out) and compares them with what a network printer reports, so a short print finishes as completed with a warning: "The printer stopped after 4 of 11 pages. It didn't report an error." Jobs sent through a CUPS queue skip the comparison, since CUPS counts pages from its own filters.
+- **printing:** a completed job with reasons such as `job-completed-with-errors` or `document-format-error` finishes with a warning in plain words. A job the client lost track of, or stopped checking after 2 hours, says so instead of claiming it printed.
+- **printing:** a job the printer aborts for a document error names it ("The printer couldn't read the document.") instead of a general message.
+- **web:** a completed job with a warning shows as "Printed with a problem" in amber with the message, in print jobs, recent jobs, and the print window. MCP job text includes the warning, and so do `printbetter print` and the client's status page.
+- **remote printers:** a job that ends with a warning finishes in the computer's print queue as completed with `job-completed-with-warnings` and the message.
+- **web:** job origins keep proper names, for example "From the API" and "From an AI assistant".
+
 ## [0.1.4] - 2026-11-19
 
 ### Added

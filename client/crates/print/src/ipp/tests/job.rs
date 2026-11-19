@@ -213,5 +213,9 @@ fn job_state_reads_state_reasons_message_and_pages() {
         Attribute::new("job-media-sheets-completed", Value::Integer(2)),
     ]))
     .unwrap();
-    assert_eq!((s.reasons, s.message.as_deref(), s.pages), (vec!["job-printing".to_string()], Some("Warming up"), Some(4)));
+    assert_eq!((&s.reasons[..], s.message.as_deref()), (&["job-printing".to_string()][..], Some("Warming up")));
+    assert_eq!((s.impressions, s.sheets, s.pages()), (Some(4), Some(2), Some(4)));
+    let sheets_only = vec![Attribute::new("job-state", Value::Enum(9)), Attribute::new("job-media-sheets-completed", Value::Integer(3))];
+    let s = state(&job(sheets_only)).unwrap();
+    assert_eq!((s.impressions, s.sheets, s.pages()), (None, Some(3), Some(3)));
 }

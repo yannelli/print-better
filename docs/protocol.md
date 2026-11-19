@@ -47,7 +47,7 @@ Close codes: 4400 protocol error, 4401 unauthorized/revoked, 4409 replaced, 4500
 - `job` is idempotent. Client persists `JobOffer` before acking with `job_status: dispatched`. If the id is already known locally, it re-sends the latest status instead of printing again.
 - `job_status.attempt` echoes `JobOffer.attempt` (omitted means the job's current attempt), so a late report from an earlier attempt cannot overwrite a retry.
 - Client fetches `fileUrl` with its token, verifies `sha256`, merges `options` over printer `defaults`.
-- Progress: `dispatched` (accepted, possibly waiting for the printer, `message` explains) → `printing` (submitted to the device) → `completed` (with `pages` when known) | `failed` (`message` required) | `canceled`.
+- Progress: `dispatched` (accepted, possibly waiting for the printer, `message` explains) → `printing` (submitted to the device) → `completed` (with `pages` when known; a `message` means it finished with a warning, such as a printer that stopped early) | `failed` (`message` required) | `canceled`.
 - Hub rules: terminal states are final; a status earlier in the order than the current one is ignored, except `printing → dispatched`, which a device sends when it backs off to retry (transient errors guarantee nothing reached the printer); reports for any `attempt` other than the job's current one are ignored.
 - `cancel`: client aborts download/convert, or sends IPP Cancel-Job when already submitted, then reports `canceled`. If the printer already finished, it reports `completed`.
 - Paused client (`settings.paused`): jobs are acked and held with message "Paused on <client name>".

@@ -24,6 +24,7 @@ const PDF: &[u8] = b"%PDF-1.7\n% shared job\n";
 struct Sink {
     jobs: Mutex<Vec<SharedJob>>,
     states: Mutex<HashMap<u32, SharedJobState>>,
+    messages: Mutex<HashMap<u32, String>>,
     canceled: Mutex<Vec<u32>>,
     refuse: Mutex<Option<String>>,
 }
@@ -31,6 +32,11 @@ struct Sink {
 impl Sink {
     fn set(&self, id: u32, state: SharedJobState) {
         self.states.lock().unwrap().insert(id, state);
+    }
+
+    fn finish_with_warning(&self, id: u32, message: &str) {
+        self.set(id, SharedJobState::Completed);
+        self.messages.lock().unwrap().insert(id, message.into());
     }
 
     fn jobs(&self) -> Vec<SharedJob> {
@@ -51,7 +57,7 @@ impl ShareSink for Sink {
     }
 
     fn state(&self, id: u32) -> Option<(SharedJobState, Option<String>)> {
-        self.states.lock().unwrap().get(&id).map(|s| (*s, None))
+        self.states.lock().unwrap().get(&id).map(|s| (*s, self.messages.lock().unwrap().get(&id).cloned()))
     }
 
     fn cancel(&self, id: u32) -> bool {

@@ -9,7 +9,7 @@ use super::uri::Target;
 use super::value::{Attribute, Group, Message, Value};
 use super::{job, printer};
 use crate::error::{Error, Result};
-use crate::model::{Capabilities, JobOptions, PrinterStatus};
+use crate::model::{Capabilities, JobOptions, PrinterStatus, Sides};
 use std::collections::HashSet;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -53,7 +53,17 @@ pub struct IppJobState {
     pub state: JobStateKind,
     pub reasons: Vec<String>,
     pub message: Option<String>,
-    pub pages: Option<u32>,
+    /// Sides printed so far: job-pages-completed or job-impressions-completed.
+    pub impressions: Option<u32>,
+    /// Sheets of paper printed so far: job-media-sheets-completed.
+    pub sheets: Option<u32>,
+}
+
+impl IppJobState {
+    /// Progress in whatever the printer counts.
+    pub fn pages(&self) -> Option<u32> {
+        self.impressions.or(self.sheets)
+    }
 }
 
 /// Parsed Get-Printer-Attributes response.
@@ -74,6 +84,7 @@ pub struct PrinterAttrs {
     pub identify_supported: bool,
     /// page-ranges-supported: the printer itself prints just the requested pages.
     pub page_ranges_supported: bool,
+    pub sides_default: Option<Sides>,
 }
 
 /// HTTP/1.1 IPP client over TCP or TLS; IPPS pins printer certs on first use (they are self-signed).
@@ -173,7 +184,8 @@ impl IppClient {
         let (resp, _) = self.exchange(&target, msg, None, REQUEST_IDLE).await?;
         // Printers drop finished jobs from their history, some as soon as they finish.
         if matches!(resp.code, status::NOT_FOUND | status::GONE) {
-            return Ok(IppJobState { state: JobStateKind::Completed, reasons: Vec::new(), message: None, pages: None });
+            let state = JobStateKind::Completed;
+            return Ok(IppJobState { state, reasons: Vec::new(), message: None, impressions: None, sheets: None });
         }
         check(&target, resp)?
             .group(group::JOB)
