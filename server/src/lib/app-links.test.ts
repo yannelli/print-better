@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ACCOUNT_ROUTE, WORKSPACE_FREE_PATHS, WORKSPACE_FREE_ROUTE, workspaceScreenHref } from './app-links'
+import { ACCOUNT_ROUTE, SETTINGS_TABS, WORKSPACE_FREE_PATHS, WORKSPACE_FREE_ROUTE, workspaceScreenHref } from './app-links'
 
 afterEach(() => vi.unstubAllGlobals())
 
@@ -15,7 +15,8 @@ describe('workspace-free app links', () => {
       expect(WORKSPACE_FREE_ROUTE.test(path)).toBe(true)
       expect(WORKSPACE_FREE_ROUTE.test(`${path}/`)).toBe(true)
     }
-    for (const path of ['/', '/printers/abc', '/devicesx', '/devices/add/more', '/w/abc/printers', '/docs/printers/add']) {
+    for (const tab of SETTINGS_TABS) expect(WORKSPACE_FREE_ROUTE.test(`/settings/${tab}`)).toBe(true)
+    for (const path of ['/', '/printers/abc', '/devicesx', '/devices/add/more', '/settings/nope', '/w/abc/printers', '/docs/printers/add']) {
       expect(WORKSPACE_FREE_ROUTE.test(path)).toBe(false)
     }
   })
@@ -29,6 +30,7 @@ describe('workspace-free app links', () => {
     expect(workspaceScreenHref('/printers', 'ws1')).toBe('/w/ws1/printers')
     expect(workspaceScreenHref('/devices/add/', 'ws1')).toBe('/w/ws1/devices/add')
     expect(workspaceScreenHref('/settings', 'ws1', '?x=1#extensions')).toBe('/w/ws1/settings?x=1#extensions')
+    expect(workspaceScreenHref('/settings/printing/', 'ws1')).toBe('/w/ws1/settings/printing')
     expect(workspaceScreenHref('/jobs', undefined)).toBe('/welcome')
   })
 

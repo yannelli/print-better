@@ -39,7 +39,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "check": "tsc -b",
+    "check": "tsc -b && node scripts/check-docs.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "test": "vitest run",
     "preview": "pnpm build && vite preview",
