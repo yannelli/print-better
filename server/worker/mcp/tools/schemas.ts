@@ -59,6 +59,8 @@ export const DEVICE_SETTINGS = object(
     logLevel: choice('Log detail', ['info', 'debug']),
     remotePrinters: bool("Show the workspace's printers on other devices as local printers on this computer (macOS and Linux)"),
     autoUpdate: bool('Install new Print Better releases automatically (macOS and Linux)'),
+    remotePrintersHidden: { type: 'array', items: { type: 'string' }, description: 'Printer ids not to show on this computer (replaces the list)' },
+    defaultPrinter: nullableText("Printer id to make this computer's default printer (macOS and Linux); null leaves the default alone"),
   },
   [],
   'Settings to change; the device applies them when online',

@@ -127,6 +127,12 @@ fn settings_change_offline_and_persist() {
     assert_eq!(get("remotePrinters"), "on");
     assert_eq!(code(&run(&home, &["config", "set", "remotePrinters", "off"])), 0);
     assert_eq!(get("remotePrinters"), "off");
+    assert_eq!((get("defaultPrinter"), get("remotePrintersHidden")), ("none".into(), "none".into()));
+    assert_eq!(code(&run(&home, &["config", "set", "defaultPrinter", "pr_1"])), 0);
+    assert_eq!(code(&run(&home, &["config", "set", "remotePrintersHidden", "pr_2,pr_3"])), 0);
+    assert_eq!((get("defaultPrinter"), get("remotePrintersHidden")), ("pr_1".into(), "pr_2,pr_3".into()));
+    assert_eq!(code(&run(&home, &["config", "set", "defaultPrinter", "none"])), 0);
+    assert_eq!(get("defaultPrinter"), "none");
     assert!(home.path().join("config.json").exists());
     let all = stdout(&run(&home, &["config", "get"]));
     assert!(all.contains("discovery.snmp = off") && all.contains("logLevel = info"));

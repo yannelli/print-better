@@ -24,7 +24,9 @@
     "paused": false,
     "logLevel": "info",
     "remotePrinters": true,
-    "autoUpdate": true
+    "autoUpdate": true,
+    "remotePrintersHidden": [],
+    "defaultPrinter": null
   },
   "settingsUpdatedAt": 1763500000000
 }

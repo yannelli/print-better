@@ -64,7 +64,8 @@ impl Daemon {
         if old.lan_sharing != new.lan_sharing {
             self.wake.share.notify_one();
         }
-        if old.remote_printers != new.remote_printers {
+        let shown = |s: &ClientSettings| (s.remote_printers, s.remote_printers_hidden.clone(), s.default_printer.clone());
+        if shown(old) != shown(new) {
             self.wake.remote.notify_one();
         }
         if old.log_level != new.log_level {

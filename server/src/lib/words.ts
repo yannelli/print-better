@@ -1,5 +1,5 @@
 // Plain-language wording for printer, job and device states. Keep the UI's vocabulary here.
-import type { Client, Job, JobStatus, Printer, Sides } from '@shared/types'
+import type { Client, DefaultPrinterProblem, Job, JobStatus, Printer, Sides, SystemPrinter } from '@shared/types'
 
 export type Tone = 'ok' | 'warn' | 'bad' | 'info' | 'neutral'
 
@@ -122,6 +122,50 @@ export function deviceKind(client: Pick<Client, 'os' | 'arch'>): string {
   if (!client.os) return 'Device'
   if (client.os === 'linux' && client.arch && /^(arm|aarch64)/.test(client.arch)) return 'Raspberry Pi or Linux'
   return OS_NAMES[client.os]
+}
+
+const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
+
+/** "this Mac" or "this computer", for sentences about a desktop. */
+export const thisComputer = (client: Pick<Client, 'os'>) => (client.os === 'macos' ? 'this Mac' : 'this computer')
+
+/** Where a desktop's own printers are set up, for "Add it in …" instructions. */
+export const printerSettingsPlace = (client: Pick<Client, 'os'>) =>
+  client.os === 'macos' ? 'System Settings > Printers & Scanners' : "this computer's printer settings"
+
+/** How a workspace printer shows up on a desktop, from the device's report (undefined: not reported yet). */
+export function systemPrinterStatus(printer: Pick<SystemPrinter, 'state' | 'queue'> | undefined, where: string): StatusWords {
+  switch (printer?.state) {
+    case 'added':
+      return { label: 'Added', tone: 'ok', detail: printer.queue ? `System printer ${printer.queue}` : 'A system printer' }
+    case 'direct':
+      return printer.queue
+        ? { label: 'Reached directly', tone: 'ok', detail: `Uses ${printer.queue}, already set up on ${where}` }
+        : { label: 'Reached directly', tone: 'ok', detail: `${capitalized(where)} reaches it on the network, so it isn't added twice` }
+    case 'hidden':
+      return { label: 'Hidden', tone: 'neutral', detail: `Not in the print window on ${where}` }
+    case 'error':
+      return { label: "Couldn't add", tone: 'bad', detail: 'See the problem above' }
+    default:
+      return { label: 'Adding', tone: 'neutral', detail: `Being added to ${where}` }
+  }
+}
+
+/** Why the chosen default printer is not the default yet. */
+export function defaultPrinterProblem(problem: DefaultPrinterProblem, name: string, client: Pick<Client, 'os'>): string {
+  const where = thisComputer(client)
+  switch (problem) {
+    case 'hidden':
+      return `${name} is hidden on ${where}, so it can't be the default.`
+    case 'needs_queue':
+      return `${capitalized(where)} reaches ${name} directly but hasn't set it up yet. Add it in ${printerSettingsPlace(client)}, and it becomes the default.`
+    case 'waiting':
+      return `${name} becomes the default once it's added to ${where}.`
+    case 'unavailable':
+      return `${name} isn't offered to ${where} right now.`
+    case 'failed':
+      return `${capitalized(where)} couldn't change its default printer.`
+  }
 }
 
 export const SIDES: Record<Sides, string> = {

@@ -2,6 +2,7 @@
 //! CUPS stand-in that records lpadmin calls. Nothing touches the real print system.
 
 mod cups;
+mod default;
 mod serve;
 mod sink;
 
@@ -87,6 +88,11 @@ pub struct FakeCups {
     pub reachable: Mutex<Vec<bool>>,
     /// Queues whose PPD was marked AirPrint, in order.
     pub marked: Mutex<Vec<String>>,
+    /// The system default queue; `lpadmin -d` sets it and removing that queue clears it.
+    pub default: Mutex<Option<String>>,
+    /// Queues set up outside Print Better, with their device URIs.
+    pub devices: Mutex<Vec<(String, String)>>,
+    pub last_used: Mutex<bool>,
 }
 
 impl FakeCups {
@@ -106,8 +112,14 @@ impl Cups for FakeCups {
             return Err(why);
         }
         let queue = args[1].clone();
-        if args[0] == "-x" {
+        let mut default = self.default.lock().unwrap();
+        if args[0] == "-d" {
+            *default = Some(queue);
+        } else if args[0] == "-x" {
             self.queues.lock().unwrap().remove(&queue);
+            if default.as_ref() == Some(&queue) {
+                *default = None;
+            }
         } else if args.contains(&"everywhere".to_string()) {
             let uri = &args[args.iter().position(|a| a == "-v").unwrap() + 1];
             let authority = uri.trim_start_matches("ipp://").split('/').next().unwrap();
@@ -118,7 +130,19 @@ impl Cups for FakeCups {
     }
 
     fn exists(&self, queue: &str) -> bool {
-        self.queues.lock().unwrap().contains(queue)
+        self.queues.lock().unwrap().contains(queue) || self.devices.lock().unwrap().iter().any(|(q, _)| q == queue)
+    }
+
+    fn default_queue(&self) -> Result<Option<String>, String> {
+        Ok(self.default.lock().unwrap().clone())
+    }
+
+    fn devices(&self) -> Vec<(String, String)> {
+        self.devices.lock().unwrap().clone()
+    }
+
+    fn last_printer_used(&self) -> bool {
+        *self.last_used.lock().unwrap()
     }
 
     fn mark_airprint(&self, queue: &str) -> Result<(), String> {

@@ -13,7 +13,11 @@
     "paused": true,
     "logLevel": "info",
     "remotePrinters": true,
-    "autoUpdate": true
+    "autoUpdate": true,
+    "remotePrintersHidden": [
+      "pr_09"
+    ],
+    "defaultPrinter": "pr_07"
   },
   "updatedAt": 1763500000123
 }

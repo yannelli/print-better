@@ -9,6 +9,7 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 - **remote printers:** the Mac print dialog offers what the printer on the other device has: paper trays (**Paper Feed**), paper types, the print qualities it supports, and two-sided printing when it can. Each choice reaches that printer as the matching job option.
 - **remote printers:** **Supply Levels** in Printers & Scanners shows the printer's toner and ink, and its **Supplies** button opens the printer's page in the web app.
 - **printers:** devices report each printer's trays (`capabilities.sources`), paper types (`mediaTypes`) and qualities (`qualities`); jobs accept `source` and `mediaType` options (REST, MCP and device jobs).
+- **remote printers:** a Mac or Linux desktop's page in the web app has a **Printers on this computer** section: show or hide each printer from your other devices on that computer, see how each one is set up there (added as a system printer, reached directly so not added twice, hidden, or waiting), and pick that computer's **Default printer**. A default changed on the computer itself wins, and on Macs set to **Last Printer Used** the page says how to make the choice stick. New device settings `remotePrintersHidden` and `defaultPrinter`, also in `printbetter config`. Devices need this version to report their printers.
 
 ### Changed
 

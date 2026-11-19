@@ -260,7 +260,8 @@ export class WorkspaceHub extends DurableObject<Env> {
       if (att?.kind !== 'client' || !att.ready) continue
       const snapshot = snapshots.get(att.clientId)
       if (!snapshot || att.remotePrinters === snapshot.fingerprint) continue
-      if (send(ws, { type: 'remote_printers', printers: snapshot.printers })) ws.serializeAttachment({ ...att, remotePrinters: snapshot.fingerprint })
+      const msg = { type: 'remote_printers' as const, printers: snapshot.printers, ...(snapshot.direct.length > 0 && { direct: snapshot.direct }) }
+      if (send(ws, msg)) ws.serializeAttachment({ ...att, remotePrinters: snapshot.fingerprint })
     }
   }
 

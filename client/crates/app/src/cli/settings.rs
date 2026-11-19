@@ -79,6 +79,9 @@ fn display(value: &Value) -> String {
         Value::String(text) => text.clone(),
         Value::Bool(true) => "on".into(),
         Value::Bool(false) => "off".into(),
+        Value::Null => "none".into(),
+        Value::Array(items) if items.is_empty() => "none".into(),
+        Value::Array(items) => items.iter().map(display).collect::<Vec<_>>().join(","),
         other => other.to_string(),
     }
 }

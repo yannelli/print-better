@@ -90,6 +90,10 @@ export interface ClientSettings {
   remotePrinters: boolean
   /** Install new client releases without asking (macOS, Linux). */
   autoUpdate: boolean
+  /** Workspace printer ids not offered on this computer even though `remotePrinters` is on. */
+  remotePrintersHidden: string[]
+  /** Workspace printer to make this computer's default printer; null leaves the default alone. */
+  defaultPrinter: string | null
 }
 
 export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
@@ -101,6 +105,36 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
   logLevel: 'info',
   remotePrinters: true,
   autoUpdate: true,
+  remotePrintersHidden: [],
+  defaultPrinter: null,
+}
+
+/** `added`: a system printer (`queue`); `direct`: reached without Print Better, so not added again (`queue` is the computer's own, if any). */
+export type SystemPrinterState = 'added' | 'direct' | 'hidden' | 'waiting' | 'error'
+
+export interface SystemPrinter {
+  /** Workspace printer id. */
+  id: string
+  state: SystemPrinterState
+  queue: string | null
+}
+
+/** Why `ClientSettings.defaultPrinter` is not this computer's default yet. */
+export type DefaultPrinterProblem = 'hidden' | 'needs_queue' | 'waiting' | 'unavailable' | 'failed'
+
+/** A desktop's remote printers and default printer as its print system has them (reported by the device). */
+export interface SystemPrinters {
+  /** Remote printers are on and served on this computer. */
+  active: boolean
+  /** Why remote printers or the default printer could not be set up. */
+  error: string | null
+  printers: SystemPrinter[]
+  /** The computer's default print queue, and the workspace printer behind it when there is one. */
+  defaultQueue: string | null
+  defaultPrinterId: string | null
+  defaultProblem: DefaultPrinterProblem | null
+  /** macOS "Default printer: Last Printer Used": the print window starts on the last printer used instead. */
+  lastUsed: boolean
 }
 
 export interface Client {
@@ -115,6 +149,8 @@ export interface Client {
   lastSeenAt: number | null
   settings: ClientSettings
   settingsUpdatedAt: number
+  /** Null until the device reports it; versions before 0.1.3 never do. */
+  systemPrinters: SystemPrinters | null
   createdAt: number
 }
 

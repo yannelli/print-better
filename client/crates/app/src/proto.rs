@@ -40,6 +40,10 @@ pub struct ClientSettings {
     pub log_level: String,
     pub remote_printers: bool,
     pub auto_update: bool,
+    /// Workspace printer ids not offered here even though `remote_printers` is on.
+    pub remote_printers_hidden: Vec<String>,
+    /// Workspace printer to make this computer's default; None leaves the default alone.
+    pub default_printer: Option<String>,
 }
 
 impl Default for ClientSettings {
@@ -53,6 +57,8 @@ impl Default for ClientSettings {
             log_level: "info".into(),
             remote_printers: true,
             auto_update: true,
+            remote_printers_hidden: Vec::new(),
+            default_printer: None,
         }
     }
 }
@@ -87,6 +93,54 @@ pub struct RemotePrinter {
     pub defaults: JobOptions,
     #[serde(default)]
     pub supplies: Vec<Supply>,
+}
+
+/// An added printer on another device that this one reports itself, so it is not in the snapshot.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct DirectPrinter {
+    pub id: String,
+    pub uuid: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum SystemPrinterState {
+    Added,
+    Direct,
+    Hidden,
+    Waiting,
+    Error,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct SystemPrinter {
+    pub id: String,
+    pub state: SystemPrinterState,
+    pub queue: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DefaultPrinterProblem {
+    Hidden,
+    NeedsQueue,
+    Waiting,
+    Unavailable,
+    Failed,
+}
+
+/// Remote printers and the default printer as this computer's print system has them.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default)]
+#[serde(rename_all = "camelCase")]
+pub struct SystemPrinters {
+    pub active: bool,
+    pub error: Option<String>,
+    pub printers: Vec<SystemPrinter>,
+    pub default_queue: Option<String>,
+    pub default_printer_id: Option<String>,
+    pub default_problem: Option<DefaultPrinterProblem>,
+    /// macOS "Default printer: Last Printer Used" is on for the signed-in user.
+    pub last_used: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -171,6 +225,9 @@ pub enum ClientMsg {
         settings: ClientSettings,
         updated_at: i64,
     },
+    SystemPrinters {
+        report: SystemPrinters,
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -200,6 +257,8 @@ pub enum ServerMsg {
     },
     RemotePrinters {
         printers: Vec<RemotePrinter>,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        direct: Vec<DirectPrinter>,
     },
     Command {
         id: String,

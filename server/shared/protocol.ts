@@ -1,7 +1,7 @@
 // Wire protocol between the client daemon and the WorkspaceHub, plus browser events.
 // Mirrored in client/crates/app/src/proto.rs. Semantics: docs/protocol.md.
 
-import type { Client, ClientSettings, Os, Workspace } from './types'
+import type { Client, ClientSettings, Os, SystemPrinters, Workspace } from './types'
 import type { Capabilities, Job, JobOptions, JobStatus, Printer, PrinterReport, PrinterState, PrinterStatus, Supply } from './printing'
 
 export const PROTOCOL_VERSION = 1
@@ -88,6 +88,12 @@ export interface ClientSettingsMsg {
   updatedAt: number
 }
 
+/** Sent after `welcome` and whenever it changes (docs/remote-printers.md). */
+export interface SystemPrintersMsg {
+  type: 'system_printers'
+  report: SystemPrinters
+}
+
 export type ClientMessage =
   | HelloMsg
   | PrintersMsg
@@ -96,6 +102,7 @@ export type ClientMessage =
   | LanJobMsg
   | ResultMsg
   | ClientSettingsMsg
+  | SystemPrintersMsg
 
 // ---- server -> client ----
 
@@ -174,10 +181,18 @@ export interface RemotePrinter {
   supplies: Supply[]
 }
 
+/** An added printer on another device that the receiver reports itself, so it is not in `printers`. */
+export interface DirectPrinter {
+  id: string
+  uuid: string | null
+}
+
 /** Full snapshot, sent after `welcome` and whenever it changes for this client. */
 export interface RemotePrintersMsg {
   type: 'remote_printers'
   printers: RemotePrinter[]
+  /** Omitted when empty. */
+  direct?: DirectPrinter[]
 }
 
 export interface CommandMsg {

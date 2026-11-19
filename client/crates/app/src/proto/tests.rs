@@ -7,7 +7,7 @@ use std::path::PathBuf;
 
 type Fields = BTreeSet<String>;
 
-const CLIENT: [(&str, &str); 8] = [
+const CLIENT: [(&str, &str); 9] = [
     ("client_hello", "HelloMsg"),
     ("client_printers", "PrintersMsg"),
     ("client_printer_status", "PrinterStatusMsg"),
@@ -16,14 +16,16 @@ const CLIENT: [(&str, &str); 8] = [
     ("client_result_ok", "ResultMsg"),
     ("client_result_error", "ResultMsg"),
     ("client_settings", "ClientSettingsMsg"),
+    ("client_system_printers", "SystemPrintersMsg"),
 ];
-const SERVER: [(&str, &str); 7] = [
+const SERVER: [(&str, &str); 8] = [
     ("server_welcome", "WelcomeMsg"),
     ("server_job", "JobMsg"),
     ("server_cancel", "CancelMsg"),
     ("server_settings", "ServerSettingsMsg"),
     ("server_printer_config", "PrinterConfigMsg"),
     ("server_remote_printers", "RemotePrintersMsg"),
+    ("server_remote_printers_direct", "RemotePrintersMsg"),
     ("server_command", "CommandMsg"),
 ];
 
@@ -111,6 +113,9 @@ fn nested_types_mirror_shared_ts() {
     assert_mirrors("printing.ts", &[("server_remote_printers", "Capabilities")], "/printers/0/capabilities");
     assert_mirrors("printing.ts", &[("server_remote_printers", "Supply")], "/printers/0/supplies/0");
     assert_mirrors("types.ts", &[("client_hello", "ClientSettings")], "/settings");
+    assert_mirrors("protocol.ts", &[("server_remote_printers_direct", "DirectPrinter")], "/direct/0");
+    assert_mirrors("types.ts", &[("client_system_printers", "SystemPrinters")], "/report");
+    assert_mirrors("types.ts", &[("client_system_printers", "SystemPrinter")], "/report/printers/0");
     assert_mirrors("printing.ts", &[("server_welcome", "JobOptions")], "/printers/0/defaults");
     let printers = [
         ("PrinterReport", "/printers/0"),
@@ -146,7 +151,7 @@ fn remote_printers_from_older_servers_and_devices_still_parse() {
     for field in ["sources", "mediaTypes", "qualities"] {
         printer["capabilities"].as_object_mut().unwrap().remove(field);
     }
-    let ServerMsg::RemotePrinters { printers } = serde_json::from_value(msg).unwrap() else { panic!("expected remote_printers") };
+    let ServerMsg::RemotePrinters { printers, .. } = serde_json::from_value(msg).unwrap() else { panic!("expected remote_printers") };
     let caps = &printers[0].capabilities;
     assert!(printers[0].supplies.is_empty() && caps.sources.is_empty() && caps.media_types.is_empty() && caps.qualities.is_empty());
     let sent = serde_json::to_value(caps).unwrap();
@@ -187,6 +192,7 @@ fn command_without_args_and_sparse_settings_get_defaults() {
     assert_eq!(sparse, expected);
     assert!(sparse.remote_printers, "older servers omit remotePrinters; it stays on");
     assert!(sparse.auto_update, "older servers omit autoUpdate; it stays on");
+    assert!(sparse.remote_printers_hidden.is_empty() && sparse.default_printer.is_none());
 }
 
 #[test]
@@ -194,12 +200,13 @@ fn defaults_and_constants_match_typescript() {
     let defaults = json!({
         "tray": true, "lanSharing": false, "autoAdd": "inherit",
         "discovery": { "mdns": true, "snmp": true, "usb": true, "os": true },
-        "paused": false, "logLevel": "info", "remotePrinters": true, "autoUpdate": true
+        "paused": false, "logLevel": "info", "remotePrinters": true, "autoUpdate": true,
+        "remotePrintersHidden": [], "defaultPrinter": null
     });
     assert_eq!(serde_json::to_value(ClientSettings::default()).unwrap(), defaults);
     let types = shared("types.ts");
     assert!(types.contains("autoAdd: 'inherit',\n  discovery: { mdns: true, snmp: true, usb: true, os: true }"));
-    assert!(types.contains("logLevel: 'info',\n  remotePrinters: true,\n  autoUpdate: true,\n}"));
+    assert!(types.contains("remotePrinters: true,\n  autoUpdate: true,\n  remotePrintersHidden: [],\n  defaultPrinter: null,\n}"));
     let protocol = shared("protocol.ts");
     for line in [
         format!("export const PROTOCOL_VERSION = {PROTOCOL_VERSION}\n"),

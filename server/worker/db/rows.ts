@@ -84,6 +84,8 @@ export interface ClientRow {
   settings_updated_at: number
   online: number
   last_seen_at: number | null
+  /** JSON SystemPrinters, null until the device reports it. */
+  system_printers: string | null
   created_at: number
 }
 

@@ -17,7 +17,7 @@ const DISCOVERY: { key: Discovery; label: string; description: string }[] = [
 ]
 
 /** Settings shown while a save is in flight, so switches respond instantly. */
-function useShownSettings(client: Client, update: ReturnType<typeof useUpdateClient>): ClientSettings {
+export function useShownSettings(client: Client, update: ReturnType<typeof useUpdateClient>): ClientSettings {
   const pending = update.isPending ? update.variables?.patch.settings : undefined
   if (!pending) return client.settings
   return { ...client.settings, ...pending, discovery: { ...client.settings.discovery, ...pending.discovery } }
@@ -53,16 +53,6 @@ export function DeviceSettings({ ws, client, canManage }: { ws: string; client: 
           'Phones and computers nearby can print to these printers without Print Better.',
           settings.lanSharing,
           (on) => save({ lanSharing: on }),
-        )}
-        {toggle(
-          'remote',
-          'Show this workspace’s printers on this computer',
-          windows
-            ? 'Coming soon on Windows.'
-            : 'Printers connected to your other devices show up in this computer’s print window, so any app can print to them.',
-          !windows && settings.remotePrinters,
-          (on) => save({ remotePrinters: on }),
-          windows,
         )}
         {toggle(
           'updates',

@@ -8,6 +8,7 @@ import { alertIfNeeded } from './alerts'
 import { applySnapshot, applyPrinterStatus, printerConfigs } from './inventory'
 import { applyJobStatus, applyLanJob, pendingOffers } from './jobs'
 import type { ClientAtt } from './sockets'
+import { onSystemPrinters } from './system-printers'
 
 export interface Session {
   env: Env
@@ -141,5 +142,7 @@ export async function handleClientMessage(s: Session, msg: Record<string, unknow
       return
     case 'settings':
       return onSettings(s, msg.settings, msg.updatedAt)
+    case 'system_printers':
+      return onSystemPrinters(s, msg.report)
   }
 }

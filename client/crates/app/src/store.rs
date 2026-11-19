@@ -2,7 +2,7 @@
 
 use crate::fsx;
 use crate::paths::Paths;
-use crate::proto::{ClientSettings, PrinterConfig, RemotePrinter};
+use crate::proto::{ClientSettings, DirectPrinter, PrinterConfig, RemotePrinter};
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use std::io;
@@ -34,6 +34,19 @@ pub struct SavedState {
     pub printers: Vec<PrinterConfig>,
     /// Latest `remote_printers` snapshot; None until a server sends one.
     pub remote_printers: Option<Vec<RemotePrinter>>,
+    /// The snapshot's `direct` list: printers this device reports itself.
+    pub remote_direct: Vec<DirectPrinter>,
+    /// The default printer this daemon last set.
+    pub default_printer: Option<AppliedDefault>,
+}
+
+/// `seen` is what `lpstat -d` said right after; a different default later means someone changed it here.
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AppliedDefault {
+    pub printer_id: String,
+    pub queue: String,
+    pub seen: Option<String>,
 }
 
 pub fn load_credentials(paths: &Paths) -> Option<Credentials> {

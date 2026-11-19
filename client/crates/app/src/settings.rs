@@ -7,6 +7,7 @@ use std::time::Duration;
 
 const AUTO_ADD: [&str; 4] = ["smart", "all", "none", "inherit"];
 const LOG_LEVELS: [&str; 2] = ["info", "debug"];
+const NULLABLE: [&str; 1] = ["defaultPrinter"];
 
 /// Every leaf setting as `(dotted.key, value)`, e.g. `("discovery.snmp", true)`.
 pub fn flatten(settings: &ClientSettings) -> Vec<(String, Value)> {
@@ -20,10 +21,15 @@ pub fn get(settings: &ClientSettings, key: &str) -> Option<Value> {
 }
 
 /// `discovery.snmp` + `off` -> `{"discovery":{"snmp":false}}`, typed like the current value.
+/// Lists take comma-separated values; `none` empties a list or clears a nullable setting.
 pub fn patch_for(settings: &ClientSettings, key: &str, raw: &str) -> Result<Value, String> {
+    let none = matches!(raw.trim().to_ascii_lowercase().as_str(), "" | "none");
     let value = match get(settings, key).ok_or_else(|| unknown(key))? {
         Value::Bool(_) => Value::Bool(parse_bool(raw).ok_or_else(|| format!("'{key}' must be on or off"))?),
-        Value::String(_) => Value::String(raw.to_string()),
+        Value::Array(_) if none => Value::Array(Vec::new()),
+        Value::Array(_) => raw.split(',').map(str::trim).filter(|v| !v.is_empty()).map(|v| Value::String(v.into())).collect(),
+        _ if NULLABLE.contains(&key) && none => Value::Null,
+        Value::String(_) | Value::Null => Value::String(raw.trim().to_string()),
         _ => return Err(format!("'{key}' is a group; set one of its keys instead")),
     };
     Ok(key.rsplit('.').fold(value, |inner, part| {
@@ -76,7 +82,8 @@ fn merge(target: &mut Value, patch: &Value, path: &str) -> Result<(), String> {
         let slot = target.get_mut(key).ok_or_else(|| unknown(&full))?;
         if slot.is_object() {
             merge(slot, value, &full)?;
-        } else if std::mem::discriminant(slot) == std::mem::discriminant(value) {
+        } else if std::mem::discriminant(slot) == std::mem::discriminant(value) || slot.is_null() || value.is_null() {
+            // A nullable setting switches between null and a value; deserializing the result checks the type.
             *slot = value.clone();
         } else {
             return Err(format!("wrong type for '{full}'"));
@@ -125,6 +132,11 @@ mod tests {
         assert_eq!(patch_for(&settings, "discovery.snmp", "off"), Ok(json!({ "discovery": { "snmp": false } })));
         assert_eq!(patch_for(&settings, "logLevel", "debug"), Ok(json!({ "logLevel": "debug" })));
         assert_eq!(patch_for(&settings, "remotePrinters", "off"), Ok(json!({ "remotePrinters": false })));
+        assert_eq!(patch_for(&settings, "remotePrintersHidden", "pr_1, pr_2,"), Ok(json!({ "remotePrintersHidden": ["pr_1", "pr_2"] })));
+        assert_eq!(patch_for(&settings, "remotePrintersHidden", "none"), Ok(json!({ "remotePrintersHidden": [] })));
+        assert_eq!(patch_for(&settings, "defaultPrinter", "pr_1"), Ok(json!({ "defaultPrinter": "pr_1" })));
+        let chosen = ClientSettings { default_printer: Some("pr_1".into()), ..ClientSettings::default() };
+        assert_eq!(patch_for(&chosen, "defaultPrinter", "none"), Ok(json!({ "defaultPrinter": null })));
         assert!(patch_for(&settings, "tray", "maybe").is_err());
         assert!(patch_for(&settings, "discovery", "on").is_err());
         assert!(patch_for(&settings, "nope", "on").is_err());
@@ -141,6 +153,12 @@ mod tests {
         assert!(apply(&settings, &json!({ "autoAdd": "sometimes" })).is_err());
         assert!(apply(&settings, &json!({ "logLevel": "trace" })).is_err());
         assert!(apply(&settings, &json!([1])).is_err());
+        let chosen = apply(&settings, &json!({ "defaultPrinter": "pr_1", "remotePrintersHidden": ["pr_2"] })).unwrap();
+        assert_eq!((chosen.default_printer.as_deref(), chosen.remote_printers_hidden.as_slice()), (Some("pr_1"), &["pr_2".to_string()][..]));
+        assert_eq!(apply(&chosen, &json!({ "defaultPrinter": null })).unwrap().default_printer, None);
+        assert!(apply(&settings, &json!({ "defaultPrinter": 7 })).is_err());
+        assert!(apply(&settings, &json!({ "remotePrintersHidden": [1] })).is_err());
+        assert!(apply(&settings, &json!({ "tray": null })).is_err());
     }
 
     #[test]

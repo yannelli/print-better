@@ -17,6 +17,8 @@ App (Cmd+P) → CUPS queue "pb_<printerId>" → ipp://127.0.0.1:8632/ipp/print/<
 
 Constant: `REMOTE_PRINT_PORT = 8632` (`server/shared/protocol.ts`, `client/crates/app/src/proto.rs`).
 
+Hiding printers and choosing the default printer add `direct` and `system_printers`; see "Choosing printers and the default printer".
+
 `ClientSettings.remotePrinters: boolean`, default `true` (server default, client default, settings LWW like every other key).
 
 Server → client:
@@ -81,3 +83,26 @@ Supplies: `marker-names`, `marker-types`, `marker-colors`, `marker-levels` come 
 macOS's other supply source, cupsd's cached `marker-*` refreshed by a CUPS `ReportLevels` command job, is never used for these queues: it needs `printer-commands` with `ReportLevels`, cupsd does not accept `application/vnd.cups-command` for an everywhere queue, and the loopback refuses anything but PDF, JPEG and PNG, so a command file can never turn into a print job.
 
 New options reach the Mac without a restart: the owning device re-probes every printer over IPP on each discovery (at start, every 10 minutes, and on demand), reports the inventory when anything but status changed, the hub sends a new `remote_printers`, and the changed fingerprint regenerates the queue's PPD.
+
+## Choosing printers and the default printer
+
+A desktop's page in the web app has a **Printers on this computer** section (macOS and Linux; Windows says "Coming soon"). It lists every added printer on the workspace's other devices, each with a switch to show or hide it on this computer and its live state there, plus a **Default printer** choice. It needs Print Better 0.1.3 or later on the device; older devices never report, so the section asks to update them.
+
+Settings (additive, LWW like every other key; also `printbetter config set remotePrintersHidden pr_1,pr_2` and `printbetter config set defaultPrinter pr_1|none`):
+
+| Key | Default | Meaning |
+|---|---|---|
+| `remotePrintersHidden: string[]` | `[]` | Workspace printer ids this computer does not add. Their `pb_` queues are removed. |
+| `defaultPrinter: string \| null` | `null` | Workspace printer to make this computer's default; `null` never touches the default. |
+
+The device reports what it did with `system_printers` (below); the hub stores it on the device row (`clients.system_printers`, migration `0004`) and sends browsers a `client` event, so `Client.systemPrinters` is `null` until a device reports. States per printer: `added` (its `pb_` queue), `direct` (reached without Print Better, so never added twice; `queue` is the computer's own queue for it when there is one), `hidden`, `waiting` (not added yet), `error` (lpadmin failed; the message is in `error`).
+
+`remote_printers` gains `direct?: { id, uuid }[]`: added printers on other devices that the receiver reports itself, so the server leaves them out of `printers`. With the printers the device sees on Bonjour, they are the `direct` ones.
+
+Default printer rules (daemon):
+- The queue for printer `id` is its `pb_` queue when added; when reached directly, the computer's own queue whose device URI names the printer's uuid (`dnssd://…?uuid=…`, from `lpstat -v`). With no such queue nothing changes and the report says `needs_queue`: the web app asks to add the printer in System Settings > Printers & Scanners first. Adding a second copy would list the printer twice.
+- `lpadmin -d <queue>` runs only when `lpstat -d` names another queue. The daemon records the queue and what `lpstat -d` said right after (`state.json`).
+- It never re-asserts. If the default later differs from that record while the recorded queue still exists, someone changed it on the computer: the local choice wins, and the daemon sets `defaultPrinter` back to `null` ("Don't change"), which syncs to the server. Picking the printer again in the web app applies it again. A default that moved because Print Better removed its own queue (the printer went away, or the computer now reaches it directly) is not a local change; the daemon follows the printer to its new queue.
+- Turning remote printers off leaves the default alone.
+
+macOS "Last Printer Used": with **System Settings > Printers & Scanners > Default printer** set to **Last Printer Used** (the macOS default), the print window starts on the last printer used on the current network and ignores the CUPS default. CUPS reads `UseLastPrinter` from `org.cups.PrintingPrefs`, first the user's domain (`~/Library/Preferences`), then `/Library/Preferences`, and treats a missing value as on; the last printer per network is `LastUsedPrinters` in the user's domain. A user's own `~/.cups/lpoptions` default also wins over the system default. A root daemon could write those preferences for the person at the login window, but that would change their settings behind their back on every pick, so it doesn't: it reads `UseLastPrinter` (`lastUsed` in the report) and the web app tells the user to set **Default printer** to the chosen printer in System Settings.

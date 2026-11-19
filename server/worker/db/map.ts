@@ -15,6 +15,7 @@ import {
   type PrinterSettings,
   type Role,
   type SessionInfo,
+  type SystemPrinters,
   type User,
   type Workspace,
   type WorkspaceSettings,
@@ -114,6 +115,7 @@ export const toClient = (r: ClientRow): Client => ({
   lastSeenAt: r.last_seen_at,
   settings: clientSettings(r.settings),
   settingsUpdatedAt: r.settings_updated_at,
+  systemPrinters: parseJson<SystemPrinters | null>(r.system_printers, null),
   createdAt: r.created_at,
 })
 

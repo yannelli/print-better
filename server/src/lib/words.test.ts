@@ -1,6 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { type Client, DEFAULT_CLIENT_SETTINGS, DEFAULT_PRINTER_SETTINGS, type Printer, type PrinterState } from '@shared/types'
-import { clientStatus, deviceKind, jobOrigin, jobStatus, printerProblems, printerStatus, reasonWords } from './words'
+import {
+  clientStatus,
+  defaultPrinterProblem,
+  deviceKind,
+  jobOrigin,
+  jobStatus,
+  printerProblems,
+  printerStatus,
+  reasonWords,
+  systemPrinterStatus,
+} from './words'
 
 function printer(state: PrinterState, reasons: string[] = [], extra: Partial<Printer> = {}): Printer {
   return {
@@ -103,6 +113,7 @@ describe('devices', () => {
     lastSeenAt: null,
     settings: DEFAULT_CLIENT_SETTINGS,
     settingsUpdatedAt: 0,
+    systemPrinters: null,
     createdAt: 0,
     ...extra,
   })
@@ -135,5 +146,27 @@ describe('jobOrigin', () => {
     expect(jobOrigin({ source: 'device', sourceClientName: 'Kitchen Mac', requestedBy: 'sam' })).toBe('From Kitchen Mac (sam)')
     expect(jobOrigin({ source: 'device', sourceClientName: 'Kitchen Mac', requestedBy: null })).toBe('From Kitchen Mac')
     expect(jobOrigin({ ...job, source: 'device', requestedBy: 'sam' })).toBe('From a removed device (sam)')
+  })
+})
+
+describe('systemPrinterStatus', () => {
+  it('says how a printer shows up on a desktop', () => {
+    expect(systemPrinterStatus({ state: 'added', queue: 'pb_pr_1' }, 'this Mac')).toEqual({ label: 'Added', tone: 'ok', detail: 'System printer pb_pr_1' })
+    expect(systemPrinterStatus({ state: 'direct', queue: 'Office_Laser' }, 'this Mac').detail).toBe('Uses Office_Laser, already set up on this Mac')
+    expect(systemPrinterStatus({ state: 'direct', queue: null }, 'this Mac').detail).toBe("This Mac reaches it on the network, so it isn't added twice")
+    expect(systemPrinterStatus({ state: 'hidden', queue: null }, 'this computer').label).toBe('Hidden')
+    expect(systemPrinterStatus({ state: 'error', queue: null }, 'this Mac').tone).toBe('bad')
+    expect(systemPrinterStatus(undefined, 'this Mac')).toMatchObject({ label: 'Adding', tone: 'neutral' })
+  })
+})
+
+describe('defaultPrinterProblem', () => {
+  it('explains each problem in the computer’s own terms', () => {
+    expect(defaultPrinterProblem('needs_queue', 'Laser', { os: 'macos' })).toBe(
+      "This Mac reaches Laser directly but hasn't set it up yet. Add it in System Settings > Printers & Scanners, and it becomes the default.",
+    )
+    expect(defaultPrinterProblem('needs_queue', 'Laser', { os: 'linux' })).toContain("Add it in this computer's printer settings")
+    expect(defaultPrinterProblem('hidden', 'Laser', { os: 'macos' })).toBe("Laser is hidden on this Mac, so it can't be the default.")
+    expect(defaultPrinterProblem('failed', 'Laser', { os: 'linux' })).toBe("This computer couldn't change its default printer.")
   })
 })

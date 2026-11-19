@@ -3,13 +3,16 @@
 
 mod api;
 mod cups;
+mod default;
 mod native;
+mod report;
 mod sink;
+mod system;
 #[cfg(test)]
 mod tests;
 
 use super::Daemon;
-use crate::proto::{REMOTE_PRINT_PORT, RemotePrinter};
+use crate::proto::{ClientMsg, ClientSettings, REMOTE_PRINT_PORT, RemotePrinter, SystemPrinters};
 use cups::{Cups, Op, Queue};
 use pb_print::share::{ShareOptions, ShareServer, SharedPrinter};
 use pb_print::{PrinterReport, PrinterState, PrinterStatus};
@@ -33,6 +36,8 @@ pub struct Status {
     pub error: Option<String>,
     /// Printer id to the system queue this daemon created for it.
     pub queues: BTreeMap<String, String>,
+    /// What the server was told last (`system_printers`).
+    pub report: Option<SystemPrinters>,
 }
 
 /// The loopback port; `PRINTBETTER_REMOTE_PORT` moves it so a development daemon can run beside an installed one.
@@ -55,7 +60,9 @@ async fn unavailable(d: Arc<Daemon>) {
     let why = if SUPPORTED { NO_CUPS } else { "Not available on Windows yet" };
     loop {
         let wanted = d.credentials().is_some() && d.settings().remote_printers;
-        d.set_remote_status(Status { error: wanted.then(|| why.to_string()), ..Status::default() });
+        let error = wanted.then(|| why.to_string());
+        let report = SystemPrinters { error: error.clone(), ..SystemPrinters::default() };
+        d.set_remote_status(Status { error, report: Some(report), ..Status::default() });
         tokio::select! {
             _ = d.wake.remote.notified() => {}
             _ = d.stopping.canceled() => return,
@@ -72,7 +79,8 @@ async fn serve(d: Arc<Daemon>, cups: Arc<dyn Cups>, port: u16) {
     let mut served: Option<Vec<RemotePrinter>> = None;
     let mut native = native::Native::default();
     loop {
-        let wanted = d.credentials().is_some() && d.settings().remote_printers;
+        let settings = d.settings();
+        let wanted = d.credentials().is_some() && settings.remote_printers;
         let snapshot = d.with_state(|st| st.saved.remote_printers.clone());
         let (mut error, mut lpadmin_failed) = (None, false);
         let list_changed = served.as_ref() != snapshot.as_ref();
@@ -101,7 +109,8 @@ async fn serve(d: Arc<Daemon>, cups: Arc<dyn Cups>, port: u16) {
         let desired: Option<Vec<Queue>> = match (wanted, listening, &snapshot) {
             (false, _, _) => Some(Vec::new()),
             (true, Some(port), Some(printers)) => {
-                Some(printers.iter().filter(|p| !native.reaches(p)).map(|p| Queue::for_printer(p, port)).collect())
+                let shown = printers.iter().filter(|p| !native.reaches(p) && !settings.remote_printers_hidden.contains(&p.id));
+                Some(shown.map(|p| Queue::for_printer(p, port)).collect())
             }
             _ => None,
         };
@@ -119,7 +128,15 @@ async fn serve(d: Arc<Daemon>, cups: Arc<dyn Cups>, port: u16) {
         }
         let queues = managed.iter().map(|q| (q.printer_id.clone(), q.name.clone())).collect();
         let wait = if lpadmin_failed { RETRY } else { RECHECK };
-        d.set_remote_status(Status { active: server.is_some(), error, queues });
+        let mut report = SystemPrinters::default();
+        if wanted {
+            let reached = snapshot.iter().flatten().filter(|p| native.reaches(p)).map(|p| p.id.clone()).collect();
+            report = survey(&d, cups.clone(), &settings, snapshot.unwrap_or_default(), reached, managed.clone(), lpadmin_failed).await;
+            error = error.or(report.error.take());
+        }
+        report.active = server.is_some();
+        report.error.clone_from(&error);
+        d.set_remote_status(Status { active: report.active, error, queues, report: Some(report) });
         tokio::select! {
             _ = d.wake.remote.notified() => {}
             _ = sleep(wait) => {}
@@ -163,6 +180,37 @@ async fn sync(cups: Arc<dyn Cups>, mut managed: Vec<Queue>, ops: Vec<Op>) -> (Ve
     })
     .await
     .unwrap_or_else(|e| (before, Some(format!("Updating system printers failed: {e}"))))
+}
+
+/// Per-printer states and the default printer, asked of CUPS off the async threads.
+async fn survey(
+    d: &Daemon,
+    cups: Arc<dyn Cups>,
+    settings: &ClientSettings,
+    snapshot: Vec<RemotePrinter>,
+    reached: std::collections::HashSet<String>,
+    managed: Vec<Queue>,
+    failed: bool,
+) -> SystemPrinters {
+    let (direct, applied) = d.with_state(|st| (st.saved.remote_direct.clone(), st.saved.default_printer.clone()));
+    let want = settings.default_printer.clone();
+    let hidden = settings.remote_printers_hidden.clone();
+    let s = report::Survey { snapshot, direct, hidden, reached, managed, failed, want: want.clone(), applied };
+    let found = match tokio::task::spawn_blocking(move || report::survey(cups.as_ref(), s)).await {
+        Ok(found) => found,
+        Err(e) => return SystemPrinters { error: Some(format!("Checking system printers failed: {e}")), ..SystemPrinters::default() },
+    };
+    d.set_default_applied(found.applied);
+    let now = d.settings();
+    if found.released && now.default_printer == want {
+        let _ = d.change_settings(ClientSettings { default_printer: None, ..now });
+    }
+    found.report
+}
+
+/// Sent after every `welcome`: reports made while offline never reached the server.
+pub fn report_message(d: &Daemon) -> Option<ClientMsg> {
+    d.with_state(|st| st.remote.report.clone()).map(|report| ClientMsg::SystemPrinters { report })
 }
 
 /// The printer as the loopback server describes it to CUPS; `pages` is where the web app shows printers.

@@ -1,0 +1,14 @@
+{
+  "type": "remote_printers",
+  "printers": [],
+  "direct": [
+    {
+      "id": "pr_11",
+      "uuid": "00000000-0000-4000-8000-0000000000aa"
+    },
+    {
+      "id": "pr_12",
+      "uuid": null
+    }
+  ]
+}

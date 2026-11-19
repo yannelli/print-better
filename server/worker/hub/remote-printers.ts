@@ -1,4 +1,4 @@
-import type { RemotePrinter } from '../../shared/protocol'
+import type { DirectPrinter, RemotePrinter } from '../../shared/protocol'
 import { PRINTER_VIEW, toPrinter } from '../db/map'
 import type { PrinterViewRow } from '../db/rows'
 import { sha256Hex } from '../lib/crypto'
@@ -6,6 +6,8 @@ import { all } from '../lib/db'
 
 export interface RemoteSnapshot {
   printers: RemotePrinter[]
+  /** Added printers on other devices that the receiver reports itself. */
+  direct: DirectPrinter[]
   /** Compared with the last one sent to a socket, so unchanged snapshots are never re-sent. */
   fingerprint: string
 }
@@ -38,10 +40,11 @@ export async function remoteSnapshots(env: Env, workspaceId: string, receivers: 
     const mine = seen.filter((s) => s.client_id === clientId)
     const keys = new Set(mine.map((s) => s.key))
     const uuids = new Set(mine.flatMap((s) => (s.uuid ? [s.uuid] : [])))
-    const printers = owned
-      .filter((o) => o.clientId !== clientId && !keys.has(o.key) && !(o.printer.uuid && uuids.has(o.printer.uuid)))
-      .map((o) => o.printer)
-    out.set(clientId, { printers, fingerprint: await sha256Hex(JSON.stringify(printers)) })
+    const others = owned.filter((o) => o.clientId !== clientId)
+    const reaches = (o: (typeof owned)[number]) => keys.has(o.key) || (o.printer.uuid !== null && uuids.has(o.printer.uuid))
+    const printers = others.filter((o) => !reaches(o)).map((o) => o.printer)
+    const direct = others.filter(reaches).map((o) => ({ id: o.printer.id, uuid: o.printer.uuid }))
+    out.set(clientId, { printers, direct, fingerprint: await sha256Hex(JSON.stringify([printers, direct])) })
   }
   return out
 }

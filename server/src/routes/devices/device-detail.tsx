@@ -14,6 +14,7 @@ import { useCanManage, useWs } from '@/hooks/workspace'
 import { date, timeAgo } from '@/lib/format'
 import { availableUpdate } from '@/lib/updates'
 import { clientStatus, deviceKind, OS_NAMES, printerStatus } from '@/lib/words'
+import { ComputerPrinters } from './computer-printers'
 import { DeviceSettings } from './device-settings'
 import { DeviceTools } from './device-tools'
 import { RenameDevice } from './rename-device'
@@ -124,6 +125,7 @@ function Detail({ ws, client }: { ws: string; client: Client }) {
       </PageHeader>
       <div className="flex flex-col gap-10">
         <Printers ws={ws} printers={printers} />
+        {client.os && <ComputerPrinters client={client} canManage={canManage} />}
         <DeviceTools ws={ws} client={client} canManage={canManage} update={update} />
         <DeviceSettings ws={ws} client={client} canManage={canManage} />
         <About client={client} update={update} />

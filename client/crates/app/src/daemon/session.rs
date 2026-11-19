@@ -172,6 +172,9 @@ async fn handle(d: &Arc<Daemon>, socket: &mut Socket, msg: ServerMsg) -> Option<
             if let Some(snapshot) = inventory::snapshot_message(d) {
                 d.outbox.send(snapshot);
             }
+            if let Some(report) = super::system_printers_message(d) {
+                d.outbox.send(report);
+            }
         }
         ServerMsg::Job { job } => d.queue.offer(job, d.server_time_ms()),
         ServerMsg::Cancel { job_id } => {
@@ -179,7 +182,10 @@ async fn handle(d: &Arc<Daemon>, socket: &mut Socket, msg: ServerMsg) -> Option<
         }
         ServerMsg::Settings { settings, updated_at } => d.apply_server_settings(settings, updated_at),
         ServerMsg::PrinterConfig { printers } => d.set_printer_configs(printers),
-        ServerMsg::RemotePrinters { printers } => d.set_remote_printers(printers),
+        ServerMsg::RemotePrinters { printers, direct } => {
+            d.set_direct_printers(direct);
+            d.set_remote_printers(printers);
+        }
         ServerMsg::Command { id, name, args } => match name.as_str() {
             "restart" => {
                 let _ = send(socket, &commands::ok(id)).await;

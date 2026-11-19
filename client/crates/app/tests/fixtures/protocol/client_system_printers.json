@@ -1,0 +1,23 @@
+{
+  "type": "system_printers",
+  "report": {
+    "active": true,
+    "error": null,
+    "printers": [
+      {
+        "id": "pr_07",
+        "state": "added",
+        "queue": "pb_pr_07"
+      },
+      {
+        "id": "pr_08",
+        "state": "direct",
+        "queue": null
+      }
+    ],
+    "defaultQueue": "pb_pr_07",
+    "defaultPrinterId": "pr_07",
+    "defaultProblem": "needs_queue",
+    "lastUsed": true
+  }
+}

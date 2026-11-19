@@ -4,6 +4,7 @@
 use crate::fsx;
 use crate::net::http::hex;
 use crate::paths::Paths;
+use super::system;
 use crate::proto::RemotePrinter;
 use pb_print::share::printer_path;
 use serde::{Deserialize, Serialize};
@@ -116,6 +117,12 @@ pub trait Cups: Send + Sync {
     fn exists(&self, queue: &str) -> bool;
     /// Marks the queue's generated PPD as AirPrint where the system needs that to show supply levels.
     fn mark_airprint(&self, queue: &str) -> Result<(), String>;
+    /// The system default queue; an error when lpstat could not tell.
+    fn default_queue(&self) -> Result<Option<String>, String>;
+    /// Every queue with its device URI.
+    fn devices(&self) -> Vec<(String, String)>;
+    /// macOS "Default printer: Last Printer Used" is on for the signed-in user.
+    fn last_printer_used(&self) -> bool;
 }
 
 /// Runs `ops`, updating `managed` after each success. Returns the first failure.
@@ -244,5 +251,17 @@ impl Cups for SystemCups {
         let result = self.lpadmin(&["-p".into(), queue.into(), "-P".into(), file.display().to_string()]);
         let _ = std::fs::remove_file(&file);
         result
+    }
+
+    fn default_queue(&self) -> Result<Option<String>, String> {
+        system::lpstat(&self.lpstat, "-d").map(|out| system::parse_default(&out))
+    }
+
+    fn devices(&self) -> Vec<(String, String)> {
+        system::lpstat(&self.lpstat, "-v").map(|out| system::parse_devices(&out)).unwrap_or_default()
+    }
+
+    fn last_printer_used(&self) -> bool {
+        system::last_printer_used()
     }
 }

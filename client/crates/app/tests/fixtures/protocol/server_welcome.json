@@ -16,7 +16,11 @@
     "paused": false,
     "logLevel": "debug",
     "remotePrinters": false,
-    "autoUpdate": false
+    "autoUpdate": false,
+    "remotePrintersHidden": [
+      "pr_09"
+    ],
+    "defaultPrinter": "pr_07"
   },
   "settingsUpdatedAt": 1763500000000,
   "serverTime": 1763500005000,

@@ -1,7 +1,7 @@
 use super::{FakeCups, daemon, printer, until};
 use crate::daemon::Daemon;
 use crate::daemon::remote::{cups, serve, shared};
-use crate::proto::ClientSettings;
+use crate::proto::{ClientMsg, ClientSettings, SystemPrinterState, SystemPrinters};
 use crate::test_util::TempDir;
 use pb_print::{PrinterState, Supply, SupplyKind};
 use pb_print::ipp::IppClient;
@@ -162,6 +162,63 @@ async fn new_options_regenerate_the_ppd_and_level_changes_do_not() {
         until("the refresh", || everywhere(&fake) == 2).await;
         assert_eq!(*fake.marked.lock().unwrap(), ["pb_pr_07", "pb_pr_07"]);
         assert_eq!(fake.calls().len(), 2, "an add and a refresh, nothing else");
+    })
+    .await;
+}
+
+fn reports(d: &Daemon) -> Vec<SystemPrinters> {
+    let mut rx = d.outbox_rx.try_lock().unwrap();
+    std::iter::from_fn(|| rx.try_recv().ok())
+        .filter_map(|m| if let ClientMsg::SystemPrinters { report } = m { Some(report) } else { None })
+        .collect()
+}
+
+fn state_of(report: &SystemPrinters, id: &str) -> SystemPrinterState {
+    report.printers.iter().find(|p| p.id == id).unwrap().state
+}
+
+#[tokio::test]
+async fn hidden_printers_get_no_queue_and_the_server_hears_about_it() {
+    let dir = TempDir::new();
+    let d = daemon(&dir, "http://127.0.0.1:1");
+    d.change_settings(ClientSettings { remote_printers_hidden: vec!["pr_08".into()], ..d.settings() }).unwrap();
+    d.set_remote_printers(vec![printer("pr_07", "Laser", None, "Den Pi", true), printer("pr_08", "Labels", None, "Den Pi", true)]);
+    let fake = Arc::new(FakeCups::default());
+    running(&d, &fake, async {
+        until("the one shown queue", || status(&d) == (true, None, 1)).await;
+        let report = reports(&d).pop().unwrap();
+        assert_eq!((state_of(&report, "pr_07"), state_of(&report, "pr_08")), (SystemPrinterState::Added, SystemPrinterState::Hidden));
+        assert!(fake.calls().iter().all(|c| c[1] != "pb_pr_08"));
+
+        d.change_settings(ClientSettings { remote_printers_hidden: Vec::new(), ..d.settings() }).unwrap();
+        until("the unhidden queue", || status(&d).2 == 2).await;
+        until("the new report", || d.with_state(|st| st.remote.report.clone()).is_some_and(|r| state_of(&r, "pr_08") == SystemPrinterState::Added)).await;
+        assert!(reports(&d).iter().any(|r| state_of(r, "pr_08") == SystemPrinterState::Added), "sent, not only stored");
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn the_default_follows_the_setting_until_someone_changes_it_here() {
+    let dir = TempDir::new();
+    let d = daemon(&dir, "http://127.0.0.1:1");
+    d.set_remote_printers(vec![printer("pr_07", "Laser", None, "Den Pi", true)]);
+    let fake = Arc::new(FakeCups::default());
+    fake.devices.lock().unwrap().push(("Office_Laser".into(), "ipp://office-laser.local/ipp/print".into()));
+    *fake.default.lock().unwrap() = Some("Office_Laser".into());
+    running(&d, &fake, async {
+        until("the queue", || status(&d) == (true, None, 1)).await;
+        assert!(fake.calls_starting("-d").is_empty(), "no choice, no change");
+
+        d.change_settings(ClientSettings { default_printer: Some("pr_07".into()), ..d.settings() }).unwrap();
+        until("the new default", || fake.default.lock().unwrap().as_deref() == Some("pb_pr_07")).await;
+        until("the report", || d.with_state(|st| st.remote.report.clone()).is_some_and(|r| r.default_printer_id.as_deref() == Some("pr_07"))).await;
+
+        *fake.default.lock().unwrap() = Some("Office_Laser".into());
+        d.wake.remote.notify_one();
+        until("the setting to let go", || d.settings().default_printer.is_none()).await;
+        assert_eq!(fake.calls_starting("-d"), [["-d", "pb_pr_07"]]);
+        assert_eq!(fake.default.lock().unwrap().as_deref(), Some("Office_Laser"));
     })
     .await;
 }

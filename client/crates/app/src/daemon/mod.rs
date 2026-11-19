@@ -17,7 +17,7 @@ mod updater;
 
 pub use inventory::discover;
 pub use outbox::Outbox;
-pub use remote::{NO_CUPS as REMOTE_PRINTERS_NO_CUPS, SUPPORTED as REMOTE_PRINTERS_SUPPORTED};
+pub use remote::{NO_CUPS as REMOTE_PRINTERS_NO_CUPS, SUPPORTED as REMOTE_PRINTERS_SUPPORTED, report_message as system_printers_message};
 pub use run::run_blocking;
 pub use state::{Conn, Pairing, State};
 pub use updater::{can_install as can_install_update, check_now as check_update, request as request_update, status as update_status};
@@ -25,9 +25,9 @@ pub use updater::{can_install as can_install_update, check_now as check_update, 
 use crate::clock::now_ms;
 use crate::paths::Paths;
 use crate::platform;
-use crate::proto::{ClientMsg, ClientSettings, RemotePrinter};
+use crate::proto::{ClientMsg, ClientSettings, DirectPrinter, RemotePrinter};
 use crate::queue::Queue;
-use crate::store::{self, Credentials};
+use crate::store::{self, AppliedDefault, Credentials};
 use pb_print::{CancelFlag, Engine, EngineOptions, JobOptions, PrinterReport};
 use std::collections::HashSet;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -160,8 +160,34 @@ impl Daemon {
         st.share_error = error;
     }
 
+    /// Also tells the server when the report changed.
     pub fn set_remote_status(&self, status: remote::Status) {
-        self.lock().remote = status;
+        let report = {
+            let mut st = self.lock();
+            let changed = st.remote.report != status.report;
+            st.remote = status;
+            st.remote.report.clone().filter(|_| changed)
+        };
+        if let Some(report) = report {
+            self.outbox.send(ClientMsg::SystemPrinters { report });
+        }
+    }
+
+    /// Printers this device reports itself; no wake, since the snapshot that carried them follows.
+    pub fn set_direct_printers(&self, direct: Vec<DirectPrinter>) {
+        let mut st = self.lock();
+        if st.saved.remote_direct != direct {
+            st.saved.remote_direct = direct;
+            self.save_saved_state(&st);
+        }
+    }
+
+    pub fn set_default_applied(&self, applied: Option<AppliedDefault>) {
+        let mut st = self.lock();
+        if st.saved.default_printer != applied {
+            st.saved.default_printer = applied;
+            self.save_saved_state(&st);
+        }
     }
 
     pub fn set_remote_printers(&self, printers: Vec<RemotePrinter>) {
