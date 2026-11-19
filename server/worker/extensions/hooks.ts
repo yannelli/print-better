@@ -6,6 +6,8 @@ import type { UsageImpact } from '../../shared/usage'
 import type { JobViewRow, PrinterViewRow } from '../db/rows'
 import type { Ctx } from '../services/context'
 import type { Access } from '../services/permissions'
+import { enterpriseCron, enterpriseFinish, enterpriseOff, enterpriseView } from './enterprise/hooks'
+import { ENTERPRISE_STEPS } from './enterprise/steps'
 import { printerAccessPolicy } from './printer-access/hook'
 import { settlement } from './usage/settle'
 import { settlementSweep } from './usage/sweep'
@@ -101,7 +103,7 @@ export interface JobStep {
 }
 
 /** In `JobStepName` order: rules and limits (print-policies), then the four enterprise steps. */
-export const JOB_STEPS: JobStep[] = []
+export const JOB_STEPS: JobStep[] = [...ENTERPRISE_STEPS]
 
 /** Runs once jobs end (completed, failed or canceled), with their rows as they ended. */
 export interface JobFinishHook {
@@ -111,7 +113,7 @@ export interface JobFinishHook {
 }
 
 /** Usage settlement first, then Enterprise controls' retention. */
-export const JOB_FINISH_HOOKS: JobFinishHook[] = [settlement]
+export const JOB_FINISH_HOOKS: JobFinishHook[] = [settlement, enterpriseFinish]
 
 /** Who is looking at a job; `report` is anyone else, such as an email or an export. */
 export type JobViewer = { kind: 'member'; userId: string; role: Role } | { kind: 'device'; clientId: string } | { kind: 'report' }
@@ -125,7 +127,7 @@ export interface JobViewHook {
   load(env: Env, workspaceId: string): Promise<JobView | null>
 }
 
-export const JOB_VIEW_HOOKS: JobViewHook[] = []
+export const JOB_VIEW_HOOKS: JobViewHook[] = [enterpriseView]
 
 /** Runs after an extension stops applying in these workspaces, by either switch. */
 export interface ExtensionOffHook {
@@ -134,7 +136,7 @@ export interface ExtensionOffHook {
 }
 
 /** Enterprise controls cancels held jobs here. */
-export const EXTENSION_OFF_HOOKS: ExtensionOffHook[] = []
+export const EXTENSION_OFF_HOOKS: ExtensionOffHook[] = [enterpriseOff]
 
 /** Work for the 15-minute cron. Each task finds the workspaces it applies to. */
 export interface CronHook {
@@ -143,4 +145,4 @@ export interface CronHook {
 }
 
 /** Usage settlement sweep, held job expiry, scheduled reports. */
-export const CRON_HOOKS: CronHook[] = [settlementSweep]
+export const CRON_HOOKS: CronHook[] = [settlementSweep, enterpriseCron]

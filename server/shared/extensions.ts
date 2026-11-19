@@ -23,7 +23,12 @@ export const EXTENSIONS: readonly ExtensionInfo[] = [
     summary: 'Check every job before it prints: rules that change, redirect, or stop jobs, and page, job, and cost limits per cycle.',
     docs: 'docs/print-policies.md',
   },
-  // Enterprise controls joins the catalog once it is built; until then it can't be made available.
+  {
+    id: 'enterprise',
+    name: 'Enterprise controls',
+    summary: 'Oversight for organizations: approvals, secure release, cost centers and budgets, reports, alerts, and stricter retention and privacy.',
+    docs: 'docs/enterprise.md',
+  },
 ]
 
 export const isExtensionId = (value: unknown): value is ExtensionId => EXTENSIONS.some((e) => e.id === value)

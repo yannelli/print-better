@@ -132,6 +132,8 @@ export interface JobHold {
   until: number
   /** Approval: why the job needs one, e.g. "Over the limit Monthly pages". */
   reasons?: string[]
+  /** Approval: once approved, the job waits for its sender to release it. */
+  release?: boolean
 }
 
 /** The current attempt's usage: estimated when it is queued, then what printed. */

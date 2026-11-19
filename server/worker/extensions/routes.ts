@@ -1,6 +1,7 @@
 import { ctxOf } from '../http/authenticate'
 import { readJson } from '../http/body'
 import type { Router } from '../http/router'
+import { enterpriseRoutes } from './enterprise/routes'
 import { printerAccessRoutes } from './printer-access/routes'
 import { listInstanceExtensions, listWorkspaceExtensions, patchInstanceExtension, patchWorkspaceExtension } from './service'
 
@@ -11,4 +12,5 @@ export function extensionRoutes(r: Router): void {
   r.get('/api/workspaces/:ws/extensions', async (h) => listWorkspaceExtensions(await ctxOf(h), h.params.ws))
   r.patch('/api/workspaces/:ws/extensions/:id', async (h) => patchWorkspaceExtension(await ctxOf(h), h.params.ws, h.params.id, await readJson(h.req)))
   printerAccessRoutes(r)
+  enterpriseRoutes(r)
 }

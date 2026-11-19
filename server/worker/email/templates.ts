@@ -55,3 +55,43 @@ export function printerAlertMail(p: { to: string[]; app: string; printer: string
     ].join('\n'),
   }
 }
+
+export function approvalRequestMail(p: { to: string[]; app: string; workspace: string; sender: string; title: string; printer: string; reasons: string[]; until: string; url: string }): Mail {
+  return {
+    to: p.to,
+    subject: `${p.sender} needs approval to print "${p.title}"`,
+    text: [
+      `${p.sender} sent "${p.title}" to ${p.printer} in "${p.workspace}". It waits for approval because:`,
+      ...p.reasons.map((r) => `- ${r}`),
+      '',
+      `Approve or deny it: ${p.url}`,
+      '',
+      `If nobody answers by ${p.until}, it is canceled. You get this email from ${p.app} because you can approve this job.`,
+    ].join('\n'),
+  }
+}
+
+export function usageAlertMail(p: { to: string[]; app: string; workspace: string; name: string; threshold: number; whose: string | null; used: string; amount: string; resets: string; url: string }): Mail {
+  const count = p.whose ? `${p.whose} count of ${p.name}` : p.name
+  return {
+    to: p.to,
+    subject: `${p.name}: ${p.threshold}% used`,
+    text: [
+      `${count} in "${p.workspace}" is at ${p.threshold}%: ${p.used} of ${p.amount} used. It resets on ${p.resets}.`,
+      ...(p.threshold >= 100 ? ['', 'Jobs that would go over it are blocked, warned about, or sent for approval, depending on its setting.'] : []),
+      '',
+      `See usage: ${p.url}`,
+      '',
+      `You get at most one of these per threshold and cycle from ${p.app}.`,
+    ].join('\n'),
+  }
+}
+
+export function scheduledReportMail(p: { to: string[]; app: string; workspace: string; name: string; period: string; lines: string[]; url: string; csv: { filename: string; content: string } }): Mail {
+  return {
+    to: p.to,
+    subject: `${p.name}: ${p.period}`,
+    text: [`Printing in "${p.workspace}", ${p.period}.`, '', ...p.lines, '', `Every row is in the attached CSV. Open Reports: ${p.url}`, '', `Sent by ${p.app}.`].join('\n'),
+    attachments: [{ filename: p.csv.filename, contentType: 'text/csv; charset=utf-8', content: p.csv.content }],
+  }
+}
