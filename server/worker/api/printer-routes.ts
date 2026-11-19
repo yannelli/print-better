@@ -3,6 +3,7 @@ import { MB, readJson } from '../http/body'
 import type { Router } from '../http/router'
 import { createJob } from '../services/job-create'
 import { cancelJob, deleteJob, getJob, jobDocument, listJobs, retryJob } from '../services/jobs'
+import { myPrinterAccess } from '../services/permissions'
 import { deletePrinter, getPrinter, identifyPrinter, listPrinters, patchPrinter, printTestPage, refreshPrinter } from '../services/printers'
 import { uploadJobFile } from '../services/upload'
 import { documentResponse } from './respond'
@@ -20,6 +21,7 @@ export function printerRoutes(r: Router): void {
   r.post('/api/workspaces/:ws/printers/:id/identify', async (h) => identifyPrinter(await ctxOf(h), h.params.ws, h.params.id))
   r.post('/api/workspaces/:ws/printers/:id/refresh', async (h) => refreshPrinter(await ctxOf(h), h.params.ws, h.params.id))
   r.post('/api/workspaces/:ws/printers/:id/test-page', async (h) => printTestPage(await ctxOf(h), h.params.ws, h.params.id))
+  r.get('/api/workspaces/:ws/access/me', async (h) => myPrinterAccess(await ctxOf(h), h.params.ws))
 }
 
 export function jobRoutes(r: Router): void {

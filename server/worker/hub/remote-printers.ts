@@ -29,8 +29,14 @@ function toRemote(row: PrinterViewRow): RemotePrinter {
   }
 }
 
-/** Per receiving device: every added printer in the workspace that it does not own, flagging the ones it finds itself. */
-export async function remoteSnapshots(env: Env, workspaceId: string, receivers: Iterable<string>): Promise<Map<string, RemoteSnapshot>> {
+/** Per receiving device: every added printer in the workspace that it does not own and may print to (`canPrint`,
+ *  when printer access decides), flagging the ones it finds itself. */
+export async function remoteSnapshots(
+  env: Env,
+  workspaceId: string,
+  receivers: Iterable<string>,
+  canPrint: ((clientId: string, printerId: string) => boolean) | null = null,
+): Promise<Map<string, RemoteSnapshot>> {
   const rows = await all<PrinterViewRow>(env.DB, `${PRINTER_VIEW} WHERE p.workspace_id = ? AND p.added = 1 ORDER BY p.name COLLATE NOCASE, p.id`, workspaceId)
   const owned = rows.map((row) => ({ clientId: row.client_id, key: row.key, printer: toRemote(row) }))
   const seen = await all<{ client_id: string; key: string; uuid: string | null }>(env.DB, 'SELECT client_id, key, uuid FROM printers WHERE workspace_id = ?', workspaceId)
@@ -40,7 +46,7 @@ export async function remoteSnapshots(env: Env, workspaceId: string, receivers: 
     const mine = seen.filter((s) => s.client_id === clientId)
     const keys = new Set(mine.map((s) => s.key))
     const uuids = new Set(mine.flatMap((s) => (s.uuid ? [s.uuid] : [])))
-    const others = owned.filter((o) => o.clientId !== clientId)
+    const others = owned.filter((o) => o.clientId !== clientId && (!canPrint || canPrint(clientId, o.printer.id)))
     const reaches = (o: (typeof owned)[number]) => keys.has(o.key) || (o.printer.uuid !== null && uuids.has(o.printer.uuid))
     const printers = others.map((o) => o.printer)
     const direct = others.filter(reaches).map((o) => ({ id: o.printer.id, uuid: o.printer.uuid }))

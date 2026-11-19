@@ -83,6 +83,8 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.3), **Later** (phase 2).
 | A-3 | Workspaces with owner, admin, and member roles; invite links; invite-only signup by default | Shipped |
 | A-4 | Email verification with resend; password reset by email or admin link | Shipped |
 | A-5 | Personal API tokens with `read`, `write`, `print` scopes; an audit log of every change | Shipped |
+| A-6 | Extensions: optional modules that stay off until a server admin makes one available and a workspace owner turns it on; turning one off restores the default rules and keeps its data | Next |
+| A-7 | Printer access extension: who can see, print to, and manage each printer, with built-in and custom roles, groups of members and devices, and device rules, applied the same way in the web app, API, MCP, email, and print windows | Next |
 
 ### 6.3 Devices and setup
 

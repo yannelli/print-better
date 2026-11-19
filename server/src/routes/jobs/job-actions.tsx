@@ -3,26 +3,25 @@ import { type Job, TERMINAL_JOB_STATUSES } from '@shared/types'
 import { Confirm } from '@/components/confirm'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { usePrinterRights } from '@/hooks/access'
 import { useUser } from '@/hooks/auth'
 import { useDeleteJob, useJobAction } from '@/hooks/jobs'
-import { useCanManage } from '@/hooks/workspace'
+import { jobRights } from '@/lib/access'
 import { jobFileUrl } from '@/lib/api/jobs'
 
 const isTerminal = (job: Job) => TERMINAL_JOB_STATUSES.includes(job.status)
 
 export function JobActions({ ws, job }: { ws: string; job: Job }) {
-  const user = useUser()
-  const canManage = useCanManage()
+  const may = jobRights(job, useUser()?.id, usePrinterRights(ws))
   const cancel = useJobAction(ws, 'cancel')
   const retry = useJobAction(ws, 'retry')
   const remove = useDeleteJob(ws)
-  const mine = canManage || (!!user && job.userId === user.id)
   const name = job.title || job.fileName || 'this print job'
-  const canRetry = mine && job.hasFile && (job.status === 'failed' || job.status === 'canceled')
+  const canRetry = may.retry && job.hasFile && (job.status === 'failed' || job.status === 'canceled')
 
   return (
     <div className="flex flex-wrap items-center gap-2">
-      {mine && !isTerminal(job) && (
+      {may.cancel && !isTerminal(job) && (
         <Button variant="outline" size="sm" onClick={() => cancel.mutate(job.id)} disabled={cancel.isPending} aria-label={`Cancel ${name}`}>
           {cancel.isPending ? <Spinner data-icon="inline-start" /> : <X data-icon="inline-start" />}
           Cancel
@@ -45,7 +44,7 @@ export function JobActions({ ws, job }: { ws: string; job: Job }) {
           <Download />
         </a>
       )}
-      {canManage && isTerminal(job) && (
+      {may.remove && isTerminal(job) && (
         <Confirm
           trigger={
             <Button variant="ghost" size="icon-sm" aria-label={`Remove ${name} from the list`} title="Remove from the list">

@@ -18,7 +18,20 @@ export interface Ctx {
   userAgent: string | null
   /** Set by the MCP layer so jobs it creates record source `mcp`. */
   via?: 'mcp'
+  /** Lookups shared by the services of one request (see `memo`). */
+  memo?: Map<string, Promise<unknown>>
   waitUntil(promise: Promise<unknown>): void
+}
+
+/** Runs `load` once per request and key; later callers share its result. */
+export function memo<T>(ctx: Ctx, key: string, load: () => Promise<T>): Promise<T> {
+  ctx.memo ??= new Map()
+  let hit = ctx.memo.get(key) as Promise<T> | undefined
+  if (!hit) {
+    hit = load()
+    ctx.memo.set(key, hit)
+  }
+  return hit
 }
 
 export function systemCtx(env: Env, origin: string, waitUntil: Ctx['waitUntil'], actor: Actor = { type: 'system' }): Ctx {

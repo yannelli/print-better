@@ -213,3 +213,5 @@ export type UiEvent =
   | { type: 'client'; client: Client }
   | { type: 'client_removed'; id: string }
   | { type: 'workspace'; workspace: Workspace }
+  /** Printer access or an extension switch changed: refetch printers, jobs, and `/access/me`. */
+  | { type: 'access' }

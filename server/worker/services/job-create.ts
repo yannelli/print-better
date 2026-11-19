@@ -9,12 +9,13 @@ import { newId, sha256Hex } from '../lib/crypto'
 import { first, run } from '../lib/db'
 import { fromB64, utf8 } from '../lib/encoding'
 import { VERSION } from '../version'
-import { requireMember, requireScope } from './access'
+import { requireScope } from './access'
 import { audit } from './audit'
 import type { Ctx } from './context'
 import { docType } from './doc-types'
 import { notifyHub } from './hub'
 import { parseJobOptions } from './job-options'
+import { memberAccess, requirePermission, type Access } from './permissions'
 import { loadWorkspace } from './workspaces'
 
 export type DocumentInput =
@@ -42,12 +43,13 @@ export async function workspaceLimits(env: Env, workspaceId: string): Promise<{ 
   return { maxBytes: settings.maxUploadMb * MB, defaultPrinterId: settings.defaultPrinterId }
 }
 
-/** Falls back to the workspace default printer; only added printers accept jobs. */
-export async function resolvePrinter(env: Env, workspaceId: string, printerId: string | null, defaultId: string | null): Promise<PrinterViewRow> {
+/** Falls back to the workspace default printer; only added printers the caller may print to accept jobs. */
+export async function resolvePrinter(env: Env, workspaceId: string, printerId: string | null, defaultId: string | null, access: Access): Promise<PrinterViewRow> {
   const id = printerId ?? defaultId
   if (!id) throw badRequest('Choose a printer (this workspace has no default printer)', 'printer_required')
   const row = await first<PrinterViewRow>(env.DB, `${PRINTER_VIEW} WHERE p.id = ? AND p.workspace_id = ?`, id, workspaceId)
   if (!row) throw notFound('Printer not found')
+  requirePermission(access, row.id, 'print')
   if (row.added !== 1) throw conflict('Add this printer to the workspace before printing to it', 'printer_not_added')
   return row
 }
@@ -85,10 +87,10 @@ function parseDocument(body: Json, maxBytes: number): DocumentInput {
 /** `POST /workspaces/:ws/jobs`: an upload slot (two-step), text, a URL the server fetches, or inline base64. */
 export async function createJob(ctx: Ctx, workspaceId: string, body: Json): Promise<{ job: Job; uploadUrl?: string }> {
   requireScope(ctx, 'print')
-  const { user } = await requireMember(ctx, workspaceId)
+  const { user, access } = await memberAccess(ctx, workspaceId)
   const limits = await workspaceLimits(ctx.env, workspaceId)
   const document = parseDocument(body, limits.maxBytes)
-  const printer = await resolvePrinter(ctx.env, workspaceId, optStr(body, 'printerId', { max: 64 }) ?? null, limits.defaultPrinterId)
+  const printer = await resolvePrinter(ctx.env, workspaceId, optStr(body, 'printerId', { max: 64 }) ?? null, limits.defaultPrinterId, access)
   return queueJob(ctx, {
     workspaceId,
     printer,
@@ -182,6 +184,3 @@ export async function queueJob(ctx: Ctx, p: QueueInput): Promise<{ job: Job; upl
   notifyHub(ctx, p.workspaceId, (hub) => hub.dispatch(p.workspaceId, id))
   return { job: toJob(await loadJobView(ctx.env, p.workspaceId, id)) }
 }
-
-/** Members manage their own jobs; admins and owners manage any job. */
-export const canManageJob = (job: JobViewRow, userId: string, role: string): boolean => role !== 'member' || job.user_id === userId

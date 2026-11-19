@@ -128,6 +128,19 @@ async fn failures_carry_the_servers_message() {
 }
 
 #[tokio::test]
+async fn a_printer_this_computer_may_not_use_fails_the_job_with_a_plain_reason() {
+    for status in [403, 404] {
+        let refusing = FakeServer::start(move |_| (status, json!({ "error": { "code": "printer_access_denied", "message": "Denied" } }))).await;
+        let dir = TempDir::new();
+        let sink = RemoteSink::new(daemon(&dir, &refusing.origin));
+        let id = sink.submit(job(&dir)).unwrap();
+        until("refusal", || state(&sink, id).0 == SharedJobState::Aborted).await;
+        assert_eq!(state(&sink, id).1.as_deref(), Some("You can't print to this printer from this computer"), "{status}");
+        assert_eq!(refusing.requests(), ["POST /api/client/jobs"]);
+    }
+}
+
+#[tokio::test]
 async fn a_broken_upload_is_aborted_and_withdrawn_from_the_server() {
     let server = FakeServer::start(|seen| match seen.method.as_str() {
         "PUT" => (500, json!({ "error": { "code": "internal", "message": "Storage is down" } })),

@@ -8,11 +8,12 @@ import { useAdminSettings } from '@/hooks/account'
 import { useUser } from '@/hooks/auth'
 import { useTab } from '../settings/use-tab'
 import { EmailTab } from './email-tab'
+import { ExtensionsTab } from './extensions-tab'
 import { GeneralTab } from './general-tab'
 import { PeopleTab } from './people-tab'
 import { SignInTab } from './sign-in-tab'
 
-const TABS = ['general', 'sign-in', 'email', 'people'] as const
+const TABS = ['general', 'sign-in', 'email', 'people', 'extensions'] as const
 
 function AdminPages() {
   const settings = useAdminSettings()
@@ -26,6 +27,7 @@ function AdminPages() {
           <TabsTrigger value="sign-in">Sign-in options</TabsTrigger>
           <TabsTrigger value="email">Email</TabsTrigger>
           <TabsTrigger value="people">People</TabsTrigger>
+          <TabsTrigger value="extensions">Extensions</TabsTrigger>
         </TabsList>
         <TabsContent value="general">
           <QueryState query={settings}>{(data) => <GeneralTab settings={data} />}</QueryState>
@@ -38,6 +40,9 @@ function AdminPages() {
         </TabsContent>
         <TabsContent value="people">
           <PeopleTab />
+        </TabsContent>
+        <TabsContent value="extensions">
+          <ExtensionsTab />
         </TabsContent>
       </Tabs>
     </>

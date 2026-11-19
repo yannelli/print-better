@@ -206,3 +206,5 @@ export const ROLE_HELP = {
   admin: 'Manage printers, devices, members and settings',
   member: 'Print, and manage their own print jobs',
 } as const
+
+export * from './access-words'

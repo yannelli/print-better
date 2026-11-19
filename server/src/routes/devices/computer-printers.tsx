@@ -1,12 +1,15 @@
 import { useId, type ReactNode } from 'react'
+import { Link } from 'wouter'
 import type { Client, ClientSettings, Printer, SystemPrinters } from '@shared/types'
 import { Mono, Row, Section } from '@/components/page'
+import { wsHref } from '@/components/shell/app-actions'
 import { StatusPill } from '@/components/status'
 import { Switch } from '@/components/ui/switch'
+import { useDevicePrintable } from '@/hooks/access'
 import { useUpdateClient } from '@/hooks/devices'
 import { useAddedPrinters } from '@/hooks/printers'
 import type { ClientSettingsPatch } from '@/lib/api/devices'
-import { defaultPrinterName, defaultPrinterProblem, printerSettingsPlace, systemPrinterStatus, thisComputer } from '@/lib/words'
+import { defaultPrinterName, defaultPrinterProblem, devicePrintWords, printerSettingsPlace, systemPrinterStatus, thisComputer } from '@/lib/words'
 import { ChoiceSelect } from '../settings/fields'
 import { useShownSettings } from './device-settings'
 
@@ -55,9 +58,25 @@ interface ChoicesProps {
   canManage: boolean
 }
 
+/** A printer that printer access keeps off this computer; its Access tab can change that. */
+function NotAllowedRow({ printer, where }: { printer: Printer; where: string }) {
+  return (
+    <Row label={printer.name} description={`On ${printer.clientName}. Its Access tab decides which devices can print to it.`}>
+      <span className="flex items-center gap-3">
+        <StatusPill status={devicePrintWords(false, where)} />
+        <Link href={wsHref(printer.workspaceId, `/printers/${printer.id}/access`)} className="text-sm font-medium underline underline-offset-4">
+          Change access
+        </Link>
+      </span>
+    </Row>
+  )
+}
+
 function Choices({ client, report, settings, save, canManage }: ChoicesProps) {
   const uid = useId()
   const printers = (useAddedPrinters(client.workspaceId).data ?? []).filter((p) => p.clientId !== client.id)
+  const printable = useDevicePrintable(client.workspaceId, client.id) ?? (() => true)
+  const offered = printers.filter((p) => printable(p.id))
   const where = thisComputer(client)
   const hidden = new Set(settings.remotePrintersHidden)
   const chosen = printers.find((p) => p.id === settings.defaultPrinter) ?? null
@@ -70,13 +89,15 @@ function Choices({ client, report, settings, save, canManage }: ChoicesProps) {
   if (printers.length === 0) return <Note>None of your other devices has a printer yet.</Note>
   const options = [
     { value: KEEP, label: 'Don’t change' },
-    ...printers.filter((p) => !hidden.has(p.id) || p.id === settings.defaultPrinter).map((p) => ({ value: p.id, label: p.name })),
+    ...printers
+      .filter((p) => (printable(p.id) && !hidden.has(p.id)) || p.id === settings.defaultPrinter)
+      .map((p) => ({ value: p.id, label: p.name })),
     ...(settings.defaultPrinter && !chosen ? [{ value: settings.defaultPrinter, label: 'A removed printer' }] : []),
   ]
   return (
     <>
       {report.error && <Note tone="bad">{report.error}</Note>}
-      {printers.map((p) => {
+      {offered.map((p) => {
         const shown = !hidden.has(p.id)
         const reported = report.printers.find((s) => s.id === p.id)
         const status = systemPrinterStatus(
@@ -101,6 +122,11 @@ function Choices({ client, report, settings, save, canManage }: ChoicesProps) {
           </Row>
         )
       })}
+      {printers
+        .filter((p) => !printable(p.id))
+        .map((p) => (
+          <NotAllowedRow key={p.id} printer={p} where={where} />
+        ))}
       <Row
         label="Default printer"
         htmlFor={`${uid}-default`}

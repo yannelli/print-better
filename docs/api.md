@@ -82,6 +82,8 @@ Token scopes: `read` (gets and lists), `print` (create, upload, cancel, retry an
 | `POST /workspaces/:ws/printers/:id/refresh` | relays `refresh` |
 | `POST /workspaces/:ws/printers/:id/test-page` | queues the built-in one-page test PDF (source `test`) → `{ job }` |
 
+With printer access active (docs/printer-access.md), each printer's permissions replace the **A** marks here and under Jobs: printers and jobs the caller can't see are left out of lists and answer 404, and other refusals are 403 `printer_access_denied`.
+
 ## Jobs
 | Route | Notes |
 |---|---|
@@ -106,6 +108,19 @@ Jobs printed from a paired computer's own print dialog have source `device`, `us
 | `PATCH /admin/users/:id` **I** | `{ isAdmin? }`; `POST /admin/users/:id/reset-password` → one-time reset URL |
 | `DELETE /admin/users/:id` **I** | |
 
+## Extensions
+Optional modules, off until a server admin makes one available and a workspace owner turns it on (docs/extensions.md). Types: `server/shared/extensions.ts` and `access.ts`.
+
+| Route | Notes |
+|---|---|
+| `GET /admin/extensions` **I** | `InstanceExtension[]`: availability and how many workspaces turned each on |
+| `PATCH /admin/extensions/:id` **I** | `{ available }` → `InstanceExtension`; turning one off makes it inactive everywhere and keeps every workspace's data |
+| `GET /workspaces/:ws/extensions` | `WorkspaceExtension[]` (`available`, `enabled`, `active`) |
+| `PATCH /workspaces/:ws/extensions/:id` **O** | `{ enabled }` → `WorkspaceExtension`; 409 `extension_unavailable` when turning on one that isn't available |
+| `GET /workspaces/:ws/access/me` | `MyPrinterAccess`: the caller's permissions on each printer they can see; also answers while printer access is off |
+
+Printer access routes (`/workspaces/:ws/access…`, `/groups…`, `/printers/:id/access…`) are listed in docs/printer-access.md. While it is off they answer 404 `extension_inactive`, except `GET /access/me` and `GET /access/subject`. Moving either switch sends an `access` event to open pages and refreshes the printers devices offer in their print windows.
+
 ## Webhooks and non-API routes
 | Route | Notes |
 |---|---|
@@ -121,6 +136,7 @@ Generic: `invalid_request` 400, `unauthorized` 401, `forbidden` 403, `not_found`
 - People: `last_owner`, `sole_owner` (deleting a user who alone owns a workspace), `last_admin`, `invite_invalid`, `oauth_request_expired`.
 - Devices: `client_offline`, `device_code_invalid`; device endpoints add `unsupported_protocol`, `no_build`, `printer_not_found` and the RFC 8628 poll codes (protocol.md).
 - Printers and jobs: `alias_taken`, `printer_required`, `printer_not_added`, `printer_missing`, `unsupported_type`, `size_mismatch`, `not_uploading`, `fetch_failed`, `job_finished`, `job_active`, `job_not_retryable`, `file_purged`.
+- Extensions and printer access: `extension_inactive` 404, `extension_unavailable` 409, `printer_access_denied` 403 (404 for a device that can't see the printer), `role_in_use` 409, `name_taken` 409.
 - Resend webhook: `not_enabled` 404, `not_configured` 503, `bad_signature` 401.
 
 ## SPA conventions
@@ -133,4 +149,4 @@ Generic: `invalid_request` 400, `unauthorized` 401, `forbidden` 403, `not_found`
 - Instance secrets in `PATCH /admin/settings` (`sso.google.clientSecret`, `sso.oidc.clientSecret`, `email.apiKey`, `email.webhookSecret`): string sets, `null` clears, omitted keeps. `InstanceSettings.email.hasWebhookSecret` reports presence.
 - `POST /workspaces/:ws/jobs` returns an absolute `uploadUrl`; the PUT body must be exactly the declared size.
 - Usernames: 2–32 characters of letters, digits, `.`, `-` and `_`.
-- Audit `action` strings are `noun.verb` (`printer.update`, `member.remove`, `job.create`, `passkey.add`, `app.approve`, …).
+- Audit `action` strings are `noun.verb` (`printer.update`, `member.remove`, `job.create`, `passkey.add`, `app.approve`, `extension.update`, `access.grant`, `group.add`, …).
