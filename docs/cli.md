@@ -1,6 +1,6 @@
-# Client CLI and install contract
+# Client CLI and Install Contract
 
-The client is one binary, `printbetter`. People, the install scripts, the web app's copy-paste commands, and Raspberry Pi first boot all use it.
+The client is a single binary, `printbetter`. People, the install scripts, the web app's copy-paste commands, and Raspberry Pi first boot all use it.
 
 ## Commands
 ```
@@ -41,16 +41,16 @@ Environment variables:
 - `PRINTBETTER_REMOTE_PORT` overrides the remote printers loopback port (default 8632).
 - `PRINTBETTER_LOG=debug` turns on debug logging.
 
-## Remote printers
-On macOS and Linux, added printers on other devices in the workspace appear as system print queues named `pb_<printerId>`, so every app's print dialog can use them (details: [Remote printers](remote-printers.md)). Remote printers are not available on Windows yet.
+## Remote Printers
+On macOS and Linux, added printers on other devices in the workspace appear as system print queues named `pb_<printerId>`, so every app's print dialog can use them (details: [Remote Printers on Desktops](remote-printers.md)). Remote printers are not available on Windows yet.
 
 Remote printers are on by default. `printbetter config set remotePrinters off` removes the queues and syncs the setting to the server like any other setting.
 
 Creating queues needs CUPS admin rights (`lpadmin`: root, or an admin/`lpadmin` group user). Problems show on the status page, in the tray, and in `printbetter doctor`.
 
-Two per-computer settings, both also on the device's page in the web app:
+These 2 per-computer settings are also on the device's page in the web app:
 - `printbetter config set remotePrintersHidden <id>,<id>` hides printers on this computer. `none` shows all of them again.
-- `printbetter config set defaultPrinter <id>` makes one the computer's default printer. `none` leaves the default alone.
+- `printbetter config set defaultPrinter <id>` makes that printer the computer's default. `none` leaves the default alone.
 
 ## Updates
 macOS and Linux devices update themselves from the server they're paired with (`GET /api/client/latest`). They check:
@@ -77,7 +77,7 @@ Only newer versions install, never a downgrade.
   5. Runs `systemctl try-restart printbetter.service`.
 - **Existing Linux system installs** get the helper once 0.1.2 or later is installed and `sudo printbetter service install --system` runs (re-running the install one-liner does this). Until then, `printbetter doctor` reports that updates need it.
 
-## Service install
+## Service Install
 | OS | user mode (default) | `--system` |
 |---|---|---|
 | macOS | LaunchAgent `~/Library/LaunchAgents/dev.yannelli.printbetter.plist` (RunAtLoad, KeepAlive on crash) running `<binary> run` | LaunchDaemon, implies `--no-tray` |
@@ -90,7 +90,7 @@ macOS system mode (what the signed pkg runs) installs a root LaunchDaemon (`run 
 
 System installs remove a conflicting per-user install and carry its pairing over. A user-mode install on a machine that already has the system daemon exits 0 without changes.
 
-## Install scripts (served by the Worker)
+## Install Scripts (Served by the Worker)
 - Unix: `curl -fsSL <origin>/install.sh | sh -s -- --token pbe_… [--name NAME] [--system] [--no-tray] [--version V]`
 - Windows: `$env:PB_TOKEN='pbe_…'; irm <origin>/install.ps1 | iex` (also reads `PB_NAME`, `PB_VERSION`)
 
@@ -114,7 +114,7 @@ Install locations:
 
 Linux as root, or with no graphical session, defaults to `--system --no-tray`.
 
-## Downloads manifest
+## Downloads Manifest
 R2 key `downloads/latest.json`, served at `/dl/latest.json`. Files are under `downloads/<version>/`, served at `/dl/<version>/<name>`.
 ```json
 {
@@ -134,5 +134,5 @@ R2 key `downloads/latest.json`, served at `/dl/latest.json`. Files are under `do
 - The macOS zip holds `Print Better.app` (binary at `Contents/MacOS/printbetter`). Linux tarballs hold the single `printbetter` binary.
 - Missing platforms are left out of `files`, and the scripts fail with a clear message.
 
-## Raspberry Pi first boot
+## Raspberry Pi First Boot
 The web app generates cloud-init files in the browser (Wi-Fi credentials never reach the server). `runcmd` waits for the network, then runs the Unix install one-liner with `--system --no-tray --name <hostname>`.

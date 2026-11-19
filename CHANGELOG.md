@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to Print Better are documented here. Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), and [CONTRIBUTING.md](CONTRIBUTING.md#versions) shows how they map to releases.
+Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/), and [CONTRIBUTING.md](CONTRIBUTING.md#versions) shows how they map to releases.
 
 ## [Unreleased]
 
@@ -18,7 +18,7 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ### Changed
 
-- **web:** Splits workspace settings into tabs (General, Printing, Email to print, Extensions, Activity, and a tab for each turned-on extension that has settings), each at its own address. An extension adds a tab instead of more sections on one page.
+- **web:** Splits workspace settings into tabs (General, Printing, Email to print, Extensions, Activity, and a tab for each turned-on extension that has settings), each at its own address. An extension adds a tab instead of more sections on 1 page.
 
 ### Fixed
 
@@ -36,7 +36,7 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 ### Added
 
 - **extensions:** Adds extensions, optional modules that stay off until a server admin makes one available under **Server admin > Extensions** and a workspace owner turns it on under **Workspace settings > Extensions**. Turning one off restores the default rules and keeps its data. Adds the routes `/api/admin/extensions` and `/api/workspaces/:ws/extensions` (audited as `extension.update`) and an `access` event that tells open pages to refresh.
-- **printer access:** Adds the printer access extension, which decides who can see, print to, and manage each printer. It has built-in roles (Viewer, User, Manager) and custom ones, groups of members and devices, a per-printer Everyone setting, and grants on one printer or on all of them. It applies in the web app, the REST API, MCP (14 new tools), email to print, and the printers a computer's print window offers. Turning it on changes nothing by itself (docs/printer-access.md).
+- **printer access:** Adds the printer access extension, which decides who can see, print to, and manage each printer. It has built-in roles (Viewer, User, Manager) and custom ones, groups of members and devices, a per-printer Everyone setting, and grants on 1 printer or on all of them. It applies in the web app, the REST API, MCP (14 new tools), email to print, and the printers a computer's print window offers. Turning it on changes nothing by itself (docs/printer-access.md).
 - **printer access:** Adds `GET /api/workspaces/:ws/access/me`, which reports what the caller may do on each printer, also while printer access is off.
 - **remote printers:** Adds a print queue error for jobs a computer may not send: "You can't print to this printer from this computer".
 
@@ -96,11 +96,9 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [0.1.0] - 2026-11-18
 
-First release.
-
 ### Added
 
-- **server:** Adds one Cloudflare Worker that serves the REST API, the web app, the MCP server, and the install scripts, with D1 for data, R2 for documents and client downloads, and one Durable Object per workspace for live device connections.
+- **server:** Adds 1 Cloudflare Worker that serves the REST API, the web app, the MCP server, and the install scripts, with D1 for data, R2 for documents and client downloads, and 1 Durable Object per workspace for live device connections.
 - **web app:** Adds the home, printers, print jobs, devices, members, workspace settings, and server admin pages. Adds light, dark, and system themes, accent colors, text size, and density.
 - **accounts:** Adds username and password, passkeys, Google and OpenID Connect sign-in, workspaces with owner, admin, and member roles, invite links, recovery codes, and password reset by email or admin link.
 - **printing:** Adds web upload, the REST API, test pages, per-printer defaults, and cancel and retry. Documents are deleted after the workspace's retention time.

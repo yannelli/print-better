@@ -1,4 +1,4 @@
-# Remote printers on desktops
+# Remote Printers on Desktops
 
 Goal: Every added printer in a workspace that lives on *another* device shows up on a paired Mac (and Linux desktop) as a normal local printer:
 - listed in System Settings > Printers & Scanners
@@ -7,7 +7,7 @@ Goal: Every added printer in a workspace that lives on *another* device shows up
 
 It is on by default, with nothing to configure.
 
-## How it works
+## How It Works
 ```
 App (Cmd+P) → CUPS queue "pb_<printerId>" → ipp://127.0.0.1:8632/ipp/print/<slug>
   → printbetter daemon (loopback IPP server, never advertised)
@@ -19,11 +19,11 @@ App (Cmd+P) → CUPS queue "pb_<printerId>" → ipp://127.0.0.1:8632/ipp/print/<
 - If the server is unreachable, the loopback server refuses with "not ready" (IPP `server-error-service-unavailable`), so CUPS keeps retrying and nothing is lost.
 - If the owning device is offline, the job is still accepted. It waits on the server (normal `queued` semantics) and prints when that device reconnects. The queue's state message says so.
 
-## Protocol additions (v1, additive; older clients ignore unknown messages)
+## Protocol Additions (v1, Additive; Older Clients Ignore Unknown Messages)
 
 Constant: `REMOTE_PRINT_PORT = 8632` (`server/shared/protocol.ts`, `client/crates/app/src/proto.rs`).
 
-Hiding printers and choosing the default printer add `direct` and `system_printers`; see "Choosing printers and the default printer".
+Hiding printers and choosing the default printer add `direct` and `system_printers`; see "Choosing Printers and the Default Printer".
 
 `ClientSettings.remotePrinters: boolean`, default `true` (server default, client default, settings LWW like every other key).
 
@@ -46,9 +46,9 @@ export interface RemotePrintersMsg { type: 'remote_printers'; printers: RemotePr
 ```
 - The message contains every `added` printer in the workspace whose `clientId` is not the receiving client, as a full snapshot each time.
 - The hub sends it right after `welcome`, then whenever that snapshot would change for a client: a printer added/removed/renamed/edited, a status state or supply level change, or the owning client connecting or disconnecting.
-- Coalescing a burst into one send is fine. Sending only on a real change is required (no per-poll spam).
+- Coalescing a burst into 1 send is fine. Sending only on a real change is required (no per-poll spam).
 
-## Client job endpoints (Bearer `pbc_…`)
+## Client Job Endpoints (Bearer `pbc_…`)
 | Method + path | Body → response |
 |---|---|
 | `POST /api/client/jobs` | `{ printerId, title?, contentType, size, fileName?, options?, requestedBy? }` → 201 `{ job, uploadUrl }` (status `uploading`). `uploadUrl` is absolute (`<origin>/api/client/jobs/:id/file`). |
@@ -61,11 +61,11 @@ export interface RemotePrintersMsg { type: 'remote_printers'; printers: RemotePr
 - Types: `DOC_TYPES`. Size limit: workspace `maxUploadMb` (413 `too_large`).
 - `options` are validated exactly like the REST API.
 - `requestedBy` is the OS user name from IPP `requesting-user-name` (≤ 100 chars).
-- These endpoints run the same service code as REST uploads (`queueJob`, `uploadJobFile`), not a parallel path.
+- These endpoints run the same service code as REST uploads (`queueJob`, `uploadJobFile`).
 - Jobs record `source = 'device'`, `source_client_id` and `requested_by`. `Job` gains `sourceClientId: string | null`, `sourceClientName: string | null` and `requestedBy: string | null`. The web UI shows "From <device> (<requestedBy>)" in job lists and detail.
-- Migration `0003_device_jobs.sql` adds `'device'` to the `jobs.source` CHECK (a table rebuild that keeps data and indexes), plus the two columns.
+- Migration `0003_device_jobs.sql` adds `'device'` to the `jobs.source` CHECK (a table rebuild that keeps data and indexes), plus the 2 columns.
 
-## Client behavior
+## Client Behavior
 - Remote printers are active when the client is paired, `settings.remotePrinters` is on, and the platform has CUPS `lpadmin` (macOS, Linux). Windows isn't supported yet; status reports "Not available on Windows yet".
 - The loopback IPP server listens on `127.0.0.1:8632` and starts before any queue is added. The printer key is the server printer id, and the `PrinterReport` passed to the share server is built from `RemotePrinter`.
 - Sink:
@@ -90,7 +90,7 @@ export interface RemotePrintersMsg { type: 'remote_printers'; printers: RemotePr
 - Status: Local `/api/status` gains `remotePrinters: { active: boolean, error: string | null, printers: [{ id, name, queue, online }] }`. The status page, tray, and `doctor` surface errors (e.g. lpadmin permission denied).
 - CLI: `printbetter config set remotePrinters false` works through the existing settings path.
 
-## Options and supplies
+## Options and Supplies
 
 The loopback server describes each printer from its `RemotePrinter`, so `lpadmin -m everywhere` builds a PPD with the same choices a native AirPrint queue for that printer gets. Every choice maps to a job option the owning device applies:
 
@@ -122,7 +122,7 @@ New options reach the Mac without a restart:
 3. The hub sends a new `remote_printers`.
 4. The changed fingerprint regenerates the queue's PPD.
 
-## Choosing printers and the default printer
+## Choosing Printers and the Default Printer
 
 A desktop's page in the web app has a **Printers on this computer** section (macOS and Linux; on Windows it says "Coming soon on Windows."). It lists every added printer on the workspace's other devices, each with its live state on this computer and a switch to show or hide it there. The section also has a **Default printer** choice.
 

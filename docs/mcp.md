@@ -1,4 +1,4 @@
-# MCP server
+# MCP Server
 
 Endpoint: `POST <origin>/mcp`, streamable HTTP, stateless, JSON responses only.
 
@@ -6,7 +6,7 @@ Goal: An agent can do everything the web UI can, including a full first-time set
 
 Code: `server/worker/mcp/` and `server/worker/oauth/`. Background: `docs/research/mcp-auth.md`.
 
-## Protocol eras
+## Protocol Eras
 - **2026-07-28 (modern)**: chosen when `params._meta` carries `io.modelcontextprotocol/protocolVersion` (or the `MCP-Protocol-Version` header says 2026-07-28).
   - Every request must also carry `_meta["io.modelcontextprotocol/clientCapabilities"]` (missing → 400 `-32602`) and these headers:
     - `MCP-Protocol-Version` (= `_meta`)
@@ -37,12 +37,12 @@ Code: `server/worker/mcp/` and `server/worker/oauth/`. Background: `docs/researc
   - `read`: list/get tools
   - `write`: manage tools
   - `print`: `print`, `print_test_page`, `cancel_job`, `retry_job`
-- PATs hold all three scopes. A missing scope is 403 with `WWW-Authenticate: Bearer error="insufficient_scope", scope="read write print", resource_metadata="…"`, so a client steps up once.
+- PATs hold all 3 scopes. A missing scope is 403 with `WWW-Authenticate: Bearer error="insufficient_scope", scope="read write print", resource_metadata="…"`, so a client steps up once.
 - The services enforce the scopes (`requireScope`), so REST and MCP always apply the same checks.
 - `offline_access` is never a permission. Refresh tokens are always issued.
-- A request that names none of `read`, `write`, `print` is granted all three, and the consent page lists exactly what is granted.
+- A request that names none of `read`, `write`, `print` is granted all 3, and the consent page lists exactly what is granted.
 
-## OAuth 2.1 authorization server (issuer = origin, path-less)
+## OAuth 2.1 Authorization Server (Issuer = Origin, Path-Less)
 | Endpoint | Notes |
 |---|---|
 | `GET /.well-known/oauth-protected-resource` and `…/mcp` | RFC 9728: `resource` `<origin>/mcp`, `authorization_servers` `[origin]`, `scopes_supported` read/write/print |
@@ -74,15 +74,15 @@ Consent flow contract (Worker ↔ SPA):
 2. `GET /api/oauth/requests/:id` (session) → `{ client: { name, uri, logoUri }, redirectHost, scopes, workspaces: WorkspaceSummary[] }`. `uri` is the verified metadata host for CIMD clients, else the self-declared `client_uri`.
 3. `POST /api/oauth/requests/:id/approve` `{ workspaceId: string | null }` → `{ redirectTo }` (code, state, iss appended). A non-null `workspaceId` pins the connection to that workspace. `POST …/deny` → `{ redirectTo }` with `error=access_denied`. An expired request is 404 `oauth_request_expired`.
 
-## Tool results
-- Every success returns `structuredContent` plus two text blocks: a short human summary, then the same JSON serialized. Clients that ignore `structuredContent` still see ids.
+## Tool Results
+- Every success returns `structuredContent` plus 2 text blocks: a short human summary, then the same JSON serialized. Clients that ignore `structuredContent` still see ids.
 - Service and validation errors become results with `isError: true` and a plain-language message the model can act on (for example `printer_required`, `workspace_required` listing the choices, `no_workspace`, `command_failed`).
 - An unknown tool or non-object `arguments` is JSON-RPC `-32602`. Unknown or missing top-level arguments are reported by name.
 - Workspace: the token's pinned workspace, else `workspaceId`, else the user's only workspace.
 - Annotations are explicit on every tool (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint: false`). Inputs are JSON Schema objects with `additionalProperties: false`.
 - Every mutation is audited by the service it calls, with actor type `token`.
 
-## Tools (in `tools/list` order)
+## Tools (in `tools/list` Order)
 | Tool | Scope | Purpose |
 |---|---|---|
 | `get_setup_status` | read | Start here: checklist (devices paired/online, printers added, first print, members) and the next tool to call with its arguments |
@@ -114,7 +114,7 @@ Consent flow contract (Worker ↔ SPA):
 | `get_instance_settings` | read | Instance admins: app name, signup, SSO, email (secrets reported as present/absent) |
 | `update_instance_settings` | write | Instance admins: deep-merged changes; secret fields are write-only (a string sets, `null` clears) |
 
-### Extension tools
+### Extension Tools
 After the core tools, `tools/list` adds the tools of each extension a server admin has made available (docs/extensions.md). While the extension is off in the workspace, each call fails with a message that says how to turn it on.
 
 Printer access (docs/printer-access.md):

@@ -1,10 +1,10 @@
-# Client protocol (v1)
+# Client Protocol (v1)
 
 The message shapes are defined in `server/shared/protocol.ts` (TypeScript) and `client/crates/app/src/proto.rs` (Rust). This file defines the semantics.
 
 JSON is camelCase. Message `type` values are snake_case.
 
-## HTTP endpoints used by the client
+## HTTP Endpoints Used by the Client
 
 All responses are JSON unless noted. Errors: `{ "error": { "code", "message" } }`.
 
@@ -21,21 +21,21 @@ All responses are JSON unless noted. Errors: `{ "error": { "code", "message" } }
 | `POST /api/client/jobs/:id/cancel` | `Bearer pbc_…` | `{ job }` (409 `job_finished` when already terminal) |
 | `GET /api/client/latest?os=&arch=&kind=` | `Bearer pbc_…` | `{ version, url, sha256, size }` or 404 `no_build`. `kind` (macOS only): `pkg` for the machine-wide install (`macos-pkg`), `app` or absent for the per-user zip (`macos-universal`); Linux gets its arch tarball (`armv6`/`armv7` for 32-bit ARM) |
 
-- Enrollment tokens are single-use by default. Enrolling consumes one use atomically.
+- Enrollment tokens are single-use by default. Enrolling consumes 1 use atomically.
 - Device codes:
   - `userCode` is 8 chars from `BCDFGHJKLMNPQRSTVWXZ`, shown as `XXXX-XXXX`.
   - Lifetime: 10 min. Poll interval: 5 s.
   - A poll less than 4 s after the previous one (1 s of slack) returns `slow_down`, and the client then adds 5 s to its interval (RFC 8628).
 - A revoked client gets 401 on every endpoint. It should drop its credentials only after the user confirms (`printbetter unpair`), so a server misconfiguration cannot silently orphan devices.
 
-## WebSocket session
+## WebSocket Session
 
 1. The client connects and sends `hello` first. Any other first message closes the socket with code 4400.
 2. The hub replies `welcome` (identity, settings, printer configs), then `remote_printers`, then re-offers every `queued`/`dispatched` job for this client as `job` messages, oldest first. While the client is connected, a job still `queued` a minute after it was queued is offered again on every alarm sweep (30 s) until the client acks it.
 3. The client sends a `printers` snapshot after its first discovery and whenever inventory changes. The hub replies `printer_config`.
 4. Keepalive: The client sends the text frame `ping` every 25 s, and the hub auto-responds `pong` without waking. If no `pong` arrives within 10 s, the client reconnects. The hub closes sockets idle for 90 s (alarm sweep).
 5. Reconnect: jittered exponential backoff from 1 s up to a 60 s cap, reset after 60 s connected. A 401 on upgrade stops reconnecting and shows "unpaired" in the tray and status page.
-6. One live socket per client: A new connection closes the old one with code 4409.
+6. 1 live socket per client: A new connection closes the old one with code 4409.
 
 Close codes: 4400 protocol error, 4401 unauthorized/revoked, 4409 replaced, 4500 server error.
 
@@ -66,7 +66,7 @@ Close codes: 4400 protocol error, 4401 unauthorized/revoked, 4409 replaced, 4500
 
 ## Commands
 
-Each `command` gets exactly one `result` with the same `id`. The hub waits up to 20 s, then reports a timeout to the caller.
+Each `command` gets exactly 1 `result` with the same `id`. The hub waits up to 20 s, then reports a timeout to the caller.
 
 | name | args | result data |
 |---|---|---|
@@ -79,7 +79,7 @@ Each `command` gets exactly one `result` with the same `id`. The hub waits up to
 | `update` | `{}` | `{ from, to }` once a newer release is found; the device then downloads, verifies and installs it in the background and restarts into `to`. Error when already current (never downgrades) or the install can't update itself (Windows) |
 | `unpair` | `{}` | `{}` then the client deletes credentials and stops. Sent only when the device is removed (`DELETE …/clients/:id` or MCP `remove_device`), just before the hub closes the socket with 4401; the commands endpoint refuses it |
 
-## Remote printers
+## Remote Printers
 
 Desktops show the workspace's printers on other devices as local printers (docs/remote-printers.md). The loopback IPP server for them listens on `REMOTE_PRINT_PORT` (8632).
 
@@ -105,7 +105,7 @@ Desktops show the workspace's printers on other devices as local printers (docs/
   - `title` (200), `fileName` (255) and `requestedBy` (100, the IPP `requesting-user-name`) are trimmed and clipped to those lengths rather than refused.
 - These jobs record source `device`, `sourceClientId`, `sourceClientName` and `requestedBy`, and follow the same queue, dispatch, status and cancel rules as any other job. A device sees and cancels only jobs it created (404 otherwise). If the printer's device is offline, the job waits `queued` until it reconnects.
 
-## Browser events
+## Browser Events
 
 `GET /api/workspaces/:ws/events` pushes `UiEvent` (`server/shared/protocol.ts`) to open pages: `printer`, `printer_removed`, `job`, `client`, `client_removed`, `workspace` and `access`.
 
@@ -118,6 +118,6 @@ Settings are server-owned, with last-write-wins on `updatedAt`. The client appli
 
 Local CLI changes (`printbetter tray off`, `printbetter pause`) are applied immediately, persisted, and sent as a client `settings` message (on reconnect if offline). The hub stores whichever `updatedAt` is newer and echoes the winner.
 
-## LAN sharing
+## LAN Sharing
 
 When `settings.lanSharing` is on, the client advertises each added printer with `lanShare: true` over DNS-SD and serves IPP on port 8631. Jobs received this way go through the same local queue and are reported with `lan_job` (history only; the server never re-dispatches them).

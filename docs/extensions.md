@@ -6,7 +6,7 @@ Extensions are optional modules that ship with Print Better and stay off until s
 |---|---|
 | `printer-access` | Who can see, print to, and manage each printer: groups, device rules, built-in and custom roles. [Docs](printer-access.md) |
 
-## Turning one on
+## Turning One On
 
 An extension is **active** in a workspace only when both switches are on. Both are off by default.
 
@@ -15,7 +15,7 @@ An extension is **active** in a workspace only when both switches are on. Both a
 
 Turning either switch off makes the extension inactive at once. Its data (groups, roles, grants, settings) is kept, so turning it back on restores the previous setup. Nothing is deleted unless the workspace or printer it belongs to is deleted.
 
-## Rules every extension follows
+## Rules Every Extension Follows
 
 - **Inactive**: With the extension inactive, the core behaves exactly as if the extension didn't exist, with the same responses, permissions and events. Its routes answer `404 extension_inactive`, and its MCP tools are listed only when the extension is available on the instance.
 - **Schema**: The tables ship with the core in the normal D1 migrations and stay empty and unused while the extension is off, so turning it on never needs a deploy.
@@ -23,7 +23,7 @@ Turning either switch off makes the extension inactive at once. Its data (groups
 - **Audit**: Every change an extension makes is written to the audit log like any core change.
 - **Permissions**: REST, MCP, email, and devices go through the same service layer, so an extension's rules apply to all of them.
 
-## Where things live
+## Where Things Live
 
 | Piece | Location |
 |---|---|
@@ -44,7 +44,7 @@ Turning either switch off makes the extension inactive at once. Its data (groups
 
 Changing either switch is audited (`extension.update`). It also sends an `access` event to the workspace's open browsers and refreshes what its devices see, so pages and print windows update without a reload. The instance switch does this for every workspace.
 
-## Writing an extension
+## Writing an Extension
 
 1. Add its id and catalog entry to `server/shared/extensions.ts`.
 2. Add its tables in a new migration. Every row must cascade on workspace delete.
