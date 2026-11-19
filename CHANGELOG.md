@@ -4,6 +4,17 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-11-19
+
+### Added
+
+- **docs:** every server serves its own docs site at `/docs`, public with no sign-in. It has 36 pages covering setup, devices, printers, printing, workspaces, extensions and reference, plus search, an "On this page" list and copy buttons on code. Code examples show the reader's own server address. The app links to it from the sidebar, the command menu and the sign-in screens.
+- **web:** `/printers`, `/jobs`, `/devices`, `/members` and `/settings/<tab>` open that screen in your current workspace, so docs and bookmarks can link to them.
+
+### Changed
+
+- **web:** workspace settings are split into tabs (General, Printing, Email to print, Extensions, Activity, and one tab per active extension), each at its own address. Extensions add a settings tab instead of more sections on one page.
+
 ### Fixed
 
 - **printing:** a job the printer only partly printed no longer shows as a clean success. The client counts the pages it sends (PDFs, images, and text it lays out) and compares them with what a network printer reports, so a short print finishes as completed with a warning: "The printer stopped after 4 of 11 pages. It didn't report an error." Jobs sent through a CUPS queue skip the comparison, since CUPS counts pages from its own filters.
@@ -12,6 +23,8 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 - **web:** a completed job with a warning shows as "Printed with a problem" in amber with the message, in print jobs, recent jobs, and the print window. MCP job text includes the warning, and so do `printbetter print` and the client's status page.
 - **remote printers:** a job that ends with a warning finishes in the computer's print queue as completed with `job-completed-with-warnings` and the message.
 - **web:** job origins keep proper names, for example "From the API" and "From an AI assistant".
+- **printing:** a job the printer drops from its history after every page was counted finishes cleanly, without a lost-track warning.
+- **web:** the largest-file setting accepts 1 to 100 MB, matching what the server allows.
 
 ## [0.1.4] - 2026-11-19
 
