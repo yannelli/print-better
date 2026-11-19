@@ -124,7 +124,7 @@ When only the machine-wide service exists, `start`, `stop`, `restart`, and `stat
 
 | System | Per-user service | Machine-wide service |
 | --- | --- | --- |
-| macOS | LaunchAgent `~/Library/LaunchAgents/dev.yannelli.printbetter.plist` | LaunchDaemon `/Library/LaunchDaemons/dev.yannelli.printbetter.plist`, plus a menu bar agent for all users |
+| macOS | A LaunchAgent in `~/Library/LaunchAgents` | A LaunchDaemon in `/Library/LaunchDaemons`, plus a menu bar agent for all users |
 | Linux | systemd user unit `printbetter.service` | `/etc/systemd/system/printbetter.service`, the `printbetter` user, a udev rule for USB printers, and the root updater |
 
 ### logs
