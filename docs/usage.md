@@ -18,8 +18,8 @@ Every job is checked after printer access allowed it and before it is queued.
 | Path | Where | When |
 |---|---|---|
 | `POST /jobs` with `text`, `url` or `base64`, MCP `print`, email to print, test pages | `queueJob` | After the document is fetched and counted, before anything is stored |
-| `POST /jobs` with `upload`, a computer's print window (`POST /api/client/jobs`) | `queueJob`, then `storeUpload` | A first check when the job is created, with pages not counted yet, so most refusals come before the upload. The full check once the file is stored, before `uploading` becomes `queued` or `held` |
-| Retry | `retryJob` | Before the job goes back to the queue, starting from what the sender asked for (`policy.requested`) |
+| `POST /jobs` with `upload`, a computer's print window (`POST /api/client/jobs`) | `queueJob`, then `storeUpload` | A first check when the job is created, before its pages are counted: each copy counts as 1 page and rules about pages wait, so most refusals come before the upload. The full check once the file is stored, before `uploading` becomes `queued` or `held` |
+| Retry | `retryJob` | Before the job goes back to the queue, starting from what the sender asked for (`policy.requested`) while they may still print to that printer, else from the printer the job is on |
 | `POST /jobs/preview` | the same code | Nothing is stored or sent |
 
 LAN sharing is never checked. Email to print checks each attachment as its own job.
@@ -39,12 +39,13 @@ Steps of an inactive extension are skipped. Each step sees the job as earlier st
 ### What a Check Can Do
 
 - Change the job's options: two-sided, black and white, fewer copies.
-- Send it to another printer. Only an added printer where the sender has `print`.
+- Send it to another printer. Only an added printer where the sender has `print`, on a device that's online.
 - Refuse it with a message. No later step runs.
 - Ask for approval, or to hold it until its sender releases it. Enterprise controls turns these into status `held`. Without it, or with its approvals or secure release turned off, a rule's request is skipped and a limit or budget set to require approval blocks.
 - Add notes. They end up in `policy.notes`.
 - Pick the cost center.
 - Carry the usage estimate and the limits and budgets it counts against.
+- Add guards (`JobDecision.guards`): SQL conditions checked again in the statement that stores the job. A blocking limit the job fits adds one, so jobs sent at the same moment can't pass it together. The job that no longer fits is refused like any other, with what is left now.
 
 A refusal is `403 policy_blocked` with the message, wherever the job came from. Email to print uses it as the rejection reason, and a computer's print queue shows it. Nothing is stored for an inline document. An upload refused when its file arrives has its file deleted and becomes `canceled` with the message. A refused retry stays as it was. Every refusal is audited as `job.block`.
 
@@ -58,7 +59,7 @@ The server counts pages from the stored document with `countPages` in `server/sh
 - **JPEG and PNG**: 1 page.
 - **Text**: laid out like the client's converter (`client/crates/print/src/convert/text.rs`): Courier 10 pt at 6 pt per character, 12 pt lines, 36 pt margins, word wrap, tabs every 8 columns, and a form feed starts a page. Paper comes from `options.media`, else the printer's `mediaDefault`, else US Letter. Landscape swaps the sides.
 - **A computer's print window**: the system print queue converts to PDF (the `pb_` queues accept PDF, JPEG and PNG), counted like any PDF. Quartz PDFs from macOS have a plain cross-reference table, the cheapest case. Output from Linux applications may use object streams.
-- **Can't count** (broken files, encrypted files with object streams): the job counts as 1 page per copy and `usage.documentPages` is null. What the printer reports corrects it later.
+- **Can't count** (broken files, encrypted files with object streams, text over 8 MB): the pages are estimated from the size, leaning towards more: 1 page per 3,000 bytes of text, 1 page per 20,000 bytes of anything else. `usage.documentPages` stays null, and what the printer reports corrects it later. A PDF's own `/Count` is always trusted.
 
 From the count:
 
@@ -76,13 +77,13 @@ Options are the job's own over the printer's defaults, as the device applies the
 `usage_entries` has 1 row per job attempt: member, device, printer, cost center, source, and jobs, pages, sheets, color pages, and cost.
 
 - It is written with the estimate when the attempt is queued or held, and counts against limits and budgets right away.
-- When the attempt ends, it is settled. A completed job counts the pages the device reported, or the estimate when it reported none. A failed or canceled job counts the reported pages or 0, and 0 jobs. When the reported pages differ from the estimate, sheets and cost are worked out again from them, at the prices of that moment. The job's `usage` follows, with `estimated: false`.
+- When the attempt ends, it is settled. A completed job counts the pages the device reported, or the estimate when it reported none or 0, since printers that don't count pages report 0. A failed or canceled job counts the reported pages or 0, and 0 jobs. When the reported pages differ from the estimate, sheets and cost are worked out again from them, at the prices of that moment. The job's `usage` follows, with `estimated: false`.
 - When the attempt was queued decides its cycle.
 - A retry is a new attempt and a new row.
 - The cron settles rows that are still estimates when their job has ended or is gone.
 - Rows have no foreign key to jobs, so usage outlives deleted jobs. Removing a printer, a device, or a member's account keeps the row and clears that link.
 
-Printers report differently. Some count sheets instead of printed sides, some leave copies out. When a printer reports nothing, the estimate stays. Jobs checked at the same moment can go over a limit by the size of the jobs in flight.
+Printers report differently. Some count sheets instead of printed sides, some leave copies out. When a printer reports nothing, the estimate stays. Blocking limits are guarded when the job is stored, but limits that warn can go over by the size of the jobs in flight.
 
 ## Cycles
 

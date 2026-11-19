@@ -61,7 +61,7 @@ Rules run top to bottom. Each rule whose conditions all match applies its action
 | **Print two-sided** | Long edge, when the printer can. |
 | **Print in black and white** | Prints in black and white. |
 | **Limit copies** | At most this many copies. |
-| **Send to another printer** | Moves the job, only if the sender may print there. Otherwise it stays, with a note. |
+| **Send to another printer** | Moves the job, only if the sender may print there and the printer's device is online. Otherwise it stays, with a note. |
 | **Add a note** | Shows your note on the job. |
 
 Every change a rule makes shows under the job in [Print Jobs](/docs/printing/jobs), for example "Big jobs on both sides: Printed two-sided".
@@ -86,6 +86,8 @@ Open **Usage**, select the **Limits** tab, then select **New limit**.
 | **One device** | That device's jobs. |
 | **One printer** | Every job sent to it, from anyone. |
 | **The whole workspace** | Every job. |
+
+Jobs from a computer's print window have no member, so **Each member** and **One member** limits don't count them. Device limits do, and so do printer, workspace, and group limits for groups the device is in. To cap what a computer prints, add a device limit.
 
 ### Choose the Amount
 
