@@ -147,6 +147,7 @@ Without a `printerId`, the job goes to the workspace's default printer. See [RES
 | [MCP server](docs/mcp.md) | Protocol versions, OAuth 2.1, scopes, and the tool list |
 | [Client protocol](docs/protocol.md) | The WebSocket messages between the server and the client |
 | [Architecture](docs/architecture.md) | How the Worker, the Durable Object, D1, R2, and the client fit together |
+| [Product requirements](docs/prd.md) | Goals, users, requirements, metrics, and the roadmap |
 | [Research notes](docs/research/) | Printing protocols, the Rust client, Cloudflare, and MCP auth |
 
 ## Development
