@@ -207,7 +207,7 @@ describe('defaultPrinterName', () => {
     expect(defaultPrinterName(report('pb_pr_1', 'Old name'), laser)).toBe('HP LaserJet M404 (Print Better)')
     expect(defaultPrinterName(report('pb_pr_1', 'Old name'), undefined)).toBe('Old name (Print Better)')
     expect(defaultPrinterName(report('Office_Laser', 'Office laser'), laser)).toBe('Office laser')
-    expect(defaultPrinterName(report('Office_Laser'), undefined)).toBe('Office_Laser')
+    expect(defaultPrinterName(report('Office_Laser'), undefined)).toBe('Office Laser')
     expect(defaultPrinterName(report(null), undefined)).toBeNull()
   })
 })

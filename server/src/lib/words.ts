@@ -158,7 +158,7 @@ export function defaultPrinterName(report: SystemPrinters, printer: Pick<Printer
   const queue = report.defaultQueue
   if (!queue) return null
   const ours = queue.startsWith('pb_')
-  const name = (ours ? printer?.name : undefined) ?? report.defaultName ?? printer?.name ?? queue
+  const name = (ours ? printer?.name : undefined) ?? report.defaultName ?? printer?.name ?? queue.replaceAll('_', ' ')
   return ours ? `${name} (Print Better)` : name
 }
 
