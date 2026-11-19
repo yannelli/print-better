@@ -60,7 +60,7 @@ Usage by **member, group, device, printer, cost center, or source** for any rang
 
 ## Alerts
 
-- An email at **80%** and at **100%** of a limit or budget. A limit that counts one person (each member, a member, or each member of a group) emails that person, and every limit and budget emails the admin recipients. Each alert goes out at most once per threshold, per count, per cycle.
+- An email at **80%** and at **100%** of a limit or budget. A limit that counts 1 person (each member, a member, or each member of a group) emails that person, and every limit and budget emails the admin recipients. Each alert goes out at most once per threshold, per count, per cycle.
 - Counts are checked when a job is queued, with its estimate, and again when its printer reports what it printed.
 - While personal alerts are on, people also see an alert on Home when they are at or over 80% of a limit.
 - Admins choose whether personal and admin alerts go out, and who gets admin alerts (default: every owner and admin).
