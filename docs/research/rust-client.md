@@ -1,7 +1,12 @@
 # Print Better Rust client: verified research (2026-11-18)
 
-Host: macOS arm64, rustc 1.97.1, zig 0.17.0, cargo-zigbuild 0.24.0 (latest 0.24.1), no cargo-xwin. Nothing installed or compiled; code samples are NOT compiled.
-UNVERIFIED = not confirmed from a primary source today. "Weight" = crate counts from my own crates.io-metadata resolver (newest compatible versions, target cfg evaluated, includes proc-macro/build crates), not `cargo tree`.
+The Print Better client is one Rust binary. It connects to the server over WSS, finds printers over mDNS and USB, rasterizes PDFs when a printer needs pixels, shows a tray icon, and has to build from one macOS arm64 machine for macOS, Windows, Linux and Raspberry Pi. These notes pick the crates and platform APIs for that and record what each one costs in dependencies.
+
+Setup and markers:
+- Host: macOS arm64, rustc 1.97.1, zig 0.17.0, cargo-zigbuild 0.24.0 (latest 0.24.1), no cargo-xwin.
+- Nothing was installed or compiled. The code samples are NOT compiled.
+- UNVERIFIED: not confirmed from a primary source today.
+- "Weight": crate counts from my own crates.io-metadata resolver (newest compatible versions, target cfg evaluated, includes proc-macro/build crates), not `cargo tree`.
 
 ## 1. Crates
 
@@ -152,6 +157,8 @@ app.run(); // blocks main thread; keep `item` alive until here
 
 ## 3. Windows printing (windows-sys 0.61.2)
 
+Windows offers two ways to print. The client can send the printer's own bytes to the spooler with the RAW datatype, or draw a bitmap onto a GDI device context and let the driver convert it.
+
 Source: windows-sys-0.61.2 src/Windows/Win32/{Graphics/Printing,Graphics/Gdi,Storage/Xps,System/Registry}/mod.rs; MS Learn EnumPrinters, PRINTER_INFO_2, CreateDCW, Run and RunOnce Registry Keys.
 ```toml
 [target.'cfg(windows)'.dependencies]
@@ -182,6 +189,8 @@ Source: cargo-zigbuild 0.24.1 tarball (src/zig/*.rs, README), https://github.com
 - musl gotcha: musl has no NSS, so nss-mdns `.local` names will not resolve through getaddrinfo in static binaries (UNVERIFIED: the musl functional-differences wiki page does not state it). Use mdns-sd resolved IPs. musl DNS-over-TCP needs musl >=1.2.4 (Rust targets ship 1.2.5, verified).
 
 ## 5. macOS: Local Network privacy, entitlements, LaunchAgent
+
+macOS asks the user before a process can use the local network, unless the process is exempt. Whether the client triggers that prompt depends on how it is launched.
 
 Source: Apple TN3179 (https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy, via the tutorials JSON endpoint), Apple DTS thread https://developer.apple.com/forums/thread/763753, https://eclecticlight.co/2026/01/14/how-local-network-privacy-could-affect-you/, Apple Hardened Runtime + entitlement pages, launchd.plist(5), SMAppService docs.
 - Needs local network access (TN3179): outgoing TCP connect, UDP send (unicast, multicast, broadcast), connecting a UDP socket, receiving UDP multicast/broadcast, resolving `.local`, all Bonjour ops. Not needed: listen/accept TCP, receive UDP unicast. Checked in the kernel stack, so it covers BSD sockets, i.e. mdns-sd (multicast 224.0.0.251) and raw 9100/IPP connects. No multicast entitlement on macOS (iOS only).
