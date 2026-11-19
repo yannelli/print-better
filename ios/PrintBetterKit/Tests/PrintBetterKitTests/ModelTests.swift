@@ -20,7 +20,7 @@ let jobJSON = """
     {"job":{"id":"job_1","workspaceId":"ws_1","printerId":"pr_07","printerName":"Upstairs laser","userId":null,"source":"device",
     "title":"Boarding pass","fileName":"Boarding pass.pdf","contentType":"application/pdf","size":1234,"options":{"copies":2},
     "status":"completed","statusMessage":"Toner is low","pages":1,"attempts":1,"hasFile":true,"createdAt":1763560000000,
-    "updatedAt":1763560005000,"completedAt":1763560005000,"sourceClientId":"c_1","sourceClientName":"Sam's iPhone","requestedBy":null}}
+    "updatedAt":1763560005000,"completedAt":1763560005000,"sourceClientId":"c_1","sourceClientName":"Front Desk iPhone","requestedBy":null}}
     """
 
 struct ModelTests {
@@ -58,9 +58,9 @@ struct ModelTests {
     }
 
     @Test func describesTheDeviceAsAnIPhone() throws {
-        let data = try JSONEncoder().encode(DeviceInfo(name: "  Sam's iPhone ", version: "1.0", token: "pbe_1"))
+        let data = try JSONEncoder().encode(DeviceInfo(name: "  Front Desk iPhone ", version: "1.0", token: "pbe_1"))
         let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: String])
-        #expect(object == ["hostname": "Sam's iPhone", "name": "Sam's iPhone", "os": "ios", "arch": "arm64", "version": "1.0", "token": "pbe_1"])
+        #expect(object == ["hostname": "Front Desk iPhone", "name": "Front Desk iPhone", "os": "ios", "arch": "arm64", "version": "1.0", "token": "pbe_1"])
         let blank = try JSONEncoder().encode(DeviceInfo(name: " ", version: "1.0"))
         let fallback = try #require(JSONSerialization.jsonObject(with: blank) as? [String: String])
         #expect(fallback["hostname"] == "iPhone")

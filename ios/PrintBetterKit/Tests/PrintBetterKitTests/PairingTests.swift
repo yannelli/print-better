@@ -25,7 +25,7 @@ struct PairingTests {
     let code = DeviceCode(
         deviceCode: "pbd_x", userCode: "BCDF-GHJK", verificationUri: "https://your-print-better.example/device",
         verificationUriComplete: "https://your-print-better.example/device?code=BCDF-GHJK", interval: 5, expiresIn: 600)
-    let issued = IssuedDevice(clientId: "c_1", workspaceId: "w_1", name: "Sam's iPhone", token: "pbc_new")
+    let issued = IssuedDevice(clientId: "c_1", workspaceId: "w_1", name: "Front Desk iPhone", token: "pbc_new")
 
     static func refusal(_ code: String, status: Int = 400) -> Result<IssuedDevice, any Error> {
         .failure(PrintBetterError.server(status: status, code: code, message: code))
