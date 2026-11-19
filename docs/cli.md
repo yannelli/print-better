@@ -37,13 +37,14 @@ macOS and Linux devices update themselves from the server they are paired with (
 - macOS system install (root LaunchDaemon, `/Applications/Print Better.app`): the pkg must pass `pkgutil --check-signature` with a Developer ID Installer certificate from the running app's own team; `installer -pkg … -target /` runs it and its postinstall reloads the service.
 - macOS per-user install: the zip is unpacked next to the app, must pass `codesign --verify --deep --strict` with the same team ID, and is swapped in atomically before a restart.
 - Any failure leaves the current install untouched and shows on the status page, in `printbetter status`, and in `printbetter doctor`. Windows does not update itself yet; re-run the install command.
-- The stock Linux system unit runs as `printbetter` and can't replace `/usr/local/bin/printbetter`; there `sudo printbetter update` does the swap as root and restarts the service.
+- Linux machine-wide service: the daemon runs as `printbetter` and can't write `/usr/local/bin/printbetter`, so it only creates `/var/lib/printbetter/update-request` (its own state folder). `printbetter-update.path` then starts `printbetter-update.service` as root (`printbetter update-helper`), which fetches the release itself with the device credentials, verifies size and SHA-256, swaps the binary, records the outcome in `/var/lib/printbetter-update/result.json` (the daemon reads it for status), and runs `systemctl try-restart printbetter.service`. `sudo printbetter update` runs the same routine.
+- Existing Linux system installs get the helper once 0.1.2 or later is installed and `sudo printbetter service install --system` runs (re-running the install one-liner does this). Until then `printbetter doctor` reports that updates need it.
 
 ## Service install
 | OS | user mode (default) | `--system` |
 |---|---|---|
 | macOS | LaunchAgent `~/Library/LaunchAgents/dev.yannelli.printbetter.plist` (RunAtLoad, KeepAlive on crash) running `<binary> run` | LaunchDaemon, implies `--no-tray` |
-| Linux | `systemd --user` unit `printbetter.service` (hint `loginctl enable-linger` for headless) | `/etc/systemd/system/printbetter.service`, system user `printbetter` in group `lp`, udev rule `/etc/udev/rules.d/60-printbetter.rules` for USB printer-class access, implies `--no-tray` |
+| Linux | `systemd --user` unit `printbetter.service` (hint `loginctl enable-linger` for headless) | `/etc/systemd/system/printbetter.service`, system user `printbetter` in group `lp`, udev rule `/etc/udev/rules.d/60-printbetter.rules` for USB printer-class access, root update helper `printbetter-update.service` + `printbetter-update.path` (see Updates), implies `--no-tray` |
 | Windows | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\PrintBetter` → `"<exe>" run` | scheduled task at startup as SYSTEM, implies `--no-tray` |
 
 The Windows exe uses the GUI subsystem and attaches to the parent console for CLI output, so login autostart never flashes a console window.

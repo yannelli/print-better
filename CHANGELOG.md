@@ -9,6 +9,7 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 ### Added
 
 - **updates:** Macs and Linux devices can install new client versions on their own (**Install updates automatically** in device settings), and the Devices page shows when an update is available, with an **Update now** button.
+- **updates:** Linux machine-wide installs update unattended through a small root helper (`printbetter-update.path` and `printbetter-update.service`). Existing installs get it by re-running the install command or `sudo printbetter service install --system`.
 
 ### Fixed
 
