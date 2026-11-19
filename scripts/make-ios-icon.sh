@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Regenerates the iPhone app icon PNG from ios/PrintBetter/AppIcon.svg (macOS only; needs swift + sips).
+# Renders the iPhone app icon from ios/PrintBetter/AppIcon.svg and copies the brand mark into the app (macOS only).
 set -euo pipefail
 . "$(dirname "$0")/lib/common.sh"
 
@@ -13,3 +13,7 @@ swiftc -O -o "$work/render" "$ROOT_DIR/scripts/macos/render-svg.swift"
 sips -s format jpeg -s formatOptions 100 "$work/icon.png" --out "$work/icon.jpg" >/dev/null
 sips -s format png "$work/icon.jpg" --out "$out" >/dev/null
 say "wrote $out"
+mark="$ROOT_DIR/ios/PrintBetter/Assets.xcassets/BrandMark.imageset"
+cp "$ROOT_DIR/docs/assets/print-better-logo.svg" "$mark/BrandMark.svg"
+cp "$ROOT_DIR/docs/assets/print-better-logo-dark.svg" "$mark/BrandMark-dark.svg"
+say "copied the brand mark into $mark"

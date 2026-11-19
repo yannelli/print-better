@@ -7,7 +7,7 @@ scripts/build-ios.sh                                  # generate the project, bu
 scripts/build-ios.sh test                             # also run the PrintBetterKit and app unit tests
 SIMULATOR="iPad Air 11-inch (M4)" scripts/build-ios.sh
 scripts/release-ios.sh                                # signed archive and IPA in build/ios/release/
-scripts/make-ios-icon.sh                              # re-renders the app icon from ios/PrintBetter/AppIcon.svg
+scripts/make-ios-icon.sh                              # re-renders the app icon, copies the brand mark from docs/assets
 ```
 
 The app version comes from `client/Cargo.toml`, like the other clients.

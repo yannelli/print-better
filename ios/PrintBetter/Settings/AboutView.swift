@@ -6,12 +6,7 @@ struct AboutView: View {
         List {
             Section {
                 VStack(spacing: 8) {
-                    Image(systemName: "printer.fill")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.tint)
-                        .frame(width: 72, height: 72)
-                        .glassEffect(in: .circle)
-                        .accessibilityHidden(true)
+                    BrandMark(size: 72)
                     Text("Print Better").font(.title2.bold())
                     Text("Version \(AppConfig.version) (\(AppConfig.build))").foregroundStyle(.secondary)
                 }

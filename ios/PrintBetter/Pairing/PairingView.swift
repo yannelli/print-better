@@ -94,12 +94,7 @@ struct PairingView: View {
 private struct WelcomeHeader: View {
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: "printer.fill")
-                .font(.system(size: 44))
-                .foregroundStyle(.tint)
-                .frame(width: 88, height: 88)
-                .glassEffect(.regular.tint(.accentColor.opacity(0.15)), in: .circle)
-                .accessibilityHidden(true)
+            BrandMark(size: 88)
             Text("Print Better").font(.largeTitle.bold())
             Text("Connect this iPhone to your Print Better server to print to your workspace's printers from anywhere.")
                 .multilineTextAlignment(.center)
