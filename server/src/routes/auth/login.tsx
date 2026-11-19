@@ -6,7 +6,7 @@ import { Spinner } from '@/components/ui/spinner'
 import { safeNext, useAfterSignIn, useInstance, useSession } from '@/hooks/auth'
 import { authApi } from '@/lib/api/auth'
 import { FullPageLoading } from '@/routes/guards'
-import { AuthLayout, FormError, linkClass } from './auth-layout'
+import { AuthLayout, DocsLink, FormError, linkClass } from './auth-layout'
 import { PasswordField, TextField, useSubmit } from './fields'
 import { OrDivider, SsoButtons } from './sso-buttons'
 import { usePasskeyLogin } from './use-passkey-login'
@@ -48,6 +48,7 @@ function LoginForm({ next, ssoError }: { next: string | null; ssoError: string |
               </Link>
             </span>
           )}
+          <DocsLink />
         </>
       }
     >
