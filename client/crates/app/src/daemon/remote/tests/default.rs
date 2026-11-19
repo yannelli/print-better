@@ -2,7 +2,7 @@ use super::{FakeCups, printer};
 use crate::daemon::remote::cups::{self, Queue};
 use crate::daemon::remote::default::{Outcome, apply, target};
 use crate::daemon::remote::report::{Survey, survey};
-use crate::daemon::remote::system::{device_uuid, native_queue, parse_default, parse_devices};
+use crate::daemon::remote::system::{device_uuid, native_queue, parse_default, parse_description, parse_devices};
 use crate::proto::{DefaultPrinterProblem as Problem, DirectPrinter, SystemPrinter, SystemPrinterState as State};
 use crate::store::AppliedDefault;
 
@@ -32,6 +32,9 @@ fn lpstat_output_is_read_in_any_language() {
     assert_eq!(device_uuid(&devices[0].1).as_deref(), Some(UUID));
     assert_eq!(device_uuid("ipp://printer.local:631/ipp/print?uuid=urn:uuid:ABC&x=1").as_deref(), Some("abc"));
     assert_eq!(device_uuid("usb://Brother/HL?serial=1"), None);
+    let long = "printer Office_Laser is idle.  enabled since Thu\n\tForm mounted:\n\tDescription: Office laser\n\tAlerts: none\n";
+    assert_eq!(parse_description(long).as_deref(), Some("Office laser"));
+    assert_eq!(parse_description("printer x is idle.\n\tDescription: \n"), None);
 }
 
 #[test]
@@ -47,7 +50,7 @@ fn the_native_queue_is_matched_by_uuid_and_never_one_of_ours() {
 fn a_target_is_a_queue_or_the_reason_there_is_none() {
     let at = |state: State, queue: Option<&str>, installed: Option<&str>| {
         let (queue, installed) = (queue.map(String::from), installed.map(String::from));
-        [SystemPrinter { id: "pr_1".into(), state, queue, installed, direct: true }]
+        [SystemPrinter { id: "pr_1".into(), state, queue, installed, installed_name: None, direct: true }]
     };
     assert_eq!(target(&at(State::Added, Some("pb_pr_1"), Some("Office_Laser")), "pr_1"), Ok("pb_pr_1".into()), "ours first");
     assert_eq!(target(&at(State::Hidden, None, Some("Office_Laser")), "pr_1"), Ok("Office_Laser".into()));
@@ -139,13 +142,14 @@ fn the_report_names_each_printers_place_and_the_default() {
     let cups = fake(None, &["pb_pr_1", "pb_pr_2"]);
     cups.devices.lock().unwrap().push(("Office_Laser".into(), format!("dnssd://Laser._ipp._tcp.local./?uuid={UUID}")));
     *cups.last_used.lock().unwrap() = true;
+    cups.descriptions.lock().unwrap().extend([("Office_Laser".into(), "Office laser".into()), ("pb_pr_2".into(), "Seen here too".into())]);
     let found = survey_of(&cups, Some("pr_2"));
-    let states: Vec<_> = found.report.printers.iter().map(|p| (p.id.as_str(), p.state, p.queue.as_deref(), p.installed.as_deref(), p.direct)).collect();
+    let states: Vec<_> = found.report.printers.iter().map(|p| (p.id.as_str(), p.state, p.queue.as_deref(), p.installed_name.as_deref(), p.direct)).collect();
     assert_eq!(
         states,
         [
             ("pr_1", State::Added, Some(cups::queue_name("pr_1").as_str()), None, false),
-            ("pr_2", State::Added, Some("pb_pr_2"), Some("Office_Laser"), true),
+            ("pr_2", State::Added, Some("pb_pr_2"), Some("Office laser"), true),
             ("pr_3", State::Hidden, None, None, false),
             ("pr_4", State::Waiting, None, None, false),
         ],
@@ -153,6 +157,13 @@ fn the_report_names_each_printers_place_and_the_default() {
     );
     let r = &found.report;
     assert_eq!((r.default_queue.as_deref(), r.default_printer_id.as_deref(), r.last_used), (Some("pb_pr_2"), Some("pr_2"), true));
+    assert_eq!(r.default_name.as_deref(), Some("Seen here too"));
     assert_eq!(survey_of(&cups, Some("pr_3")).report.default_problem, Some(Problem::Hidden));
+    *cups.default.lock().unwrap() = Some("Office_Laser".into());
+    let native = survey_of(&cups, None).report;
+    assert_eq!((native.default_printer_id.as_deref(), native.default_name.as_deref()), (Some("pr_2"), Some("Office laser")), "its installed copy is still that printer");
+    cups.descriptions.lock().unwrap().push(("Garage".into(), "Garage inkjet".into()));
+    *cups.default.lock().unwrap() = Some("Garage".into());
+    assert_eq!(survey_of(&cups, None).report.default_name.as_deref(), Some("Garage inkjet"));
     assert_eq!(survey_of(&cups, Some("pr_9")).report.default_problem, Some(Problem::Unavailable));
 }

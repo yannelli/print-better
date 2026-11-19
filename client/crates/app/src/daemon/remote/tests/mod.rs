@@ -93,6 +93,8 @@ pub struct FakeCups {
     /// Queues set up outside Print Better, with their device URIs.
     pub devices: Mutex<Vec<(String, String)>>,
     pub last_used: Mutex<bool>,
+    /// Queue descriptions, as `lpstat -l -p` reports them.
+    pub descriptions: Mutex<Vec<(String, String)>>,
 }
 
 impl FakeCups {
@@ -139,6 +141,10 @@ impl Cups for FakeCups {
 
     fn devices(&self) -> Vec<(String, String)> {
         self.devices.lock().unwrap().clone()
+    }
+
+    fn description(&self, queue: &str) -> Option<String> {
+        self.descriptions.lock().unwrap().iter().find(|(q, _)| q == queue).map(|(_, d)| d.clone())
     }
 
     fn last_printer_used(&self) -> bool {

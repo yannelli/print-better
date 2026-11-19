@@ -4,6 +4,10 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
+### Changed
+
+- **remote printers:** a computer's **Printers on this computer** section names printers the way its print window does ("In the print window as “Upstairs laser”", "Right now it's HP LaserJet M404 (Print Better)") instead of by CUPS queue; the `pb_` queue id is a small detail under each printer. Devices report the descriptions of directly installed queues and of the default printer (`installedName`, `defaultName`).
+
 ## [0.1.3] - 2026-11-19
 
 ### Added

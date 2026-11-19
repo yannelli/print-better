@@ -4,11 +4,13 @@
 use std::path::Path;
 use std::process::{Command, Stdio};
 
-/// Runs `lpstat <flag>` without macOS "last used" defaults, in the C locale where CUPS honors it.
-pub fn lpstat(path: &Path, flag: &str) -> Result<String, String> {
+/// Runs lpstat without macOS "last used" defaults, in the C locale (`SOFTWARE` makes macOS CUPS honor `LANG`).
+pub fn lpstat(path: &Path, args: &[&str]) -> Result<String, String> {
     let out = Command::new(path)
-        .arg(flag)
+        .args(args)
         .env("LC_ALL", "C")
+        .env("LANG", "C")
+        .env("SOFTWARE", "1")
         .env("CUPS_DISABLE_APPLE_DEFAULT", "1")
         .env("CUPS_NO_APPLE_DEFAULT", "1")
         .env_remove("LPDEST")
@@ -27,6 +29,12 @@ pub fn lpstat(path: &Path, flag: &str) -> Result<String, String> {
 pub fn parse_default(out: &str) -> Option<String> {
     let name = out.lines().find_map(|l| l.split_once(": "))?.1.trim();
     name.split('/').next().filter(|n| !n.is_empty()).map(String::from)
+}
+
+/// The "Description:" line of `lpstat -l -p NAME`: the name people see in print windows.
+pub fn parse_description(out: &str) -> Option<String> {
+    let line = out.lines().map(str::trim).find_map(|l| l.strip_prefix("Description:"))?;
+    Some(line.trim().to_string()).filter(|d| !d.is_empty())
 }
 
 /// "device for NAME: URI" lines; queue names have no spaces, so NAME is the last word before ": ".

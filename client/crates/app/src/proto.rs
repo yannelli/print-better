@@ -112,12 +112,14 @@ pub enum SystemPrinterState {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct SystemPrinter {
     pub id: String,
     pub state: SystemPrinterState,
     pub queue: Option<String>,
-    /// A queue for the same printer set up here without Print Better.
+    /// A queue for the same printer set up here without Print Better, and its description.
     pub installed: Option<String>,
+    pub installed_name: Option<String>,
     pub direct: bool,
 }
 
@@ -138,6 +140,8 @@ pub struct SystemPrinters {
     pub error: Option<String>,
     pub printers: Vec<SystemPrinter>,
     pub default_queue: Option<String>,
+    /// The default queue's description: what print windows call it.
+    pub default_name: Option<String>,
     pub default_printer_id: Option<String>,
     pub default_problem: Option<DefaultPrinterProblem>,
     /// macOS "Default printer: Last Printer Used" is on for the signed-in user.

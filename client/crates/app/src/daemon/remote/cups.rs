@@ -121,6 +121,8 @@ pub trait Cups: Send + Sync {
     fn default_queue(&self) -> Result<Option<String>, String>;
     /// Every queue with its device URI.
     fn devices(&self) -> Vec<(String, String)>;
+    /// The queue's description (printer-info), the name print windows show.
+    fn description(&self, queue: &str) -> Option<String>;
     /// macOS "Default printer: Last Printer Used" is on for the signed-in user.
     fn last_printer_used(&self) -> bool;
 }
@@ -272,11 +274,15 @@ impl Cups for SystemCups {
     }
 
     fn default_queue(&self) -> Result<Option<String>, String> {
-        system::lpstat(&self.lpstat, "-d").map(|out| system::parse_default(&out))
+        system::lpstat(&self.lpstat, &["-d"]).map(|out| system::parse_default(&out))
     }
 
     fn devices(&self) -> Vec<(String, String)> {
-        system::lpstat(&self.lpstat, "-v").map(|out| system::parse_devices(&out)).unwrap_or_default()
+        system::lpstat(&self.lpstat, &["-v"]).map(|out| system::parse_devices(&out)).unwrap_or_default()
+    }
+
+    fn description(&self, queue: &str) -> Option<String> {
+        system::lpstat(&self.lpstat, &["-l", "-p", queue]).ok().and_then(|out| system::parse_description(&out))
     }
 
     fn last_printer_used(&self) -> bool {

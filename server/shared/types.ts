@@ -118,8 +118,9 @@ export interface SystemPrinter {
   state: SystemPrinterState
   /** The `pb_` queue, when added. */
   queue: string | null
-  /** A queue for the same printer set up on this computer without Print Better (matched by uuid). */
+  /** A queue for the same printer set up on this computer without Print Better (matched by uuid), and its description. */
   installed: string | null
+  installedName: string | null
   /** This computer finds the printer on its own network too. */
   direct: boolean
 }
@@ -136,6 +137,8 @@ export interface SystemPrinters {
   printers: SystemPrinter[]
   /** The computer's default print queue, and the workspace printer behind it when there is one. */
   defaultQueue: string | null
+  /** The default queue's description: what print windows call it. */
+  defaultName: string | null
   defaultPrinterId: string | null
   defaultProblem: DefaultPrinterProblem | null
   /** macOS "Default printer: Last Printer Used": the print window starts on the last printer used instead. */

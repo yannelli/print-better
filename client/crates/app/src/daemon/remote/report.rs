@@ -28,18 +28,20 @@ pub struct Found {
 /// Runs the lpstat and lpadmin calls behind the report; blocking.
 pub fn survey(cups: &dyn Cups, s: Survey) -> Found {
     let devices = if s.snapshot.iter().any(|p| p.uuid.is_some()) { cups.devices() } else { Vec::new() };
-    let printers = printers(&s, &devices);
+    let mut printers = printers(&s, &devices);
     let target = s.want.as_deref().map_or(Err(DefaultPrinterProblem::Unavailable), |id| default::target(&printers, id));
     let outcome = default::apply(cups, s.want.as_deref(), target, s.applied);
-    let default_printer_id = outcome
-        .current
-        .as_ref()
-        .and_then(|queue| printers.iter().find(|p| p.queue.as_ref() == Some(queue)))
-        .map(|p| p.id.clone());
+    for p in &mut printers {
+        p.installed_name = p.installed.as_deref().and_then(|q| cups.description(q));
+    }
+    let behind = |queue: &String| printers.iter().find(|p| p.queue.as_ref() == Some(queue) || p.installed.as_ref() == Some(queue));
+    let default_printer_id = outcome.current.as_ref().and_then(behind).map(|p| p.id.clone());
+    let default_name = outcome.current.as_deref().and_then(|q| cups.description(q));
     let report = SystemPrinters {
         error: outcome.error,
         printers,
         default_queue: outcome.current,
+        default_name,
         default_printer_id,
         default_problem: outcome.problem,
         last_used: cups.last_printer_used(),
@@ -64,7 +66,7 @@ fn printers(s: &Survey, devices: &[(String, String)]) -> Vec<SystemPrinter> {
         };
         let queue = queue.filter(|_| state == State::Added);
         let installed = system::native_queue(devices, p.uuid.as_deref());
-        SystemPrinter { id: p.id.clone(), state, queue, installed, direct: direct.contains(p.id.as_str()) }
+        SystemPrinter { id: p.id.clone(), state, queue, installed, installed_name: None, direct: direct.contains(p.id.as_str()) }
     });
     printers.collect()
 }

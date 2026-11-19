@@ -9,17 +9,20 @@
         "state": "added",
         "queue": "pb_pr_07",
         "installed": "Office_Laser",
-        "direct": true
+        "direct": true,
+        "installedName": "Office laser"
       },
       {
         "id": "pr_08",
         "state": "hidden",
         "queue": null,
         "installed": null,
-        "direct": false
+        "direct": false,
+        "installedName": null
       }
     ],
     "defaultQueue": "pb_pr_07",
+    "defaultName": "Office laser",
     "defaultPrinterId": "pr_07",
     "defaultProblem": "waiting",
     "lastUsed": true

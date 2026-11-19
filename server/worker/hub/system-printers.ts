@@ -13,7 +13,7 @@ const text = (v: unknown, max: number): string | null => (typeof v === 'string' 
 function sanitizePrinter(v: unknown): SystemPrinter | null {
   if (!isObj(v) || typeof v.id !== 'string' || v.id === '' || v.id.length > 64) return null
   if (!STATES.includes(v.state as SystemPrinterState)) return null
-  return { id: v.id, state: v.state as SystemPrinterState, queue: text(v.queue, 127), installed: text(v.installed, 127), direct: v.direct === true }
+  return { id: v.id, state: v.state as SystemPrinterState, queue: text(v.queue, 127), installed: text(v.installed, 127), installedName: text(v.installedName, 127), direct: v.direct === true }
 }
 
 /** Device reports are only loosely trusted: anything malformed is dropped, text is capped. */
@@ -25,6 +25,7 @@ export function sanitizeSystemPrinters(v: unknown): SystemPrinters | null {
     error: text(v.error, 500),
     printers: printers.filter((p): p is SystemPrinter => p !== null),
     defaultQueue: text(v.defaultQueue, 127),
+    defaultName: text(v.defaultName, 127),
     defaultPrinterId: text(v.defaultPrinterId, 64),
     defaultProblem: PROBLEMS.includes(v.defaultProblem as DefaultPrinterProblem) ? (v.defaultProblem as DefaultPrinterProblem) : null,
     lastUsed: v.lastUsed === true,

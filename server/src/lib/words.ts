@@ -1,5 +1,5 @@
 // Plain-language wording for printer, job and device states. Keep the UI's vocabulary here.
-import type { Client, DefaultPrinterProblem, Job, JobStatus, Printer, Sides, SystemPrinter } from '@shared/types'
+import type { Client, DefaultPrinterProblem, Job, JobStatus, Printer, Sides, SystemPrinter, SystemPrinters } from '@shared/types'
 
 export type Tone = 'ok' | 'warn' | 'bad' | 'info' | 'neutral'
 
@@ -134,16 +134,16 @@ export const printerSettingsPlace = (client: Pick<Client, 'os'>) =>
   client.os === 'macos' ? 'System Settings > Printers & Scanners' : "this computer's printer settings"
 
 /** How a workspace printer shows up on a desktop, from the device's report (undefined: not reported yet). */
-export function systemPrinterStatus(printer: Omit<SystemPrinter, 'id'> | undefined, where: string): StatusWords {
+export function systemPrinterStatus(printer: Omit<SystemPrinter, 'id'> | undefined, name: string, where: string): StatusWords {
   const also = printer?.installed
-    ? `Also installed directly as ${printer.installed.replaceAll('_', ' ')}`
+    ? `Also installed directly as “${printer.installedName ?? printer.installed.replaceAll('_', ' ')}”`
     : printer?.direct
       ? `${capitalized(where)} also finds it on its network`
       : null
   const words = (label: string, tone: Tone, detail: string): StatusWords => ({ label, tone, detail: also ? `${detail}. ${also}` : detail })
   switch (printer?.state) {
     case 'added':
-      return words('Added', 'ok', `In the print window on ${where}`)
+      return words('Added', 'ok', `In the print window as “${name}”`)
     case 'hidden':
       return words('Hidden', 'neutral', `Print Better doesn't add it to ${where}`)
     case 'error':
@@ -151,6 +151,15 @@ export function systemPrinterStatus(printer: Omit<SystemPrinter, 'id'> | undefin
     default:
       return words('Adding', 'neutral', `Being added to ${where}`)
   }
+}
+
+/** A desktop's default printer as its print window names it (`printer`: the workspace printer behind it). */
+export function defaultPrinterName(report: SystemPrinters, printer: Pick<Printer, 'name'> | undefined): string | null {
+  const queue = report.defaultQueue
+  if (!queue) return null
+  const ours = queue.startsWith('pb_')
+  const name = (ours ? printer?.name : undefined) ?? report.defaultName ?? printer?.name ?? queue
+  return ours ? `${name} (Print Better)` : name
 }
 
 /** Why the chosen default printer is not the default yet. */

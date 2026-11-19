@@ -32,10 +32,11 @@ const REPORT: SystemPrinters = {
   active: true,
   error: null,
   printers: [
-    { id: 'pr_1', state: 'added', queue: 'pb_pr_1', installed: 'Office_Laser', direct: true },
-    { id: 'pr_2', state: 'hidden', queue: null, installed: null, direct: false },
+    { id: 'pr_1', state: 'added', queue: 'pb_pr_1', installed: 'Office_Laser', installedName: 'Office laser', direct: true },
+    { id: 'pr_2', state: 'hidden', queue: null, installed: null, installedName: null, direct: false },
   ],
   defaultQueue: 'pb_pr_1',
+  defaultName: 'Front desk laser',
   defaultPrinterId: 'pr_1',
   defaultProblem: null,
   lastUsed: true,
@@ -63,8 +64,9 @@ describe('system_printers', () => {
   it('drops malformed parts of a report and caps its text', async () => {
     const ws = await freshWorkspace(owner)
     const d = await desk(ws)
-    const printers = [{ id: 'pr_1', state: 'direct', queue: 'x' }, { id: '', state: 'added' }, { id: 'pr_3', state: 'hidden', queue: 7, installed: 'q'.repeat(200), direct: 'yes' }]
-    d.device.send({ type: 'system_printers', report: { active: 'yes', error: 'e'.repeat(900), printers, defaultProblem: 'odd', lastUsed: 1 } })
+    const printers = [{ id: 'pr_1', state: 'direct', queue: 'x' }, { id: '', state: 'added' }, { id: 'pr_3', state: 'hidden', queue: 7, installed: 'q'.repeat(200), installedName: 5, direct: 'yes' }]
+    const report = { active: 'yes', error: 'e'.repeat(900), printers, defaultName: 'n'.repeat(200), defaultProblem: 'odd', lastUsed: 1 }
+    d.device.send({ type: 'system_printers', report })
     const stored = await eventually(async () => {
       const report = (await clientOf(ws, d.clientId)).systemPrinters
       expect(report).not.toBeNull()
@@ -73,8 +75,9 @@ describe('system_printers', () => {
     expect(stored).toEqual({
       active: false,
       error: 'e'.repeat(500),
-      printers: [{ id: 'pr_3', state: 'hidden', queue: null, installed: 'q'.repeat(127), direct: false }],
+      printers: [{ id: 'pr_3', state: 'hidden', queue: null, installed: 'q'.repeat(127), installedName: null, direct: false }],
       defaultQueue: null,
+      defaultName: 'n'.repeat(127),
       defaultPrinterId: null,
       defaultProblem: null,
       lastUsed: false,

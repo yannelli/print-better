@@ -6,10 +6,12 @@ import {
   type Printer,
   type PrinterState,
   type SystemPrinter,
+  type SystemPrinters,
   type SystemPrinterState,
 } from '@shared/types'
 import {
   clientStatus,
+  defaultPrinterName,
   defaultPrinterProblem,
   deviceKind,
   jobOrigin,
@@ -158,20 +160,55 @@ describe('jobOrigin', () => {
 })
 
 describe('systemPrinterStatus', () => {
-  const at = (state: SystemPrinterState, extra: Partial<SystemPrinter> = {}) => ({ state, queue: null, installed: null, direct: false, ...extra })
+  const at = (state: SystemPrinterState, extra: Partial<SystemPrinter> = {}) => ({
+    state,
+    queue: null,
+    installed: null,
+    installedName: null,
+    direct: false,
+    ...extra,
+  })
 
-  it('says how a printer shows up on a desktop', () => {
-    expect(systemPrinterStatus(at('added', { queue: 'pb_pr_1' }), 'this Mac')).toEqual({ label: 'Added', tone: 'ok', detail: 'In the print window on this Mac' })
-    expect(systemPrinterStatus(at('hidden'), 'this computer')).toMatchObject({ label: 'Hidden', detail: "Print Better doesn't add it to this computer" })
-    expect(systemPrinterStatus(at('error'), 'this Mac').tone).toBe('bad')
-    expect(systemPrinterStatus(undefined, 'this Mac')).toMatchObject({ label: 'Adding', tone: 'neutral' })
+  it('says how a printer shows up on a desktop, by name', () => {
+    expect(systemPrinterStatus(at('added', { queue: 'pb_pr_1' }), 'Upstairs laser', 'this Mac')).toEqual({
+      label: 'Added',
+      tone: 'ok',
+      detail: 'In the print window as “Upstairs laser”',
+    })
+    expect(systemPrinterStatus(at('hidden'), 'Laser', 'this computer')).toMatchObject({ label: 'Hidden', detail: "Print Better doesn't add it to this computer" })
+    expect(systemPrinterStatus(at('error'), 'Laser', 'this Mac').tone).toBe('bad')
+    expect(systemPrinterStatus(undefined, 'Laser', 'this Mac')).toMatchObject({ label: 'Adding', tone: 'neutral' })
   })
 
   it('mentions a copy installed directly, or that the computer finds it itself', () => {
-    expect(systemPrinterStatus(at('added', { queue: 'pb_pr_1', installed: 'Office_Laser', direct: true }), 'this Mac').detail).toBe(
-      'In the print window on this Mac. Also installed directly as Office Laser',
+    const installed = at('added', { queue: 'pb_pr_1', installed: 'Office_Laser', installedName: 'Office laser 2', direct: true })
+    expect(systemPrinterStatus(installed, 'Laser', 'this Mac').detail).toBe('In the print window as “Laser”. Also installed directly as “Office laser 2”')
+    expect(systemPrinterStatus({ ...installed, installedName: null }, 'Laser', 'this Mac').detail).toMatch(/directly as “Office Laser”$/)
+    expect(systemPrinterStatus(at('hidden', { direct: true }), 'Laser', 'this Mac').detail).toBe(
+      "Print Better doesn't add it to this Mac. This Mac also finds it on its network",
     )
-    expect(systemPrinterStatus(at('hidden', { direct: true }), 'this Mac').detail).toBe("Print Better doesn't add it to this Mac. This Mac also finds it on its network")
+  })
+})
+
+describe('defaultPrinterName', () => {
+  const report = (defaultQueue: string | null, defaultName: string | null = null): SystemPrinters => ({
+    active: true,
+    error: null,
+    printers: [],
+    defaultQueue,
+    defaultName,
+    defaultPrinterId: null,
+    defaultProblem: null,
+    lastUsed: false,
+  })
+
+  it('names the default the way the print window does, by queue only when nothing else is known', () => {
+    const laser = { name: 'HP LaserJet M404' }
+    expect(defaultPrinterName(report('pb_pr_1', 'Old name'), laser)).toBe('HP LaserJet M404 (Print Better)')
+    expect(defaultPrinterName(report('pb_pr_1', 'Old name'), undefined)).toBe('Old name (Print Better)')
+    expect(defaultPrinterName(report('Office_Laser', 'Office laser'), laser)).toBe('Office laser')
+    expect(defaultPrinterName(report('Office_Laser'), undefined)).toBe('Office_Laser')
+    expect(defaultPrinterName(report(null), undefined)).toBeNull()
   })
 })
 

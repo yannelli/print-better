@@ -6,7 +6,7 @@ import { Switch } from '@/components/ui/switch'
 import { useUpdateClient } from '@/hooks/devices'
 import { useAddedPrinters } from '@/hooks/printers'
 import type { ClientSettingsPatch } from '@/lib/api/devices'
-import { defaultPrinterProblem, printerSettingsPlace, systemPrinterStatus, thisComputer } from '@/lib/words'
+import { defaultPrinterName, defaultPrinterProblem, printerSettingsPlace, systemPrinterStatus, thisComputer } from '@/lib/words'
 import { ChoiceSelect } from '../settings/fields'
 import { useShownSettings } from './device-settings'
 
@@ -31,21 +31,10 @@ interface DefaultProps {
 
 /** What the default printer row says under its label: today's default, then anything in the way. */
 function DefaultDescription({ client, report, printers, chosen }: DefaultProps) {
-  const where = thisComputer(client)
-  const current = printers.find((p) => p.id === report.defaultPrinterId)
+  const name = defaultPrinterName(report, printers.find((p) => p.id === report.defaultPrinterId))
   return (
     <span className="flex flex-col gap-1">
-      <span>
-        {current ? (
-          <>Right now it’s {current.name}.</>
-        ) : report.defaultQueue ? (
-          <>
-            Right now it’s <Mono>{report.defaultQueue}</Mono>, set up on {where}.
-          </>
-        ) : (
-          <>Right now {where} has no default printer.</>
-        )}
-      </span>
+      <span>{name ? `Right now it’s ${name}.` : `Right now ${thisComputer(client)} has no default printer.`}</span>
       {chosen && report.defaultProblem && <span>{defaultPrinterProblem(report.defaultProblem, chosen.name, client)}</span>}
       {chosen && client.os === 'macos' && report.lastUsed && (
         <span>
@@ -90,9 +79,21 @@ function Choices({ client, report, settings, save, canManage }: ChoicesProps) {
       {printers.map((p) => {
         const shown = !hidden.has(p.id)
         const reported = report.printers.find((s) => s.id === p.id)
-        const status = systemPrinterStatus(shown ? reported : { installed: null, direct: false, ...reported, state: 'hidden', queue: null }, where)
+        const status = systemPrinterStatus(
+          shown ? reported : { installed: null, installedName: null, direct: false, ...reported, state: 'hidden', queue: null },
+          p.name,
+          where,
+        )
+        const description = (
+          <span className="flex flex-col gap-0.5">
+            <span>
+              {status.detail}. On {p.clientName}.
+            </span>
+            {shown && reported?.queue && <Mono className="text-xs">{reported.queue}</Mono>}
+          </span>
+        )
         return (
-          <Row key={p.id} label={p.name} description={`${status.detail}. On ${p.clientName}.`} htmlFor={`${uid}-${p.id}`}>
+          <Row key={p.id} label={p.name} description={description} htmlFor={`${uid}-${p.id}`}>
             <span className="flex items-center gap-3">
               <StatusPill status={status} />
               <Switch id={`${uid}-${p.id}`} checked={shown} onCheckedChange={(on) => setShown(p.id, on)} disabled={!canManage} />
