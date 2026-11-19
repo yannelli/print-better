@@ -4,6 +4,7 @@
 mod image;
 mod media;
 mod pages;
+mod pdfcount;
 mod pdfwrite;
 mod place;
 mod plan;
@@ -104,6 +105,19 @@ pub(crate) struct Prepared {
     /// Pages in the payload, counting copies, when known.
     pub pages: Option<u32>,
     _scratch: Option<TempFile>,
+}
+
+/// Pages the printer receives before it applies copies and page ranges, when they can be known.
+pub(crate) async fn payload_pages(prepared: &Prepared) -> Option<u32> {
+    match prepared.format {
+        _ if prepared.pages.is_some() => prepared.pages,
+        DocFormat::Jpeg | DocFormat::Png => Some(1),
+        DocFormat::Pdf => {
+            let path = prepared.path.clone();
+            blocking(move || Ok(pdfcount::count(&path))).await.ok().flatten()
+        }
+        _ => None,
+    }
 }
 
 /// Runs `work` on the blocking pool; a panic inside (for example in the PDF renderer) becomes an error.

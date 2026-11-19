@@ -169,10 +169,10 @@ async fn purged_jobs_read_as_completed() {
     .await;
     for id in [1, 2] {
         let s = ipp.job_state(&printer.uri, id).await.unwrap();
-        assert_eq!((s.state, s.pages), (JobStateKind::Completed, None), "job {id}");
+        assert_eq!((s.state, s.pages()), (JobStateKind::Completed, None), "job {id}");
     }
     let s = ipp.job_state(&printer.uri, 3).await.unwrap();
-    assert_eq!((s.state, s.pages), (JobStateKind::Processing, Some(3)));
+    assert_eq!((s.state, s.pages()), (JobStateKind::Processing, Some(3)));
 }
 
 #[derive(Clone, Copy, Debug)]

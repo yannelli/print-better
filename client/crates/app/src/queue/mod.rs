@@ -28,6 +28,8 @@ const RESTARTED: &str =
 
 pub enum Outcome {
     Done(Option<u32>),
+    /// Finished, but some of it may not have printed; the warning is the job's message.
+    Warned(Option<u32>, String),
     Canceled,
     Failed(String),
     /// Transient: keep the job and try again with backoff.
@@ -192,6 +194,7 @@ impl Queue {
         }
         self.update(run, true, |rec| match outcome {
             Outcome::Done(pages) => rec.finish(JobStatus::Completed, None, pages, now),
+            Outcome::Warned(pages, warning) => rec.finish(JobStatus::Completed, Some(warning), pages, now),
             Outcome::Canceled => rec.finish(JobStatus::Canceled, None, None, now),
             Outcome::Retry(_) if canceled => rec.finish(JobStatus::Canceled, None, None, now),
             Outcome::Failed(message) => rec.finish(JobStatus::Failed, Some(message), None, now),

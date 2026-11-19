@@ -118,12 +118,7 @@ pub fn options(attrs: &[Attribute]) -> JobOptions {
     JobOptions {
         copies: get("copies").and_then(Attribute::int).and_then(|n| u32::try_from(n).ok()).filter(|&n| n >= 1),
         media: keyword("media").map(str::to_string),
-        sides: keyword("sides").and_then(|s| match s {
-            "one-sided" => Some(Sides::OneSided),
-            "two-sided-long-edge" => Some(Sides::TwoSidedLongEdge),
-            "two-sided-short-edge" => Some(Sides::TwoSidedShortEdge),
-            _ => None,
-        }),
+        sides: keyword("sides").and_then(sides),
         color_mode: keyword("print-color-mode").and_then(|s| match s {
             "auto" => Some(ColorMode::Auto),
             "color" => Some(ColorMode::Color),
@@ -183,10 +178,23 @@ pub fn state(job: &Group) -> Option<IppJobState> {
     let message = ["job-state-message", "job-printer-state-message"]
         .iter()
         .find_map(|name| job.get(name).and_then(Attribute::str).map(str::trim).filter(|m| !m.is_empty()));
-    let pages = ["job-pages-completed", "job-impressions-completed", "job-media-sheets-completed"]
-        .iter()
-        .find_map(|name| job.get(name).and_then(Attribute::int).and_then(|n| u32::try_from(n).ok()));
-    Some(IppJobState { state, reasons: reasons.unwrap_or_default(), message: message.map(str::to_string), pages })
+    let count = |name: &str| job.get(name).and_then(Attribute::int).and_then(|n| u32::try_from(n).ok());
+    Some(IppJobState {
+        state,
+        reasons: reasons.unwrap_or_default(),
+        message: message.map(str::to_string),
+        impressions: count("job-pages-completed").or_else(|| count("job-impressions-completed")),
+        sheets: count("job-media-sheets-completed"),
+    })
+}
+
+pub fn sides(keyword: &str) -> Option<Sides> {
+    match keyword {
+        "one-sided" => Some(Sides::OneSided),
+        "two-sided-long-edge" => Some(Sides::TwoSidedLongEdge),
+        "two-sided-short-edge" => Some(Sides::TwoSidedShortEdge),
+        _ => None,
+    }
 }
 
 pub fn sides_keyword(s: Sides) -> &'static str {

@@ -40,12 +40,21 @@ const JOB: &[(&str, &str)] = &[
     ("printer-stopped", "The printer is stopped and needs attention."),
 ];
 
+/// Reasons on a completed job that mean some of it may be missing, most specific first.
+const COMPLETED: &[(&str, &str)] = &[
+    ("document-format-error", "The printer couldn't read part of the document."),
+    ("document-unprintable-error", "The printer couldn't print part of the document."),
+    ("document-access-error", "The printer couldn't open part of the document."),
+    ("job-completed-with-errors", "The printer reported an error while printing."),
+    ("job-completed-with-warnings", "The printer reported a problem while printing."),
+];
+
 fn keyword(reason: &str) -> &str {
     ["-error", "-warning", "-report"].iter().find_map(|s| reason.strip_suffix(s)).unwrap_or(reason)
 }
 
 fn lookup(table: &[(&str, &'static str)], reasons: &[String]) -> Option<&'static str> {
-    table.iter().find(|(key, _)| reasons.iter().any(|r| keyword(r) == *key)).map(|(_, text)| *text)
+    table.iter().find(|(key, _)| reasons.iter().any(|r| r == key || keyword(r) == *key)).map(|(_, text)| *text)
 }
 
 fn own_words(message: Option<&String>) -> Option<String> {
@@ -82,4 +91,13 @@ pub(crate) fn aborted(job: &IppJobState) -> String {
         .map(str::to_string)
         .or_else(|| own_words(job.message.as_ref()))
         .unwrap_or_else(|| "The printer stopped the job before it finished.".into())
+}
+
+/// Why a job the printer calls completed may not have printed in full; None when nothing says so.
+pub(crate) fn completed(job: &IppJobState, shortfall: Option<String>) -> Option<String> {
+    match (shortfall, lookup(COMPLETED, &job.reasons)) {
+        (Some(short), Some(reported)) => Some(format!("{short} {reported}")),
+        (Some(short), None) => Some(format!("{short} It didn't report an error.")),
+        (None, reported) => reported.map(str::to_string),
+    }
 }

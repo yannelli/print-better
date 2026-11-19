@@ -2,7 +2,7 @@ use super::fixture;
 use crate::ipp::printer::{bare_uuid, parse, status, supply_kind};
 use crate::ipp::tags::group;
 use crate::ipp::{Attribute, Group, Message, Value};
-use crate::model::{PrinterState, Quality, Supply, SupplyKind};
+use crate::model::{PrinterState, Quality, Sides, Supply, SupplyKind};
 
 fn captured(name: &str) -> Group {
     let (msg, _) = Message::decode(&fixture(name)).unwrap();
@@ -138,4 +138,12 @@ fn identify_needs_the_operation_or_identify_actions() {
     assert!(!parse(&printer(vec![ops(&[0x02, 0x0B])])).identify_supported);
     let actions = Attribute::new("identify-actions-supported", Value::keyword("sound"));
     assert!(parse(&printer(vec![actions])).identify_supported);
+}
+
+#[test]
+fn sides_default_is_read() {
+    let sides = |k: &str| parse(&printer(vec![Attribute::new("sides-default", Value::keyword(k))])).sides_default;
+    assert_eq!(sides("two-sided-long-edge"), Some(Sides::TwoSidedLongEdge));
+    assert_eq!(sides("one-sided"), Some(Sides::OneSided));
+    assert_eq!(sides("two-sided-sideways"), None);
 }

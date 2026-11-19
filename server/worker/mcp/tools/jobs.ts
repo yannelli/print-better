@@ -9,7 +9,12 @@ const JOB_ID = text('Job id, from list_jobs or print')
 const jobIdOf = (args: Record<string, unknown>) => str(args, 'jobId', { max: 64 })
 const STATUSES = ['uploading', 'queued', 'dispatched', 'printing', 'completed', 'failed', 'canceled'] as const
 
-const describe = (j: Job) => `"${j.title}" on ${j.printerName ?? 'a removed printer'}: ${j.status}${j.statusMessage ? ` (${j.statusMessage})` : ''}`
+/** A completed job's message is a warning that some of it may not have printed. */
+function state(j: Job) {
+  if (!j.statusMessage) return j.status
+  return j.status === 'completed' ? `completed with a warning: ${j.statusMessage}` : `${j.status} (${j.statusMessage})`
+}
+const describe = (j: Job) => `"${j.title}" on ${j.printerName ?? 'a removed printer'}: ${state(j)}`
 
 export const jobTools: Tool[] = [
   {
