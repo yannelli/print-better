@@ -132,4 +132,27 @@ Printer access (docs/printer-access.md):
 | `revoke_printer_access` | write | Remove a grant |
 | `explain_printer_access` | read | Why a member, group, device or Everyone has their permissions on a printer |
 
+Print rules and limits, and Enterprise controls, share these (docs/usage.md):
+
+| Tool | Scope | Purpose |
+|---|---|---|
+| `get_prices` | read | Currency, time zone, default prices, and printers' own prices |
+| `set_prices` | write | Admins: change any of those; a printer set to `null` goes back to the default |
+| `preview_print_job` | print | What would happen to a job sent now: refused or not, changes, notes, pages, sheets, cost, and the limits it counts against |
+
+Print rules and limits (docs/print-policies.md):
+
+| Tool | Scope | Purpose |
+|---|---|---|
+| `list_print_rules` | read | Admins: rules, top to bottom |
+| `create_print_rule`, `update_print_rule`, `delete_print_rule` | write | Admins: add a rule at the bottom, change it, delete it |
+| `reorder_print_rules` | write | Admins: every rule id once, top to bottom |
+| `list_print_limits` | read | Admins: limits with this cycle's counts |
+| `create_print_limit`, `update_print_limit`, `delete_print_limit` | write | Admins: add, change or delete a limit |
+| `add_limit_allowance` | write | Admins: an extra amount for the current cycle, for one count |
+| `get_my_usage` | read | The limits that count your jobs, with what is left and when each starts over |
+| `get_usage` | read | Admins: every limit's counts, this cycle or the previous one |
+
+`print` and `print_test_page` are checked like any other job, and a refused job fails with the rule's or limit's message.
+
 Resources and prompts: none in phase 1.

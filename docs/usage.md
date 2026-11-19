@@ -1,17 +1,17 @@
-# Usage and job checks
+# Usage and Job Checks
 
 The shared foundation of [Print rules and limits](print-policies.md) and [Enterprise controls](enterprise.md): the check every job goes through before it is queued, page counting, usage, cycles, and prices. It is not an extension of its own. It works while **either** of them is active (`USAGE_EXTENSIONS` in `server/shared/usage.ts`) and does nothing while both are off.
 
-## Inactive means invisible
+## Inactive Means Invisible
 
-With both extensions off, a job takes exactly today's path: no page counting, no checks, no usage rows. Every response is byte for byte the same.
+With both extensions off, a job takes exactly today's path: no page counting, no checks, no usage rows. Every response is byte for byte the same. `server/test/usage-legacy.test.ts` traces every job path at the SQL level to prove it.
 
 - `Job` has four optional fields: `policy`, `held`, `costCenterId` and `usage`. Each has its own nullable column in `jobs`, and `toJob` adds a field only when its column is set. Jobs created while both are off never get them.
 - A job keeps what was recorded on it while an extension was on, like its status message. The web app shows these fields only while the extension that wrote them is active.
 - The status `held` exists only with Enterprise controls. Turning it off cancels held jobs.
 - Prices, the time zone, and usage history are kept while both are off.
 
-## The job check
+## The Job Check
 
 Every job is checked after printer access allowed it and before it is queued.
 
@@ -36,7 +36,7 @@ LAN sharing is never checked. Email to print checks each attachment as its own j
 
 Steps of an inactive extension are skipped. Each step sees the job as earlier steps left it. The usage estimate is worked out again after every step, so a limit sees the job a rule made two-sided.
 
-### What a check can do
+### What a Check Can Do
 
 - Change the job's options: two-sided, black and white, fewer copies.
 - Send it to another printer. Only an added printer where the sender has `print`.
@@ -50,7 +50,7 @@ A refusal is `403 policy_blocked` with the message, wherever the job came from. 
 
 Side effects (alert emails, approval emails, the `approval` event) run after the job is stored, never for previews or refusals.
 
-## Page counting
+## Page Counting
 
 The server counts pages from the stored document with `countPages` in `server/shared/pages/`. The same code runs in the browser for previews. It reads only the parts it needs through a `ByteSource`: R2 range reads, a buffer, or a browser `File`.
 
@@ -76,7 +76,7 @@ Options are the job's own over the printer's defaults, as the device applies the
 `usage_entries` has one row per job attempt: member, device, printer, cost center, source, and jobs, pages, sheets, color pages, and cost.
 
 - It is written with the estimate when the attempt is queued or held, and counts against limits and budgets right away.
-- When the attempt ends, it is settled. A completed job counts the pages the device reported, or the estimate when it reported none. A failed or canceled job counts the reported pages or 0, and 0 jobs. When the reported pages differ from the estimate, sheets and cost are worked out again from them. The job's `usage` follows, with `estimated: false`.
+- When the attempt ends, it is settled. A completed job counts the pages the device reported, or the estimate when it reported none. A failed or canceled job counts the reported pages or 0, and 0 jobs. When the reported pages differ from the estimate, sheets and cost are worked out again from them, at the prices of that moment. The job's `usage` follows, with `estimated: false`.
 - When the attempt was queued decides its cycle.
 - A retry is a new attempt and a new row.
 - The cron settles rows that are still estimates when their job has ended or is gone.
@@ -101,7 +101,7 @@ A cycle ends at the next one's first midnight. On DST change days a day lasts 23
 - Cost is printed pages times the page price, minus the discount for each sheet printed on both sides, never below 0.
 - Money is in micros, integer millionths of the currency: 0.025 is `25000`. Sums are exact.
 
-Members can read prices. Admins change them while either extension is active.
+Members can read prices, with only the printer prices of printers they can see. Admins change them under **Workspace settings > Prices** while either extension is active.
 
 ## API
 
@@ -126,14 +126,14 @@ Errors: `403 policy_blocked`. Audit: `prices.update`, `job.block`. Browser event
 
 MCP: `get_prices`, `set_prices`, and `preview_print_job`, listed while either extension is available on the instance.
 
-## For developers
+## For Developers
 
 Hook interfaces and registries are in `server/worker/extensions/hooks.ts`. The foundation's code lives in `server/worker/extensions/usage/` and `server/shared/pages/`.
 
 | Registry | Called from | Used for |
 |---|---|---|
 | `JOB_STEPS` | the job check, run by `queueJob`, `storeUpload`, `retryJob`, and the preview | The steps above, in `JobStepName` order |
-| `JOB_FINISH_HOOKS` | every place a job ends: `applyJobStatus` (hub), `cancelOwnedJob`, `failStaleJobs` (cron), `deletePrinter`, and Enterprise controls' own cancels | Settling usage, then retention |
+| `JOB_FINISH_HOOKS` | every place a job ends: `applyJobStatus` (hub), `cancelOwnedJob`, `failStaleJobs` (cron), `deletePrinter`, `deleteClient`, a refused upload in `storeUpload`, and Enterprise controls' own cancels | Settling usage, then retention |
 | `JOB_VIEW_HOOKS` | job responses (REST and MCP), browser events, emails | Hiding document names |
 | `EXTENSION_OFF_HOOKS` | `patchWorkspaceExtension` and `patchInstanceExtension`, whenever an extension stops applying | Canceling held jobs |
 | `CRON_HOOKS` | `runCron` | Settlement sweep, held job expiry, scheduled reports |
@@ -148,7 +148,7 @@ Tables, every row cascading on workspace delete:
 - `0009_print_policies.sql`: `print_rules`, `print_limits`, `limit_adjustments`.
 - `0010_enterprise.sql`: `cost_centers`, `cost_center_defaults`, `budgets`, `printer_controls`, `report_schedules`, `usage_alerts`. Enterprise settings live in `workspace_extensions.config`.
 
-### Held jobs in the core
+### Held Jobs in the Core
 
 - Devices are offered only `queued` jobs (`hub.dispatch`, `pendingOffers`, `stuckOffers`), and `failStaleJobs` names the statuses it fails, so held jobs are never sent or failed as stuck. Their expiry runs from `CRON_HOOKS`.
 - `held` outranks every device report in `applyJobStatus`, so a late report can't move a held job.
@@ -160,17 +160,18 @@ Tables, every row cascading on workspace delete:
 - `not_sent` in `client/crates/app/src/daemon/remote/sink.rs` shows a `403 policy_blocked` message as it is, like `printer_access_denied`.
 - `ipp_state` in `api.rs` treats `held` as the end of the local job: completed, with the server's message. The CUPS queue sends one job at a time, so a local job that waited would hold back every job behind it.
 
-### Web app
+### Web App
 
 `server/src/extensions/` gains two things. `ExtensionUi` takes the id `usage`, active while either extension is. `ExtensionUi.pages` adds routes under `/w/:ws`, each with an optional nav entry and a `visible` rule.
 
 | What | Registered by | Slot or route |
 |---|---|---|
-| Prices, currency, time zone | `usage` | `settingsSection` |
-| Print dialog: what will happen, what is left | `usage`, `print-policies` | `printForm` (new; it may add fields such as `costCenter` to the job request) |
+| Prices, currency, time zone | `usage` | `settingsTab` (**Prices**) |
+| Print dialog: what will happen, what is left | `usage` | `printForm` (new; it may add fields such as `costCenter` to the job request) |
 | Print dialog: cost center picker | `enterprise` | `printForm` |
 | Notes, pages, and cost under each job | `usage` | `jobMeta` (new) |
-| Rules, limits, and this cycle's usage | `print-policies` | `/w/:ws/policies/:tab?` (admins) |
+| The **Usage** page | `usage` | `/w/:ws/usage/:tab?`, 1 tab per `usageTab` entry (new) |
+| Overview, Limits, Rules | `print-policies` | `usageTab` (Limits and Rules for admins) |
 | What is left, on Home | `print-policies` | `homeSection` (new) |
 | Alerts, waiting approvals, jobs ready to release, on Home | `enterprise` | `homeSection` |
 | Approvals | `enterprise` | `jobsTab` (new, on Print jobs, for approvers) and `jobActions` (new) |

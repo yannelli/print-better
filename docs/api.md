@@ -124,6 +124,8 @@ Jobs printed from a paired computer's own print dialog have source `device` and 
 
 Other sources leave all 3 null. Devices create these jobs with `/api/client/jobs` (protocol.md, "Remote Printers").
 
+While Print rules and limits or Enterprise controls is on, every job is checked before it is queued (docs/usage.md). A rule or limit can change its options or printer, recorded in `policy`, or refuse it with 403 `policy_blocked` and the rule's or limit's message. Jobs counted then carry `usage`. These fields appear only on jobs they were recorded for.
+
 ## Instance Admin
 | Route | Notes |
 |---|---|
@@ -147,6 +149,16 @@ docs/printer-access.md lists the printer access routes (`/workspaces/:ws/access�
 
 Moving either switch sends an `access` event to open pages and refreshes the printers devices offer in their print windows.
 
+docs/usage.md lists the routes shared by Print rules and limits and Enterprise controls. They answer 404 `extension_inactive` while both are off:
+
+| Route | Notes |
+|---|---|
+| `POST /workspaces/:ws/jobs/preview` | `JobPreviewRequest` → `JobPreview`: what would happen to a job sent now. Needs `print` on the printer; nothing is stored or sent |
+| `GET /workspaces/:ws/prices` | `Prices`: currency, time zone, default prices, and the prices of printers the caller can see |
+| `PUT /workspaces/:ws/prices` **A** | `PricesUpdate` → `Prices` |
+
+docs/print-policies.md lists the Print rules and limits routes (`/workspaces/:ws/policies/rules…`, `/policies/limits…`, `/usage/me`, `/usage`). While it is off they answer 404 `extension_inactive`.
+
 ## Webhooks and Non-API Routes
 | Route | Notes |
 |---|---|
@@ -163,6 +175,7 @@ Generic: `invalid_request` 400, `unauthorized` 401, `forbidden` 403, `not_found`
 - Devices: `client_offline`, `device_code_invalid`; device endpoints add `unsupported_protocol`, `no_build`, `printer_not_found` and the RFC 8628 poll codes (protocol.md).
 - Printers and jobs: `alias_taken`, `printer_required`, `printer_not_added`, `printer_missing`, `unsupported_type`, `size_mismatch`, `not_uploading`, `fetch_failed`, `job_finished`, `job_active`, `job_not_retryable`, `file_purged`.
 - Extensions and printer access: `extension_inactive` 404, `extension_unavailable` 409, `printer_access_denied` 403 (404 for a device that can't see the printer), `role_in_use` 409, `name_taken` 409.
+- Rules and limits: `policy_blocked` 403, with the rule's or limit's message.
 - Resend webhook: `not_enabled` 404, `not_configured` 503, `bad_signature` 401.
 
 ## SPA Conventions

@@ -62,7 +62,7 @@ Errors use the HTTP status and a JSON body:
 | --- | --- |
 | `400` | `invalid_request`, `printer_required`, `size_mismatch`, `email_disabled`, `cost_center_invalid` |
 | `401` | `unauthorized`, `invalid_token`, `invalid_credentials` |
-| `403` | `forbidden`, `insufficient_scope`, `session_required`, `bad_origin`, `printer_access_denied` |
+| `403` | `forbidden`, `insufficient_scope`, `session_required`, `bad_origin`, `printer_access_denied`, `policy_blocked` |
 | `404` | `not_found`, `extension_inactive` |
 | `409` | `conflict`, `client_offline`, `printer_not_added`, `job_finished`, `job_not_retryable`, `file_purged`, `last_owner`, `job_not_held`, `part_off`, `cost_center_in_use`, `name_taken` |
 | `413` | `too_large` |
@@ -267,6 +267,31 @@ These endpoints need the [Printer Access](/docs/extensions/printer-access) exten
 | GET | `/printers/:id/access` | `read` | A printer's Everyone setting and grants. Needs `access` on it. |
 | PATCH | `/printers/:id/access` | `write` | Sets a printer's Everyone role. Needs `access` on it. |
 | POST | `/printers/:id/access/grants` | `write` | Grants a role on one printer. Needs `access` on it. |
+
+## Print Rules and Limits
+
+These endpoints need the [Print Rules and Limits](/docs/extensions/print-rules-and-limits) extension turned on. While it is off, they return `404 extension_inactive`. All paths start with `/workspaces/:ws`.
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/policies/rules` | `read` | Admins: rules, top to bottom. |
+| POST | `/policies/rules` | `write` | Admins: adds a rule at the bottom. |
+| PATCH | `/policies/rules/:id` | `write` | Admins: changes a rule. |
+| DELETE | `/policies/rules/:id` | `write` | Admins: deletes a rule. |
+| PUT | `/policies/rules/order` | `write` | Admins: sets the order, with every rule id once. |
+| GET | `/policies/limits` | `read` | Admins: limits with this cycle's counts. |
+| POST | `/policies/limits` | `write` | Admins: adds a limit. |
+| PATCH | `/policies/limits/:id` | `write` | Admins: changes a limit. |
+| DELETE | `/policies/limits/:id` | `write` | Admins: deletes a limit and its extra allowances. |
+| GET | `/policies/limits/:id/adjustments` | `read` | Admins: this cycle's extra allowances. |
+| POST | `/policies/limits/:id/adjustments` | `write` | Admins: gives an extra amount for this cycle. |
+| GET | `/usage/me` | `read` | The limits that count your jobs, with what's left. |
+| GET | `/usage?cycle=current` | `read` | Admins: every limit's counts. `cycle=previous` for the cycle before. |
+| POST | `/jobs/preview` | `print` | What would happen to a job sent now. Nothing is printed. |
+| GET | `/prices` | `read` | The currency, time zone, and prices. |
+| PUT | `/prices` | `write` | Admins: changes them. |
+
+A rule or limit that refuses a job returns `403 policy_blocked` with its message. Jobs it checked carry `policy` (what changed, and what the sender asked for) and `usage` (pages, sheets, and cost).
 
 ## Enterprise Controls
 

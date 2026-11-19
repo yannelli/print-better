@@ -1,8 +1,8 @@
-# Print rules and limits
+# Print Rules and Limits
 
 **Print rules and limits** (`print-policies`) is an [extension](extensions.md) that checks every print job before it is queued: **rules** can change, redirect, or stop a job, and **limits** cap how much people, groups, devices, and printers print in each cycle. It is off by default.
 
-Turn it on in two steps: a server admin makes it available under **Admin > Extensions**, then a workspace owner enables it under **Workspace settings > Extensions**. **Turning it on changes nothing by itself**: there are no rules or limits until you add them.
+Turn it on in 2 steps: a server admin makes it available under **Server admin > Extensions**, then a workspace owner turns it on under **Workspace settings > Extensions**. **Turning it on changes nothing by itself**: there are no rules or limits until you add them.
 
 It works on its own and does more alongside other extensions:
 
@@ -11,15 +11,15 @@ It works on its own and does more alongside other extensions:
 
 Page counting, usage, cycles, and prices are shared with Enterprise controls. See [Usage and job checks](usage.md).
 
-## Where it applies
+## Where It Applies
 
-Every job, wherever it comes from: the web app, the REST API, AI assistants (MCP), email to print, a computer's print window (remote printers), and test pages. Each job is checked after printer access allows it and before it is queued (see [the job check](usage.md#the-job-check)). Jobs already printing are never stopped. LAN sharing is outside it, like printer access.
+Every job, wherever it comes from: the web app, the REST API, AI assistants (MCP), email to print, a computer's print window (remote printers), and test pages. Each job is checked after printer access allows it and before it is queued (see [The Job Check](usage.md#the-job-check)). Jobs already printing are never stopped. LAN sharing is outside it, like printer access.
 
 Rules and limits apply to owners and admins too, unless a rule or limit is set to **Doesn't apply to owners and admins**.
 
 ## Rules
 
-A rule has a name, an on/off switch, **conditions**, and **actions**. Rules run **top to bottom**, in the order shown on the Rules page. Every rule whose conditions all match applies its actions, and later rules see the job as earlier rules left it. A rule that **blocks** stops the job right away.
+A rule has a name, an on/off switch, **conditions**, and **actions**. Rules run **top to bottom**, in the order shown under **Usage > Rules**. Every rule whose conditions all match applies its actions, and later rules see the job as earlier rules left it. A rule that **blocks** stops the job right away.
 
 ### Conditions
 
@@ -53,7 +53,7 @@ Pages that couldn't be counted count as 1 page per copy.
 | Hold for release | `release` | Waits until the sender releases it. Needs Enterprise controls with secure release on; skipped otherwise |
 | Add a note | `note` | Shows your note on the job, for example "Printed two-sided to save paper" |
 
-Everything a rule changed is recorded on the job in `policy.notes` and shown in its details, for example "Big jobs on both sides: printed two-sided". What the sender asked for is kept in `policy.requested`. The web print dialog shows the outcome before you send, using `POST /jobs/preview`.
+Everything a rule changed is recorded on the job in `policy.notes` and shown under it in **Print jobs**, for example "Big jobs on both sides: Printed two-sided". What the sender asked for is kept in `policy.requested`. The web print dialog shows the outcome before you send, using `POST /jobs/preview`.
 
 ## Limits
 
@@ -68,32 +68,37 @@ A limit has a name, **who** it applies to, **what it counts**, an **amount**, a 
 
 A limit set to **Doesn't apply to owners and admins** never blocks, warns about, or holds their jobs. What they print still counts toward shared counts, such as a printer's or the workspace's.
 
-### How usage is counted
+### How Usage Is Counted
 
 1. When a job is sent, its usage is **estimated**: PDFs are counted page by page, images count as one page, and text is laid out the way the device prints it. Page ranges, copies, and two-sided printing are applied.
 2. The estimate counts against every matching limit right away, together with everything already printed or waiting in the current cycle. A job that would go over a limit gets that limit's action.
 3. When the job ends, the estimate is replaced by the pages the printer reported. A canceled or failed job counts only the pages actually printed.
 
-Details are in [Usage and job checks](usage.md#usage).
+Details are in [Usage and Job Checks](usage.md#usage).
 
-### Extra allowance and visibility
+### Extra Allowance and Visibility
 
 - Admins can give a **one-off extra amount** for the current cycle, for example 100 more pages for one person this month. It is recorded and audited, and it ends with the cycle.
-- Everyone sees the limits that count their jobs and what is left, on the home page and in the print dialog, for example "84 of 500 pages left this month, resets Dec 1".
+- Everyone sees the limits that count their jobs and what is left, on **Usage**, on **Home** and in the print dialog, for example "84 of 500 pages left this month, resets Dec 1".
 
 ## Prices
 
 Prices turn pages into cost for cost limits, and for Enterprise controls budgets and reports. They are shared with Enterprise controls and editable while either extension is active. A job's cost is shown in its details and estimated in the print dialog. See [Prices](usage.md#prices).
 
-## In the web app
+## In the Web App
 
-- **Rules and limits** (admins): a page in the navigation with tabs for rules, limits, and this cycle's usage.
-- **Home**: the limits that count your jobs and what is left.
-- **Print dialog**: what will happen to the job and what it leaves you.
-- **Print jobs**: notes, pages, and cost under each job.
-- **Workspace settings**: prices, currency, and time zone.
+- **Usage** in the navigation (`/w/:ws/usage`):
+  - **Overview**, for everyone: the limits that count your jobs and what each has left. Owners and admins also see every limit's counts, for this cycle or the last.
+  - **Limits**, for owners and admins: add, change or delete limits, and give extra allowances, in dialogs.
+  - **Rules**, for owners and admins: add, change, turn off, reorder or delete rules.
+- **Home**: a card with the limit closest to running out, only while a limit counts your jobs.
+- **Print dialog**: 1 line with what the job leaves you, or why it would be refused, and **What happens to this job** with the details.
+- **Print jobs**: notes, pages and cost under each job.
+- **Workspace settings > Prices**: currency, time zone and prices, shared with Enterprise controls.
 
-## Turning it off
+Members see only **Overview**. The navigation shows **Usage** to members only while this extension is on.
+
+## Turning It Off
 
 Rules and limits stop applying immediately. Rules, limits, extra allowances, prices, and usage history are kept, so turning it back on restores them. Usage keeps being recorded while Enterprise controls is on. Jobs printed while both are off are never counted.
 
@@ -122,7 +127,7 @@ Bodies are validated like job options: unknown keys are refused, and members, gr
 
 Errors: `403 policy_blocked` when a rule or limit refuses a job, with its message. `404 not_found` for a rule or limit of another workspace.
 
-Every change is audited: `rule.create`, `rule.update`, `rule.delete`, `rule.reorder`, `limit.create`, `limit.update`, `limit.delete`, `limit.adjust`. Refused jobs are audited as `job.block`. Limit changes and extra allowances send a `usage` event.
+Every change is audited: `rule.create`, `rule.update`, `rule.delete`, `rule.reorder`, `limit.create`, `limit.update`, `limit.delete`, `limit.adjust`. Refused jobs are audited as `job.block`. Rule and limit changes and extra allowances send a `usage` event.
 
 ## MCP
 
