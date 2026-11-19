@@ -31,7 +31,7 @@ A role is a named set of permissions.
 | **User** | `view`, `print`, `jobs.read` |
 | **Manager** | all six |
 
-Admins can create **custom roles** from any combination of the six permissions, for example "Prints, sees only own jobs" (`view`, `print`). A custom role in use can be edited (everyone holding it changes at once) but not deleted until no grant uses it.
+Admins can create **custom roles** from any combination of the six permissions, for example "Prints, sees only own jobs" (`view`, `print`). A custom role in use can be edited (everyone holding it changes at once) but not deleted while a grant, a printer's Everyone setting, or the workspace default uses it.
 
 ### Who can be granted access
 
@@ -69,7 +69,8 @@ Grants only add access; there are no deny rules. To keep someone out of a printe
 | Email to print | A sender who is a member needs `print`. Allowlisted non-members can print only where Everyone has `print` |
 | A computer's print window (remote printers) | Shows a printer only if that **device** has `print`. A job the device sends without it fails in the print queue with "You can't print to this printer from this computer" |
 | Job lists, job details, documents | Your own jobs, plus jobs on printers where you have `jobs.read` |
-| Cancel, retry, delete jobs | Your own jobs (retry needs `print`), or `jobs.manage` on the job's printer |
+| Cancel and retry jobs | Your own jobs (retry needs `print`), or `jobs.manage` on the job's printer |
+| Delete jobs | `jobs.manage` on the job's printer, also for your own jobs (without the extension only admins can) |
 | Printer settings, add, remove, delete, LAN sharing | Needs `settings` |
 | A printer's grants and Everyone setting | Needs `access` |
 | Groups, custom roles, workspace-wide grants, workspace default role | Workspace admins and owners |
@@ -83,27 +84,30 @@ Turning the extension off (either switch) restores the default rules immediately
 
 ## API
 
-All under `/api/workspaces/:ws`. Extension routes answer `404 extension_inactive` while it is off, except `GET /access/me`.
+All under `/api/workspaces/:ws`. Extension routes answer `404 extension_inactive` while it is off, except `GET /access/me` and `GET /access/subject`.
 
 | Method and path | Who | Body or result |
 |---|---|---|
 | `GET /access/me` | members | `MyPrinterAccess` (works with the extension off) |
 | `GET /access` | members | `WorkspaceAccess` |
-| `PATCH /access` | admins | `{ "defaultRole": "user" }` |
+| `PATCH /access` | admins | `{ "defaultRole": "user" }` (a role, or `none` to restrict every printer without its own setting) |
 | `GET /access/printers` | members | `PrinterAccessSummary[]` for printers they can see |
-| `GET /access/explain?printer=<id>&subject=<type>:<id>` | admins, or `access` on that printer | `AccessExplanation` |
+| `GET /access/explain?printer=<id>&subject=<type>:<id>` | admins, or `access` on that printer | `AccessExplanation`; `subject` is `everyone`, `user:<id>`, `group:<id>` or `client:<id>` |
+| `GET /access/subject?subject=<type>:<id>` | admins | `{ "printers": { "<printerId>": [...] } }`: the subject's permissions on every printer it can see. Works with the extension off, using today's rules (members `view`, `print`, `jobs.read` everywhere; devices `view`, `print` on added printers of other devices) |
 | `POST /access/roles` | admins | `{ "name", "description"?, "permissions": [...] }` returns `PrinterRole` |
 | `PATCH /access/roles/:id`, `DELETE /access/roles/:id` | admins | Edit, or delete when unused (`409 role_in_use`) |
-| `POST /access/grants` | admins | Workspace-wide grant: `{ "subject": { "type", "id"? }, "role" }` |
+| `POST /access/grants` | admins | Workspace-wide grant: `{ "subject": { "type", "id"? }, "role" }` returns `PrinterGrant`. Granting the same subject again replaces its role |
 | `DELETE /access/grants/:id` | admins, or `access` on the grant's printer | Remove any grant |
 | `GET /groups`, `POST /groups` | members read, admins write | `Group[]`; create `{ "name", "description"? }` |
 | `PATCH /groups/:id`, `DELETE /groups/:id` | admins | Rename, describe, delete (its grants go with it) |
 | `PUT /groups/:id/members/:type/:memberId`, `DELETE` the same | admins | Add or remove a member (`user`) or device (`client`) |
 | `GET /printers/:id/access` | `access` on the printer | `PrinterAccess` |
 | `PATCH /printers/:id/access` | `access` on the printer | `{ "everyoneRole": "none" }` (or a role, or `null` for the default) |
-| `POST /printers/:id/access/grants` | `access` on the printer | `{ "subject", "role" }` returns `PrinterGrant` |
+| `POST /printers/:id/access/grants` | `access` on the printer | `{ "subject", "role" }` returns `PrinterGrant`. Everyone is not a subject here: use the printer's Everyone setting |
 
-Every change is audited (`access.*`, `group.*`) and followed by an `access` event.
+Every change is audited (`access.update`, `access.grant`, `access.revoke`, `access.role_create`, `access.role_update`, `access.role_delete`, `group.create`, `group.update`, `group.delete`, `group.add`, `group.remove`) and followed by an `access` event.
+
+Errors: `403 printer_access_denied` when a permission is missing, while a printer or job the caller can't see answers `404 not_found` (a device's job for a printer it can't see: `404 printer_access_denied`); `409 role_in_use`; `409 name_taken` for a group or role name already in use, built-in role names included.
 
 ## MCP
 

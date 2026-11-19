@@ -11,18 +11,21 @@ import { printerConfigs } from './inventory'
 import { stuckOffers, toOffer, type OfferRow } from './jobs'
 import { remoteSnapshots } from './remote-printers'
 import { attachment, CLIENT_TAG, clientTag, HUB_HEADERS, isOpen, send, UI_TAG, userTag, type Attachment, type ClientAtt } from './sockets'
+import { HubAccessCache, UiFanOut } from './ui-access'
 
 const SWEEP_MS = 30_000
 const COMMAND_TIMEOUT_MS = 20_000
 const STUCK_MS = 60_000
 /** UI events that can change what other devices see in their `remote_printers` snapshot. */
-const REMOTE_TRIGGERS = new Set<UiEvent['type']>(['printer', 'printer_removed', 'client', 'client_removed'])
+const REMOTE_TRIGGERS = new Set<UiEvent['type']>(['printer', 'printer_removed', 'client', 'client_removed', 'access'])
 
 /** One per workspace: device and browser sockets (hibernatable), job delivery, command relay, UI fan-out. */
 export class WorkspaceHub extends DurableObject<Env> {
   private pending = new Map<string, (result: ResultMsg | null) => void>()
   private remoteRun: Promise<void> | null = null
   private remoteDirty = false
+  private access = new HubAccessCache(this.env)
+  private ui = new UiFanOut(this.ctx, this.access)
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -153,8 +156,15 @@ export class WorkspaceHub extends DurableObject<Env> {
     this.fanOut(events)
   }
 
+  /** Printer access or an extension switch changed: pages refetch, devices get snapshots under the new rules. */
+  async accessChanged(): Promise<void> {
+    this.access.clear()
+    this.fanOut([{ type: 'access' }])
+  }
+
   /** `Workspace` carries the viewer's role, so each browser gets its own copy. */
   async broadcastWorkspace(workspaceId: string): Promise<void> {
+    this.access.clear()
     const row = await first<WorkspaceRow>(this.env.DB, 'SELECT * FROM workspaces WHERE id = ?', workspaceId)
     if (!row) return
     const roles = new Map((await all<{ user_id: string; role: Role }>(this.env.DB, 'SELECT user_id, role FROM members WHERE workspace_id = ?', workspaceId)).map((m) => [m.user_id, m.role]))
@@ -225,8 +235,7 @@ export class WorkspaceHub extends DurableObject<Env> {
 
   /** Every printer and device change reaches browsers through here, so desktops' remote printers are refreshed here too. */
   private fanOut(events: UiEvent[]): void {
-    const sockets = this.ctx.getWebSockets(UI_TAG).filter(isOpen)
-    for (const event of events) for (const ws of sockets) send(ws, event)
+    this.ui.send(events)
     if (events.some((e) => REMOTE_TRIGGERS.has(e.type))) void this.syncRemotePrinters()
   }
 
@@ -254,7 +263,9 @@ export class WorkspaceHub extends DurableObject<Env> {
   private async sendRemotePrinters(): Promise<void> {
     const ready = this.ctx.getWebSockets(CLIENT_TAG).map(attachment).filter((a): a is ClientAtt => a?.kind === 'client' && a.ready)
     if (ready.length === 0) return
-    const snapshots = await remoteSnapshots(this.env, ready[0].workspaceId, ready.map((a) => a.clientId))
+    const view = await this.access.get(ready[0].workspaceId)
+    const canPrint = view && ((clientId: string, printerId: string) => view.device(clientId).can(printerId, 'print'))
+    const snapshots = await remoteSnapshots(this.env, ready[0].workspaceId, ready.map((a) => a.clientId), canPrint)
     for (const ws of this.ctx.getWebSockets(CLIENT_TAG).filter(isOpen)) {
       const att = attachment(ws)
       if (att?.kind !== 'client' || !att.ready) continue

@@ -42,6 +42,14 @@ fn active(state: SharedJobState) -> bool {
     matches!(state, SharedJobState::Pending | SharedJobState::Processing)
 }
 
+/// Printer access refuses with 403, or 404 when the printer is hidden from this computer.
+fn not_sent(e: NetError) -> String {
+    match e {
+        NetError::Api { status: 403 | 404, code, .. } if code == "printer_access_denied" => "You can't print to this printer from this computer".into(),
+        e => format!("Couldn't send the job to Print Better: {e}"),
+    }
+}
+
 impl RemoteSink {
     pub fn new(d: Arc<Daemon>) -> RemoteSink {
         RemoteSink(Arc::new(Inner { d, jobs: Mutex::new(Jobs::default()) }))
@@ -97,14 +105,13 @@ impl RemoteSink {
 
     /// Creates the server job and uploads the document.
     async fn hand_over(&self, id: u32, server: &Server, job: &SharedJob) -> Result<ServerJob, String> {
-        let failed = |e: NetError| format!("Couldn't send the job to Print Better: {e}");
         let size = tokio::fs::metadata(&job.doc.path).await.map_err(|e| format!("Couldn't read the document: {e}"))?.len();
-        let (created, path) = server.create(&job.printer_key, job, size).await.map_err(failed)?;
+        let (created, path) = server.create(&job.printer_key, job, size).await.map_err(not_sent)?;
         log::info!("remote job {id}: sent as {} to printer {}", created.id, job.printer_key);
         if let Some(entry) = self.jobs().list.get_mut(&id) {
             entry.server_id = Some(created.id.clone());
         }
-        server.upload(&path, job).await.map_err(failed)
+        server.upload(&path, job).await.map_err(not_sent)
     }
 
     /// Polls the server job until it ends, passing a cancel from CUPS on.

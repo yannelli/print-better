@@ -1,23 +1,21 @@
 import type { Job } from '../../shared/printing'
 import { toJob } from '../db/map'
 import type { JobViewRow } from '../db/rows'
-import { ApiError, badRequest, conflict, forbidden } from '../http/errors'
+import { ApiError, badRequest, conflict } from '../http/errors'
 import { run } from '../lib/db'
 import { hex } from '../lib/encoding'
-import { requireMember, requireScope } from './access'
+import { requireScope } from './access'
 import { audit } from './audit'
 import type { Ctx } from './context'
 import { docType } from './doc-types'
 import { notifyHub } from './hub'
-import { canManageJob, jobFileKey, loadJobView } from './job-create'
+import { jobFor } from './job-access'
+import { jobFileKey, loadJobView } from './job-create'
 
 /** Second upload step: streams the body to R2 through a SHA-256 tap, then queues and dispatches the job. */
 export async function uploadJobFile(ctx: Ctx, workspaceId: string, id: string, req: Request): Promise<Job> {
   requireScope(ctx, 'print')
-  const { user, role } = await requireMember(ctx, workspaceId)
-  const job = await loadJobView(ctx.env, workspaceId, id)
-  if (!canManageJob(job, user.id, role)) throw forbidden('Only the person who created this job can upload its file')
-  return storeUpload(ctx, job, req)
+  return storeUpload(ctx, (await jobFor(ctx, workspaceId, id, 'upload')).job, req)
 }
 
 /** The upload itself, once the caller is known to own `job` (REST or device endpoint). */

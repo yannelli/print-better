@@ -1,3 +1,4 @@
+import { extensionTools } from '../extensions/tools'
 import { MB, readText } from '../http/body'
 import { ApiError } from '../http/errors'
 import { HOUR } from '../lib/time'
@@ -5,7 +6,7 @@ import type { Ctx } from '../services/context'
 import { hasScope } from '../services/access'
 import { insufficientScope, mcpContext } from './auth'
 import { CODE, decodeHeaderValue, INSTRUCTIONS, LEGACY, META, MODERN, rpcError, rpcResult, SERVER_INFO, SUPPORTED, type RpcId } from './protocol'
-import { argumentProblem } from './tool'
+import { argumentProblem, type Tool } from './tool'
 import { TOOL_BY_NAME, TOOLS } from './tools'
 
 // Base64 documents ride inside tools/call, so this bounds them (about 12 MB decoded).
@@ -17,19 +18,20 @@ type Finish = (result: Params) => Response
 const isObject = (v: unknown): v is Params => typeof v === 'object' && v !== null && !Array.isArray(v)
 const isId = (v: unknown): v is string | number => typeof v === 'string' || (typeof v === 'number' && Number.isFinite(v))
 
-const TOOL_LIST = TOOLS.map(({ name, title, description, inputSchema, annotations }) => ({
-  name,
-  title,
-  description,
-  inputSchema,
-  annotations: { title, ...annotations },
-}))
+const listed = ({ name, title, description, inputSchema, annotations }: Tool) => ({ name, title, description, inputSchema, annotations: { title, ...annotations } })
+const TOOL_LIST = TOOLS.map(listed)
+
+/** The core tools, then those of extensions a server admin made available. */
+const toolList = async (env: Env) => [...TOOL_LIST, ...(await extensionTools(env)).map(listed)]
+
+const findTool = async (env: Env, name: unknown): Promise<Tool | undefined> =>
+  typeof name !== 'string' ? undefined : (TOOL_BY_NAME.get(name) ?? (await extensionTools(env)).find((t) => t.name === name))
 
 const toolError = (message: string): Params => ({ content: [{ type: 'text', text: message }], isError: true })
 
 /** Service errors become `isError` results the model can read and correct; HTTP-level errors are reserved for auth. */
 async function callTool(ctx: Ctx, id: RpcId, params: Params, finish: Finish): Promise<Response> {
-  const tool = typeof params.name === 'string' ? TOOL_BY_NAME.get(params.name) : undefined
+  const tool = await findTool(ctx.env, params.name)
   if (!tool) return rpcError(id, 200, CODE.invalidParams, `Unknown tool: ${String(params.name)}`)
   if (!hasScope(ctx, tool.scope)) return insufficientScope(ctx.origin, tool.scope)
   const args = params.arguments ?? {}
@@ -64,11 +66,11 @@ function modern(req: Request, ctx: Ctx, id: RpcId, method: string, params: Param
     case 'server/discover':
       return finish({ supportedVersions: SUPPORTED, capabilities: { tools: {} }, instructions: INSTRUCTIONS, ttlMs: HOUR, cacheScope: 'public' })
     case 'tools/list':
-      return finish({ tools: TOOL_LIST, ttlMs: HOUR, cacheScope: 'private' })
+      return toolList(ctx.env).then((tools) => finish({ tools, ttlMs: HOUR, cacheScope: 'private' }))
     case 'tools/call':
       return callTool(ctx, id, params, finish)
     case 'subscriptions/listen':
-      // Nothing here ever changes at runtime, so the subscription completes at once with no notifications.
+      // Stateless: the tool list changes only when an admin switches an extension, and clients see it on their next tools/list.
       return finish({})
     default:
       return rpcError(id, 404, CODE.methodNotFound, `Unknown method: ${method}`)
@@ -91,7 +93,7 @@ function legacy(req: Request, ctx: Ctx, id: RpcId, method: string, params: Param
     case 'ping':
       return finish({})
     case 'tools/list':
-      return finish({ tools: TOOL_LIST })
+      return toolList(ctx.env).then((tools) => finish({ tools }))
     case 'tools/call':
       return callTool(ctx, id, params, finish)
     default:
