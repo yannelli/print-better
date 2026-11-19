@@ -1,0 +1,59 @@
+# Remote printers on desktops
+
+Goal: every added printer in a workspace that lives on *another* device shows up on a paired Mac (and Linux desktop) as a normal local printer: listed in System Settings → Printers & Scanners, selectable in every app's Cmd+P dialog, with job progress in the system print queue. Nothing to configure; it is on by default.
+
+## How it works
+```
+App (Cmd+P) → CUPS queue "pb_<printerId>" → ipp://127.0.0.1:8632/ipp/print/<slug>
+  → printbetter daemon (loopback IPP server, never advertised)
+  → POST /api/client/jobs + PUT file → WorkspaceHub → device that owns the printer → printer
+```
+- The daemon reuses `pb_print::share` on loopback only, with no DNS-SD, accepting only the server's document types (PDF, JPEG, PNG). macOS and CUPS send PDF.
+- CUPS queues are created with `lpadmin ... -m everywhere`, which queries our loopback IPP server, so the server must be listening before queues are added.
+- If the daemon is down, CUPS holds the job and retries on its own. If the server is unreachable, the loopback server refuses with "not ready" (IPP `server-error-service-unavailable`) so CUPS keeps retrying; nothing is lost.
+- If the owning device is offline, the job is still accepted: it waits on the server (normal `queued` semantics) and prints when that device reconnects. The queue's state message says so.
+
+## Protocol additions (v1, additive; older clients ignore unknown messages)
+
+Constant: `REMOTE_PRINT_PORT = 8632` (`server/shared/protocol.ts`, `client/crates/app/src/proto.rs`).
+
+`ClientSettings.remotePrinters: boolean`, default `true` (server default, client default, settings LWW like every other key).
+
+Server → client:
+```ts
+export interface RemotePrinter {
+  id: string                 // server printer id
+  name: string               // display name (alias if set)
+  location: string | null
+  makeModel: string | null
+  clientName: string         // device that owns it
+  online: boolean            // owning client connected AND printer state !== 'offline'
+  state: PrinterState
+  capabilities: Capabilities
+  defaults: JobOptions
+}
+export interface RemotePrintersMsg { type: 'remote_printers'; printers: RemotePrinter[] }
+```
+- Contains every `added` printer in the workspace whose `clientId` is not the receiving client. Full snapshot each time.
+- Sent right after `welcome`, then whenever that snapshot would change for a client (printer added/removed/renamed/edited, status state change, owning client connects or disconnects). Coalescing a burst into one send is fine; sending only on real change is required (no per-poll spam).
+
+## Client job endpoints (Bearer `pbc_…`)
+| Method + path | Body → response |
+|---|---|
+| `POST /api/client/jobs` | `{ printerId, title?, contentType, size, fileName?, options?, requestedBy? }` → 201 `{ job, uploadUrl }` (status `uploading`). `uploadUrl` is absolute (`<origin>/api/client/jobs/:id/file`). |
+| `PUT /api/client/jobs/:id/file` | raw body, `Content-Type` = declared type, exactly `size` bytes → `{ job }` now `queued` and dispatched |
+| `GET /api/client/jobs/:id` | → `{ job }` |
+| `POST /api/client/jobs/:id/cancel` | → `{ job }` |
+
+- Only jobs this client created are visible to it (404 otherwise). The printer must be `added` and in the client's workspace (404 `printer_not_found` otherwise). Types: `DOC_TYPES`; size limit: workspace `maxUploadMb` (413 `too_large`). `options` validated exactly like the REST API. `requestedBy` is the OS user name from IPP `requesting-user-name` (≤ 100 chars).
+- Same service code as REST uploads (`queueJob`, `uploadJobFile`), not a parallel path.
+- Jobs record `source = 'device'`, `source_client_id`, `requested_by`. `Job` gains `sourceClientId: string | null`, `sourceClientName: string | null`, `requestedBy: string | null`. The web UI shows "From <device> (<requestedBy>)" in job lists and detail.
+- Migration `0003_device_jobs.sql`: adds `'device'` to the `jobs.source` CHECK (table rebuild, keep data and indexes) plus the two columns.
+
+## Client behavior
+- Active when: paired, `settings.remotePrinters`, and the platform has CUPS `lpadmin` (macOS, Linux). Windows: not yet; status reports "Not available on Windows yet".
+- Loopback IPP server on `127.0.0.1:8632`, started before any queue is added. Printer key = server printer id; the `PrinterReport` passed to the share server is built from `RemotePrinter`.
+- Sink: `submit` refuses with "not ready" when the session is not connected; otherwise it returns a local id at once and a task uploads (create, PUT, delete the spool file), then polls `GET /api/client/jobs/:id` every 2 s until terminal. State map: `uploading|queued|dispatched` → pending (message "Waiting for <clientName>" when that device is offline), `printing` → processing, `completed` → completed, `failed` → aborted with the server's message, `canceled` → canceled. `cancel` → `POST …/cancel`.
+- Queue sync (diff, not rebuild): name `pb_<printerId>`; `lpadmin -p pb_<id> -E -v ipp://127.0.0.1:8632/ipp/print/<slug> -m everywhere -D "<name>" -L "<location or clientName> (via Print Better)" -o printer-is-shared=false`. Update `-D`/`-L` when they change. Remove (`lpadmin -x`) when a printer leaves the snapshot, when `remotePrinters` turns off, and on unpair. Only ever touch queues recorded as managed in local state and named `pb_*`. Daemon shutdown keeps queues.
+- Status: local `/api/status` gains `remotePrinters: { active: boolean, error: string | null, printers: [{ id, name, queue, online }] }`; the status page, tray, and `doctor` surface errors (e.g. lpadmin permission denied).
+- CLI: `printbetter config set remotePrinters false` works through the existing settings path.

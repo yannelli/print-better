@@ -1,0 +1,12 @@
+# Per-user service written by `printbetter service install`.
+[Unit]
+Description=Print Better client
+
+[Service]
+Type=simple
+ExecStart={{EXE}} run{{ARGS}}
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

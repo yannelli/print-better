@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en" data-accent="ink" data-text="default" data-density="comfortable">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#ffffff" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="description" content="Print from anywhere to the printers you already have." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icon-maskable.svg" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Print Better</title>
+    <script>
+      // Apply saved look before first paint so the page never flashes the wrong theme or size.
+      try {
+        var p = JSON.parse(localStorage.getItem('pb-prefs') || '{}')
+        var d = document.documentElement
+        var dark = p.theme === 'dark' || (p.theme !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)
+        if (dark) d.classList.add('dark')
+        d.dataset.accent = p.accent || 'ink'
+        d.dataset.text = p.textSize || 'default'
+        d.dataset.density = p.density || 'comfortable'
+        document.querySelector('meta[name="theme-color"]').setAttribute('content', dark ? '#000000' : '#ffffff')
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Print Better needs JavaScript turned on.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

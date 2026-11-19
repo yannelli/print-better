@@ -1,0 +1,6 @@
+{
+  "type": "result",
+  "id": "cmd_2",
+  "ok": false,
+  "error": "That printer is not available right now."
+}

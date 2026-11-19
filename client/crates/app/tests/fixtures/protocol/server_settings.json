@@ -1,0 +1,19 @@
+{
+  "type": "settings",
+  "settings": {
+    "tray": true,
+    "lanSharing": false,
+    "autoAdd": "inherit",
+    "discovery": {
+      "mdns": true,
+      "snmp": true,
+      "usb": true,
+      "os": true
+    },
+    "paused": true,
+    "logLevel": "info",
+    "remotePrinters": true,
+    "autoUpdate": true
+  },
+  "updatedAt": 1763500009000
+}

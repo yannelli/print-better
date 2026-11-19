@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Print Better</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+  <script src="/actions.js" defer></script>
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8V3h10v5M7 17H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg>
+      <span>Print Better</span>
+    </div>
+    <span id="conn" class="pill" data-tone="muted" role="status">Loading…</span>
+  </header>
+
+  <main>
+    <div id="banner" class="banner" hidden></div>
+
+    <section id="pair" class="card" hidden aria-labelledby="pair-title">
+      <h1 id="pair-title">Connect this computer</h1>
+      <div id="pair-form">
+        <p class="muted">Enter the address of your Print Better site. You will approve this computer in your browser.</p>
+        <label for="server">Print Better address</label>
+        <input id="server" type="url" inputmode="url" autocomplete="url" placeholder="print.example.com" spellcheck="false">
+        <label for="name">Name for this computer <span class="muted">(optional)</span></label>
+        <input id="name" type="text" autocomplete="off" placeholder="Kitchen computer">
+        <div id="token-row" hidden>
+          <label for="token">Pairing code</label>
+          <input id="token" type="text" autocomplete="off" spellcheck="false" placeholder="pbe_…">
+        </div>
+        <p id="pair-error" class="error" role="alert" hidden></p>
+        <div class="actions">
+          <button id="pair-browser" class="primary" type="button">Connect with my browser</button>
+          <button id="pair-token" type="button">Use a pairing code</button>
+        </div>
+      </div>
+      <div id="pair-confirm" hidden>
+        <p>Connect this computer to <strong id="confirm-server"></strong>?</p>
+        <p class="muted">Only continue if you started this from your Print Better dashboard.</p>
+        <div class="actions">
+          <button id="confirm-yes" class="primary" type="button">Connect</button>
+          <button id="confirm-no" type="button">Cancel</button>
+        </div>
+      </div>
+      <div id="pair-wait" hidden>
+        <p>Approve this computer in your browser. Check that the page shows this code:</p>
+        <p id="pair-code" class="code"></p>
+        <div class="actions">
+          <a id="pair-link" class="button primary" target="_blank" rel="noopener">Open the approval page</a>
+          <button id="pair-cancel" type="button">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="overview" class="card" hidden>
+      <div class="row">
+        <div>
+          <h1 id="device-name"></h1>
+          <p id="device-server" class="muted"></p>
+        </div>
+        <a id="dashboard" class="button" target="_blank" rel="noopener">Open dashboard</a>
+      </div>
+      <p id="device-detail" class="note" hidden></p>
+      <div class="row pause">
+        <div>
+          <strong id="pause-title"></strong>
+          <p id="pause-text" class="muted"></p>
+        </div>
+        <button id="pause" type="button"></button>
+      </div>
+      <div id="update-row" class="row pause" hidden>
+        <div>
+          <strong id="update-title"></strong>
+          <p id="update-text" class="muted"></p>
+        </div>
+        <button id="update-now" class="primary" type="button">Update now</button>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="printers-title">
+      <div class="row">
+        <h2 id="printers-title">Printers</h2>
+        <button id="discover" type="button">Find printers</button>
+      </div>
+      <ul id="printers" class="list"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="jobs-title">
+      <h2 id="jobs-title">Recent printing</h2>
+      <ul id="jobs" class="list"></ul>
+    </section>
+
+    <section class="card" aria-labelledby="settings-title">
+      <h2 id="settings-title">Settings</h2>
+      <div id="settings" class="toggles"></div>
+      <p id="share-error" class="error" hidden></p>
+      <p id="remote-error" class="error" hidden></p>
+    </section>
+
+    <details class="card" id="advanced">
+      <summary>Help and troubleshooting</summary>
+      <div class="actions">
+        <button id="run-checks" type="button">Run checks</button>
+        <button id="show-logs" type="button">Show recent log</button>
+        <button id="unpair" class="danger" type="button" hidden>Disconnect this computer</button>
+      </div>
+      <ul id="checks" class="list" hidden></ul>
+      <pre id="logs" hidden></pre>
+      <p id="log-file" class="muted small"></p>
+    </details>
+  </main>
+
+  <footer id="version" class="muted small"></footer>
+</body>
+</html>

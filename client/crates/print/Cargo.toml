@@ -1,0 +1,50 @@
+[package]
+name = "pb-print"
+description = "Printer discovery, IPP, conversion, and LAN sharing for Print Better"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[features]
+default = ["raster"]
+# PDF rasterization (hayro) for printers that cannot take PDF; adds ~77 crates.
+raster = ["dep:hayro"]
+
+[dependencies]
+tokio.workspace = true
+hyper.workspace = true
+hyper-util.workspace = true
+http-body-util.workspace = true
+bytes.workspace = true
+rustls.workspace = true
+tokio-rustls.workspace = true
+ring.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+mdns-sd.workspace = true
+# Interface broadcast addresses for SNMP discovery; already in the tree via mdns-sd.
+if-addrs = "0.15"
+png.workspace = true
+zune-jpeg.workspace = true
+miniz_oxide.workspace = true
+hayro = { workspace = true, optional = true }
+
+[target.'cfg(not(windows))'.dependencies]
+nusb.workspace = true
+libc.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true
+
+[dev-dependencies]
+# Builds JPEG test images in memory; no binary fixtures.
+jpeg-encoder = "0.7.1"

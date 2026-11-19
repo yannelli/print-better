@@ -1,0 +1,8 @@
+{
+  "type": "result",
+  "id": "cmd_1",
+  "ok": true,
+  "data": {
+    "count": 2
+  }
+}

@@ -1,0 +1,16 @@
+name: Feature request
+description: Suggest a printer, a platform, or another change.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What you want to do and what stops you today.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: How you want it to work. For printer support, include the make, model, and the protocols it speaks.

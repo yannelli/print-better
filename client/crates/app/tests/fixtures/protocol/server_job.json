@@ -1,0 +1,19 @@
+{
+  "type": "job",
+  "job": {
+    "id": "job_01",
+    "printerKey": "uuid:4509a320-00a0-008f-00b6-002507510eca",
+    "title": "Recipe.pdf",
+    "contentType": "application/pdf",
+    "size": 102400,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "options": {
+      "copies": 2,
+      "sides": "one-sided",
+      "colorMode": "color"
+    },
+    "fileUrl": "/api/client/jobs/job_01/document",
+    "attempt": 1,
+    "createdAt": 1763500001000
+  }
+}

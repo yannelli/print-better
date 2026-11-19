@@ -1,0 +1,4 @@
+# Required secrets. For production: `wrangler secret put <NAME>`; for local dev copy to .dev.vars.
+SETUP_TOKEN="long-random-string-needed-to-create-the-first-account"
+APP_SECRET="random-32-plus-bytes-used-to-encrypt-instance-settings"
+AUTH_PEPPER="random-secret-mixed-into-password-hashes"

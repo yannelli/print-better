@@ -1,0 +1,92 @@
+{
+  "type": "printers",
+  "printers": [
+    {
+      "key": "uuid:4509a320-00a0-008f-00b6-002507510eca",
+      "name": "Brother HL-L2350DW",
+      "makeModel": "Brother HL-L2350DW series",
+      "uuid": "4509a320-00a0-008f-00b6-002507510eca",
+      "location": "Office",
+      "local": false,
+      "routes": [
+        {
+          "kind": "ipps",
+          "uri": "ipps://brother.local:631/ipp/print"
+        },
+        {
+          "kind": "socket",
+          "uri": "socket://192.168.1.20:9100"
+        }
+      ],
+      "capabilities": {
+        "formats": [
+          "application/pdf",
+          "image/urf"
+        ],
+        "color": false,
+        "duplex": true,
+        "media": [
+          "na_letter_8.5x11in",
+          "iso_a4_210x297mm"
+        ],
+        "mediaDefault": "na_letter_8.5x11in",
+        "resolutions": [
+          300,
+          600
+        ],
+        "copiesMax": 99
+      },
+      "status": {
+        "state": "idle",
+        "reasons": [
+          "toner-low"
+        ],
+        "message": "Toner is low",
+        "supplies": [
+          {
+            "name": "Black Toner",
+            "kind": "toner",
+            "color": "#000000",
+            "level": 12
+          }
+        ]
+      }
+    },
+    {
+      "key": "usb:04f9:0042:E12345",
+      "name": "USB printer",
+      "makeModel": null,
+      "uuid": null,
+      "location": null,
+      "local": true,
+      "routes": [
+        {
+          "kind": "usb",
+          "uri": "usb://04f9:0042/E12345?if=0"
+        }
+      ],
+      "capabilities": {
+        "formats": [],
+        "color": true,
+        "duplex": false,
+        "media": [],
+        "mediaDefault": null,
+        "resolutions": [],
+        "copiesMax": 1
+      },
+      "status": {
+        "state": "unknown",
+        "reasons": [],
+        "message": null,
+        "supplies": [
+          {
+            "name": "Waste box",
+            "kind": "waste",
+            "color": null,
+            "level": -1
+          }
+        ]
+      }
+    }
+  ]
+}

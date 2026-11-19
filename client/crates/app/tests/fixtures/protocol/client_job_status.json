@@ -1,0 +1,8 @@
+{
+  "type": "job_status",
+  "jobId": "job_01",
+  "status": "completed",
+  "message": "Printed 3 pages",
+  "pages": 3,
+  "attempt": 2
+}

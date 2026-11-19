@@ -1,0 +1,30 @@
+{
+  "type": "hello",
+  "protocol": 1,
+  "version": "0.1.0",
+  "os": "macos",
+  "arch": "aarch64",
+  "hostname": "kitchen-mac",
+  "features": [
+    "tray",
+    "usb",
+    "snmp",
+    "lan-share"
+  ],
+  "settings": {
+    "tray": true,
+    "lanSharing": false,
+    "autoAdd": "inherit",
+    "discovery": {
+      "mdns": true,
+      "snmp": true,
+      "usb": true,
+      "os": true
+    },
+    "paused": false,
+    "logLevel": "info",
+    "remotePrinters": true,
+    "autoUpdate": true
+  },
+  "settingsUpdatedAt": 1763500000000
+}

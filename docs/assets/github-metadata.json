@@ -1,0 +1,27 @@
+{
+  "description": "Self-hosted print server on Cloudflare Workers with a Rust client for macOS, Linux, Windows, and Raspberry Pi. Print from anywhere, see every printer in Cmd+P, and let Claude or ChatGPT set up and print over MCP.",
+  "homepage": "",
+  "topics": [
+    "printing",
+    "print-server",
+    "ipp",
+    "ipp-everywhere",
+    "airprint",
+    "cups",
+    "self-hosted",
+    "cloudflare-workers",
+    "durable-objects",
+    "rust",
+    "typescript",
+    "react",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "claude",
+    "passkeys",
+    "webauthn",
+    "raspberry-pi",
+    "macos"
+  ],
+  "social_preview": "docs/assets/social-preview.png"
+}

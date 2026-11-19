@@ -1,0 +1,11 @@
+{
+  "type": "lan_job",
+  "localId": "lan-7",
+  "printerKey": "uuid:4509a320-00a0-008f-00b6-002507510eca",
+  "title": "Boarding pass.pdf",
+  "user": "alice",
+  "contentType": "application/pdf",
+  "size": 48213,
+  "status": "printing",
+  "message": "Sending to the printer"
+}

@@ -1,0 +1,56 @@
+{
+  "type": "remote_printers",
+  "printers": [
+    {
+      "id": "pr_07",
+      "name": "Upstairs laser",
+      "location": "Office",
+      "makeModel": "Brother HL-L2350DW series",
+      "uuid": "7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34",
+      "clientName": "Den Pi",
+      "online": true,
+      "state": "idle",
+      "capabilities": {
+        "formats": [
+          "application/pdf",
+          "image/urf"
+        ],
+        "color": false,
+        "duplex": true,
+        "media": [
+          "na_letter_8.5x11in",
+          "iso_a4_210x297mm"
+        ],
+        "mediaDefault": "na_letter_8.5x11in",
+        "resolutions": [
+          300,
+          600
+        ],
+        "copiesMax": 99
+      },
+      "defaults": {
+        "sides": "two-sided-long-edge"
+      }
+    },
+    {
+      "id": "pr_08",
+      "name": "Label maker",
+      "location": null,
+      "makeModel": null,
+      "uuid": null,
+      "clientName": "Garage Mac",
+      "online": false,
+      "state": "offline",
+      "capabilities": {
+        "formats": [],
+        "color": false,
+        "duplex": false,
+        "media": [],
+        "mediaDefault": null,
+        "resolutions": [],
+        "copiesMax": 1
+      },
+      "defaults": {}
+    }
+  ]
+}

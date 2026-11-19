@@ -1,0 +1,13 @@
+{
+  "type": "printer_config",
+  "printers": [
+    {
+      "key": "usb:04f9:0042:E12345",
+      "id": "pr_02",
+      "name": "Den printer",
+      "added": false,
+      "lanShare": true,
+      "defaults": {}
+    }
+  ]
+}

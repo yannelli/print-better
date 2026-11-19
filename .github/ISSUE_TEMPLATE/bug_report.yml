@@ -1,0 +1,40 @@
+name: Bug report
+description: Something does not work as the docs describe.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw. Paste the exact error text or job message.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The server and client versions, for example v0.1.1. The device page shows the client version.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Web app, REST API, MCP server, Sign-in, "Client (daemon, CLI, tray)", Printer discovery, Printing, Remote printers (Cmd+P), Install and updates, Raspberry Pi setup, Deploy and release scripts, Docs, Other]
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Device platform
+      options: [macOS, Linux, Windows, Raspberry Pi, Server only]
+  - type: input
+    id: printer
+    attributes:
+      label: Printer
+      description: Make and model, and how it connects (network, USB, or the computer's printer list).
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The output of `printbetter doctor` helps. Remove tokens, server addresses, IP addresses, serial numbers, and email addresses.

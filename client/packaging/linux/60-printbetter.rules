@@ -1,0 +1,2 @@
+# Print Better: let the `lp` group (and the logged-in user) open USB printer-class devices.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_USB_INTERFACES}=="*:0701??:*", GROUP="lp", MODE="0660", TAG+="uaccess"

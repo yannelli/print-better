@@ -1,0 +1,11 @@
+# Written by `printbetter service install --system`: the daemon (user printbetter) asks for an
+# update by creating this file in its own state folder.
+[Unit]
+Description=Print Better update requests
+
+[Path]
+PathExists=/var/lib/printbetter/update-request
+Unit=printbetter-update.service
+
+[Install]
+WantedBy=multi-user.target

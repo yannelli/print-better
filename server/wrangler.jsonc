@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "print-better",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-11-18",
+  "compatibility_flags": ["nodejs_compat"],
+  "upload_source_maps": true,
+  "observability": { "enabled": true },
+  "assets": {
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    // Any explicit list disables navigation auto-detection, so every Worker-owned path is listed.
+    "run_worker_first": [
+      "/api/*",
+      "/mcp",
+      "/mcp/*",
+      "/.well-known/*",
+      "/oauth/authorize",
+      "/oauth/token",
+      "/oauth/register",
+      "/oauth/revoke",
+      "/install.sh",
+      "/install.ps1",
+      "/dl/*"
+    ]
+  },
+  // IDs are omitted so `wrangler deploy` auto-provisions and writes them back.
+  "d1_databases": [{ "binding": "DB", "database_name": "print-better", "migrations_dir": "migrations" }],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "print-better-files" }],
+  "durable_objects": { "bindings": [{ "name": "HUB", "class_name": "WorkspaceHub" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["WorkspaceHub"] }],
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "vars": { "APP_NAME": "Print Better" }
+}

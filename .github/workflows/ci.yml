@@ -1,0 +1,58 @@
+name: ci
+
+# Manual-only for now: start it from the Actions tab.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  server:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: server/package.json
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: server/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec wrangler types --check
+      - run: pnpm check
+      - run: pnpm build
+
+  client:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: client
+      - run: cargo clippy --workspace --locked --all-targets
+      - run: cargo check -p pb-print --no-default-features --locked
+      - name: Linux tray feature
+        if: runner.os == 'Linux'
+        run: cargo check -p printbetter --features tray-linux --locked
+
+  scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: cd scripts && shellcheck -x -s bash ./*.sh lib/*.sh && shellcheck -s sh macos/pkg-scripts/postinstall

@@ -1,0 +1,39 @@
+# Machine-wide service written by `printbetter service install --system`.
+[Unit]
+Description=Print Better client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=printbetter
+Group=printbetter
+SupplementaryGroups=lp
+Environment=PRINTBETTER_SYSTEM=1
+ExecStart={{EXE}} run --no-tray
+Restart=on-failure
+RestartSec=5
+StateDirectory=printbetter
+ConfigurationDirectory=printbetter
+ReadWritePaths=/etc/printbetter
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+LockPersonality=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+SystemCallFilter=@system-service
+CapabilityBoundingSet=
+# USB printers: raw device nodes (nusb) and the usblp class driver. No PrivateDevices=,
+# which would hide /dev/bus/usb.
+DevicePolicy=closed
+DeviceAllow=char-usb_device rw
+DeviceAllow=char-usb rw
+
+[Install]
+WantedBy=multi-user.target

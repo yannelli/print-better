@@ -1,0 +1,42 @@
+{
+  "type": "welcome",
+  "clientId": "cl_01",
+  "workspaceId": "ws_01",
+  "name": "Kitchen Mac",
+  "settings": {
+    "tray": true,
+    "lanSharing": true,
+    "autoAdd": "inherit",
+    "discovery": {
+      "mdns": true,
+      "snmp": true,
+      "usb": true,
+      "os": true
+    },
+    "paused": false,
+    "logLevel": "debug",
+    "remotePrinters": false,
+    "autoUpdate": false
+  },
+  "settingsUpdatedAt": 1763500000000,
+  "serverTime": 1763500005000,
+  "printers": [
+    {
+      "key": "uuid:4509a320-00a0-008f-00b6-002507510eca",
+      "id": "pr_01",
+      "name": "Office printer",
+      "added": true,
+      "lanShare": false,
+      "defaults": {
+        "copies": 1,
+        "media": "na_letter_8.5x11in",
+        "sides": "two-sided-long-edge",
+        "colorMode": "monochrome",
+        "orientation": "portrait",
+        "pageRanges": "1-3",
+        "fit": "fit",
+        "quality": "high"
+      }
+    }
+  ]
+}

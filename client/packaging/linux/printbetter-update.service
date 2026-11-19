@@ -1,0 +1,16 @@
+# Root helper written by `printbetter service install --system`; printbetter-update.path starts it
+# when the daemon asks. It fetches and verifies the release itself, so the request grants nothing.
+[Unit]
+Description=Print Better updater
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+Environment=PRINTBETTER_SYSTEM=1
+ExecStart={{EXE}} update-helper
+StateDirectory=printbetter-update
+TimeoutStartSec=15min
+NoNewPrivileges=yes
+ProtectHome=yes
+PrivateTmp=yes

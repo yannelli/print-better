@@ -1,0 +1,5 @@
+#!/bin/sh
+# Runs as root after the pkg copies the app: installs the root daemon and the per-user tray agent.
+set -e
+"/Applications/Print Better.app/Contents/MacOS/printbetter" service install --system
+exit 0

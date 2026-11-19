@@ -1,0 +1,12 @@
+{
+  "type": "printer_status",
+  "key": "usb:04f9:0042:E12345",
+  "status": {
+    "state": "stopped",
+    "reasons": [
+      "media-empty"
+    ],
+    "message": "Out of paper",
+    "supplies": []
+  }
+}
