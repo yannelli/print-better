@@ -152,6 +152,29 @@ async fn a_printer_this_computer_may_not_use_fails_the_job_with_a_plain_reason()
 }
 
 #[tokio::test]
+async fn a_job_a_rule_or_limit_refuses_fails_with_its_message() {
+    let refusing = FakeServer::start(|_| (403, json!({ "error": { "code": "policy_blocked", "message": "Color printing is off on weekends" } }))).await;
+    let dir = TempDir::new();
+    let sink = RemoteSink::new(daemon(&dir, &refusing.origin));
+    let id = sink.submit(job(&dir)).unwrap();
+    until("refusal", || state(&sink, id).0 == SharedJobState::Aborted).await;
+    assert_eq!(state(&sink, id).1.as_deref(), Some("Color printing is off on weekends"));
+    assert_eq!(refusing.requests(), ["POST /api/client/jobs"]);
+
+    // Counted once the file arrives: the server refuses the upload and cancels the job itself.
+    let server = FakeServer::start(|seen| match seen.method.as_str() {
+        "PUT" => (403, json!({ "error": { "code": "policy_blocked", "message": "Over the limit Monthly pages" } })),
+        _ => (201, json!({ "job": { "id": "jb_1", "status": "uploading" }, "uploadUrl": "/api/client/jobs/jb_1/file" })),
+    })
+    .await;
+    let dir = TempDir::new();
+    let sink = RemoteSink::new(daemon(&dir, &server.origin));
+    let id = sink.submit(job(&dir)).unwrap();
+    until("the refused upload", || state(&sink, id).0 == SharedJobState::Aborted && server.requests().len() == 3).await;
+    assert_eq!(state(&sink, id).1.as_deref(), Some("Over the limit Monthly pages"));
+}
+
+#[tokio::test]
 async fn a_broken_upload_is_aborted_and_withdrawn_from_the_server() {
     let server = FakeServer::start(|seen| match seen.method.as_str() {
         "PUT" => (500, json!({ "error": { "code": "internal", "message": "Storage is down" } })),
