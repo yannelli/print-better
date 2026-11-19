@@ -16,7 +16,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
 import { Switch } from '@/components/ui/switch'
-import { docsUrl } from '@/extensions/docs'
+import { extensionDocsHref } from '@/extensions/docs'
 import { useExtensions, useSetExtensionEnabled } from '@/hooks/extensions'
 
 const CONFIRM: Record<ExtensionId, { on: string; off: string }> = {
@@ -62,7 +62,7 @@ function ExtensionRow({ ws, extension, isOwner }: { ws: string; extension: Works
         <span className="text-sm text-muted-foreground">{extension.summary}</span>
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <span>{status(extension, isOwner)}</span>
-          <a href={docsUrl(extension.docs)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground">
+          <a href={extensionDocsHref(extension)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground">
             How it works
             <ExternalLink aria-hidden className="size-3.5" />
           </a>

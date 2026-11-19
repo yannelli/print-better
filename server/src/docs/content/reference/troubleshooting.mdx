@@ -1,0 +1,152 @@
+This page helps you fix common problems with devices, printers, and jobs. Find the section that matches what you see, then work through the checks in order.
+
+## Start with a checkup
+
+A checkup tests the connection, the clock, storage, discovery, and each printer. Run it in any of these places:
+
+- On the device's page in the web app, under **Tools**, select **Run checkup**.
+- On the device's status page at `http://127.0.0.1:47631`, open **Help and troubleshooting** and select **Run checks**.
+- On the device, run `printbetter doctor`. Add `--json` for a copy to share.
+
+`printbetter status` shows the connection, the printers, the queue, and the update state at a glance. See [Manage devices](/docs/devices/manage#check-a-devices-health) for what each check means.
+
+## A device shows offline
+
+The web app shows a device as **Offline** when its connection to the server is closed.
+
+1. Check that the device is on, awake, and connected to the internet.
+2. Run `printbetter status` on the device. If it says **Print Better is not running**, run `printbetter service start`.
+3. Read the connection state in `printbetter status`, the menu bar icon, or the status page.
+
+| State | What to do |
+| --- | --- |
+| **Offline, reconnecting…** | The device can't reach the server. Check the internet connection and the **Server** check. The device keeps trying by itself. |
+| **Removed from Print Better** | Someone removed the device. Run `printbetter unpair`, then pair it again from [Add a device](/devices/add). |
+| **Stopped: connected elsewhere** | Another copy of Print Better uses the same device key, for example on a cloned disk. Run `printbetter unpair` on one copy and pair it again. |
+| **Not set up yet** | The device isn't paired. Follow [Add a device](/devices/add). |
+
+Also check these:
+
+- **Clock**: if the device's clock is off by more than 2 minutes, turn on automatic date and time.
+- Devices keep using the address they paired with. If you moved to a new domain and turned off the old address, pair them again.
+- A Linux user service stops when you log out. Run `loginctl enable-linger "$USER"` to keep it running.
+- On a new Raspberry Pi, check that the three setup files kept their exact names. The setup code works once, for 7 days. If you can sign in to the Pi, read `/var/log/cloud-init-output.log` and `journalctl -u printbetter`.
+
+## No printers found
+
+1. Turn the printer on. Check that it is on the same network as the device, or plugged into it with USB.
+2. On the device's page, select **Look now**. Or run `printbetter discover` on the device to see what it finds.
+3. Check **Where to look for printers** on the device's page. A checkup shows **Discovery** as off when every method is off.
+4. For an older office printer, turn on **Older network printers (SNMP)**.
+
+More checks:
+
+- On a Mac with a Terminal install, allow Print Better in **System Settings**, under **Privacy & Security**, then **Local Network**.
+- For a USB printer on Linux, the system service needs its udev rule. Run `sudo printbetter service install --system`, then unplug and replug the printer.
+- Bonjour doesn't cross routers. A printer on another network segment won't announce itself to the device.
+- **Found but not added**: with **Ask me first**, found printers wait on the **Printers** page. Add them there.
+
+See [Printer discovery](/docs/devices/discovery).
+
+## A printer is missing from the print window
+
+Print Better adds workspace printers to the print window of Macs and Linux computers with CUPS. It adds only printers on your other devices. Printers on the computer's own device don't get a Print Better copy.
+
+1. Check that the printer is added to the workspace, not only found.
+2. Open the computer's page in the web app. Under **Printers on this computer**, check that **Show this workspace’s printers on this computer** is on.
+3. Find the printer in the list and read its state.
+
+| State | What to do |
+| --- | --- |
+| **Added** | It is in the print window. The detail shows the name to look for. |
+| **Hidden** | Turn on the switch next to it. |
+| **Adding** | Wait a minute. The device adds it on its next check. |
+| **Couldn't add** | Read the problem above the list, and the **Remote printers** check in a checkup. |
+
+The most common problem is `lpadmin: Forbidden`. Adding printers needs CUPS admin rights:
+
+- On a Mac, install with the signed installer. It runs as a system service with those rights. A Terminal install needs an admin account.
+- On Linux, add your user to the CUPS admin group, then log out and in. On many systems that group is `lpadmin`.
+
+If the section says **Update Print Better on** the computer, update it to 0.1.3 or later. With [Printer access](/docs/extensions/printer-access) active, the computer itself needs permission to print to the printer.
+
+See [From your computer's print window](/docs/printing/print-window).
+
+## A job stays waiting
+
+Open the job on the **Print jobs** page and read its status and message.
+
+| Status or message | What it means | What to do |
+| --- | --- | --- |
+| **Waiting** | The device that owns the printer hasn't taken the job, for example because it is offline. | See [A device shows offline](#a-device-shows-offline). The job prints when the device is back. |
+| Paused on the device's name | The device is paused. | Turn off **Pause printing** on the device's page, or run `printbetter resume`. |
+| **Sending to printer**, with a message | The device has the job but can't print yet, for example the printer is off or out of paper. | Fix the printer. The device tries again, waiting up to 5 minutes between tries. |
+| Waiting for the printer to be found | The device can't see the printer. | See [No printers found](#no-printers-found). |
+| **Uploading** | The file never finished uploading. | It fails after an hour. Send it again. |
+
+A job that makes no progress for the workspace's **Keep trying for** time fails with "Gave up after" that many hours.
+
+## A job didn't print
+
+Read the message on the job. It says why the job failed.
+
+- Print Better prints PDF, JPEG, PNG, and plain text files. Convert other files first.
+- If the message names a printer problem, fix it, then retry the job. See [Print jobs](/docs/printing/jobs).
+- A job can't be retried once its document is deleted after the **Keep documents for** time. Print the file again.
+- In a print window, "You can't print to this printer from this computer" means [Printer access](/docs/extensions/printer-access) doesn't let that computer print there.
+- In a print window, "Not ready: Print Better is not connected to its server" means the computer can't reach your server. Its print system holds the job and tries again by itself.
+
+## Email to print is refused
+
+With Cloudflare Email Routing, the sender gets a bounce with one of these reasons. With Resend, the reason is in the Worker's logs.
+
+| Reason | What to do |
+| --- | --- |
+| Email-to-print is not enabled on this server | In **Server admin**, under **Email**, choose how email arrives. It must match the service that delivers the mail. |
+| The sender could not be verified (DMARC) | The sender's domain failed DMARC. Send from an address whose domain passes. |
+| No printer accepts email at this address | Check the printer's **Email name for this printer**, its **Print by email** switch, and that it is added. Check **Allow printing by email** in workspace settings. |
+| This sender is not allowed to print here | Members must send from their account's email, and it must be verified. Turn on **Accept email from members**, or add the address under **Also accept email from**. |
+| The message has nothing printable | Attach a PDF, JPEG, PNG, or text file, or write the text in the message body. Each file must fit the upload limit. |
+
+See [Email](/docs/self-hosting/email).
+
+## Updates don't install
+
+First check that a newer version is published on your server. The **Devices** page shows **Update available** for devices that are behind. Devices check every 6 hours, so select **Update now** to install at once.
+
+| Message | What to do |
+| --- | --- |
+| No Print Better release is published for this computer yet | Publish one with `scripts/release.sh --publish remote`. |
+| A version is available, with "run: printbetter update" | **Install updates automatically** is off. Turn it on, or select **Update now**. |
+| Updates need the system updater, which this install lacks | Run `sudo printbetter service install --system`. |
+| Can't replace the program, with "Run: sudo printbetter update" | Run `sudo printbetter update`. |
+| This Print Better is installed for one user | Run `printbetter update` without `sudo`. |
+| This copy of Print Better is not inside Print Better.app | Run the install command from **Add a device** again. |
+| The update is signed by a different team | Publish with the same Developer ID certificates as the installed app. |
+| The update download was damaged | Publish the release again, then select **Update now**. |
+
+A failed update leaves the current version in place. See [Automatic updates](/docs/devices/updates).
+
+## Where the logs are
+
+| Device | Log |
+| --- | --- |
+| Mac, signed installer | `/Library/Logs/Print Better/printbetter.log` |
+| Mac, Terminal install | `~/Library/Logs/Print Better/printbetter.log` |
+| Mac, menu bar icon of the signed installer | `~/Library/Logs/Print Better/tray.log` |
+| Linux, user service | `~/.local/state/printbetter/logs/printbetter.log`, or `journalctl --user -u printbetter` |
+| Linux and Raspberry Pi, system service | `/var/lib/printbetter/logs/printbetter.log`, or `journalctl -u printbetter` |
+
+You can also read the log without opening the file:
+
+- In the web app, on the device's page, select **Show log**. Then select **Copy log** or **Download**.
+- On the device, run `printbetter logs`, or `printbetter logs --follow` to watch new lines.
+- On the status page, open **Help and troubleshooting** and select **Show recent log**.
+
+For more detail, turn on **Detailed activity log** on the device's page, or run `printbetter config set logLevel debug`. Turn it off when you are done.
+
+The server's own logs are in Cloudflare Workers Logs. To watch them live, run:
+
+```sh
+pnpm --dir server exec wrangler tail
+```

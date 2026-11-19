@@ -131,8 +131,11 @@ Without a `printerId`, the job goes to the workspace's default printer. See [RES
 
 ## Docs
 
+Every Print Better deployment serves its user docs at `/docs`, for example `https://<your-server>/docs`. Anyone can read them without signing in, and they match the version that server runs.
+
 | Page | Contents |
 | --- | --- |
+| [Docs site](docs/docs-site.md) | The docs every server serves at `/docs`: how pages are written, checked, and built |
 | [Self-hosting](docs/self-hosting.md) | Deploy, secrets, custom domains, Google and OIDC sign-in, email, backups, and updates |
 | [Releasing the client](docs/release.md) | Build targets, signing and notarization, publishing to R2, and known limits |
 | [Remote printers](docs/remote-printers.md) | How printers on other devices show up in Cmd+P on Mac and Linux |

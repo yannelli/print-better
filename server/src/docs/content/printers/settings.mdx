@@ -1,0 +1,120 @@
+Give a printer a name people recognize, say where it is, and choose the settings every print starts with.
+
+Owners and admins can change printer settings. With [Printer access](/docs/extensions/printer-access) turned on, anyone with the **Change settings** permission on the printer can too. Everyone else sees the settings but can't change them.
+
+## Rename a printer
+
+<Steps>
+
+### Open the printer
+
+Open [**Printers**](/printers) and select the printer.
+
+### Open Name and place
+
+Under **Tools**, find **Name and place** and select **Change**.
+
+### Enter the name and location
+
+Type a **Name**, such as "Office laser". **Where it is** is optional, such as "Upstairs office".
+
+### Save
+
+Select **Save**.
+
+</Steps>
+
+The new name shows up everywhere: the web app, the print dialog, AI assistants, and the print window on your other computers.
+
+The location appears under the printer's name, for example "Upstairs office, via Front desk Mac". Without a location, the page says "Connected to Front desk Mac". In a computer's print window, the location reads "Upstairs office (via Print Better)".
+
+## Default settings
+
+Every print starts with the printer's default settings. Change them on the printer's **Overview** tab, under **Default settings**.
+
+| Setting | Choices |
+| --- | --- |
+| **Copies** | From 1 up to the most copies the printer reports. |
+| **Color** | **Color** or **Black and white**. Shown only for color printers. |
+| **Sides** | **One side**, **Both sides, like a book**, or **Both sides, flip up**. Shown only for printers that print on both sides. |
+| **Paper** | The paper sizes the printer reports, such as Letter or A4. |
+| **Page direction** | **Automatic**, **Portrait (tall)**, or **Landscape (wide)**. |
+| **Size on the page** | **Shrink to fit the page**, **Fill the whole page**, or **Actual size**. |
+| **Quality** | **Draft (faster, uses less ink)**, **Normal**, or **Best**. |
+
+Select **Save defaults** to keep your changes. Select **Undo changes** to go back to the saved settings.
+
+Defaults apply to every print that doesn't choose its own value. That covers the web app, the API, AI assistants, email, and a computer's print window. A choice someone makes for one print always wins over the default.
+
+The device applies the defaults when the job prints. If you change a default while a job is waiting, the job uses the new default for any setting it didn't choose.
+
+[Job options](/docs/reference/job-options) lists every setting and the values the API accepts.
+
+### Print on both sides by default
+
+<Steps>
+
+### Open the default settings
+
+Open the printer and find **Default settings** on the **Overview** tab.
+
+### Choose two-sided printing
+
+Set **Sides** to **Both sides, like a book**.
+
+### Save
+
+Select **Save defaults**.
+
+</Steps>
+
+**Both sides, like a book** turns pages on the long edge, which suits most documents. **Both sides, flip up** turns pages on the short edge, like a notepad. People can still pick **One side** for a single print.
+
+If **Sides** is missing, the printer didn't report that it can print on both sides.
+
+## Sharing
+
+The **Sharing** section has two switches:
+
+- **Share on the local network** lets phones and computers on the same network print without Print Better. See [Share on your network](/docs/printers/lan-sharing).
+- **Print by email** gives the printer its own email address. See [Print by email](/docs/printing/email).
+
+## Printer details
+
+The **Details** section shows what the device knows about the printer.
+
+| Row | What it shows |
+| --- | --- |
+| **Model** | The make and model the printer reports. |
+| **Connected through** | The device that reaches the printer, and whether it is online. |
+| **Location** | The location you set, or **Not set**. |
+| **How it's reached** | Each connection the device can use, in order of preference. For example **Network, encrypted** or **USB cable**. |
+| **Can print** | Color or black and white, and both sides or one side. |
+| **File types it understands** | The formats the printer reads itself. The device converts other files for it. |
+| **Sharpness** | The resolutions the printer reports, in dpi. |
+| **Printer ID** | The printer's own identifier. |
+| **First seen** | When a device first found the printer. |
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/printers/status" title="Status and supplies">
+
+See whether the printer is ready, and check its ink or toner.
+
+</Card>
+
+<Card href="/docs/reference/job-options" title="Job options">
+
+Every print setting and how defaults work.
+
+</Card>
+
+<Card href="/docs/extensions/printer-access" title="Printer access">
+
+Choose who can change this printer's settings.
+
+</Card>
+
+</Cards>

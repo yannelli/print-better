@@ -1,0 +1,90 @@
+This page explains how Macs and Linux devices find and install new versions of Print Better. Devices update from your own server, so a new version reaches them only after a server admin publishes it.
+
+## How a device finds an update
+
+A device asks the server it is paired with for the newest version:
+
+- About 2 minutes after Print Better starts.
+- Every 6 hours after that, within 30 minutes either way.
+- When you ask for an update.
+
+Devices only move to a newer version. They never install an older one.
+
+To publish a new version, see [Update the devices](/docs/self-hosting/updates-and-backups#update-the-devices).
+
+## Install updates automatically
+
+**Install updates automatically** is on by default. With it on, a device installs a new version in the background and restarts Print Better. It first waits up to 30 minutes for the jobs it is working on to finish.
+
+With it off, the device still checks, but it installs only when you ask. Turn it off in either place:
+
+- On the device's page in the web app, under **Settings**.
+- On the device, with `printbetter config set autoUpdate off` or the switch on its status page.
+
+## Update now
+
+The **Devices** page marks devices that are behind with **Update available**. To update one right away:
+
+- On the device's page, under **Tools**, select **Update now**.
+- In the menu bar icon, choose **Update to** the new version.
+- On the device's status page, select **Update now**.
+- On the device, run `printbetter update`.
+
+The device downloads the new version, installs it, and restarts. Printing pauses for a few seconds.
+
+You can also run the install command from **Add a device** again. It installs the newest version and keeps the connection.
+
+## How updates are checked
+
+Before a device installs anything, it checks the download:
+
+- It downloads only from the server it is paired with, using its own device key.
+- The file must match the size and SHA-256 checksum the server lists.
+- On a Mac, the update must carry a valid Developer ID signature from the same team as the installed app. The signed installer checks the package signature. A Terminal install checks the app's code signature.
+- On Linux, the new program must run and report the new version before it replaces the old one.
+
+If any check fails, the current version stays in place. The error shows in `printbetter status`, `printbetter doctor`, the status page, and the **Updates** line of a checkup.
+
+## Linux system service
+
+The system service runs as the `printbetter` user, which can't replace `/usr/local/bin/printbetter`. A small updater does that part as root:
+
+1. The service asks for an update by creating a file in its own state folder.
+2. `printbetter-update.path` notices it and starts `printbetter-update.service`.
+3. The updater downloads the release itself with the device's key, checks it, and replaces the program.
+4. It restarts the service and records the result for the status page.
+
+`sudo printbetter update` runs the same steps by hand.
+
+Installs from before version 0.1.2 don't have the updater yet. The checkup reports this under **Updates**. To add it, run the install command again, or run:
+
+```sh
+sudo printbetter service install --system
+```
+
+## When a device won't update itself
+
+A device only installs on request, and never by itself, when:
+
+- **Install updates automatically** is off.
+- It runs a development build.
+
+It can't update itself at all when the program isn't inside `Print Better.app` on a Mac. Run the install command again in that case. See [Updates don't install](/docs/reference/troubleshooting#updates-dont-install).
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/devices/manage" title="Manage devices">
+
+See each device's version and update it.
+
+</Card>
+
+<Card href="/docs/self-hosting/updates-and-backups" title="Updates and backups">
+
+Publish new client versions from your Mac.
+
+</Card>
+
+</Cards>

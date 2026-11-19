@@ -1,0 +1,98 @@
+This page explains how a device finds printers and what happens to each new printer it finds. Use it to understand why a printer appears, and to turn discovery methods on or off.
+
+## Where a device looks
+
+A device uses four methods. All four are on by default.
+
+| Method | Setting on the device's page | What it finds |
+| --- | --- | --- |
+| Bonjour | **Network printers (Bonjour)** | Printers that announce IPPS, IPP, raw port 9100, or LPD on the local network. Most printers made in the last 15 years do. |
+| SNMP | **Older network printers (SNMP)** | Office printers that don't announce themselves. The device asks the network who is a printer. |
+| USB | **USB printers** | Printers plugged into the device with a cable. |
+| System printers | **Printers already set up on this computer** | Printers in the computer's own print system, CUPS on a Mac or Linux computer. |
+
+When two methods find the same physical printer, the device merges them into one printer with several routes. When it prints, it tries the routes in order. If a route can't connect, it moves to the next one.
+
+Printers that Print Better added to the print window from your other devices are never reported back as new printers.
+
+## When a device looks
+
+- When Print Better starts.
+- Every 10 minutes.
+- When you ask: **Look now** on the device's page, **Find printers** in the menu bar icon or on the status page, or `printbetter discover` on the device.
+
+A device also checks each added printer every 60 seconds. It reports the printer's state, problems such as low toner, and supply levels. See [Status and supplies](/docs/printers/status).
+
+If a printer stops showing up, it stays in the list with its settings and shows **Not responding**. Remove it yourself if it is gone for good.
+
+## New printers
+
+Each printer a device finds for the first time is **found**. It can't take jobs until someone adds it. The **Add printers automatically** setting in workspace settings decides what happens next:
+
+| Choice | Adds |
+| --- | --- |
+| **Recommended** (the default) | Printers plugged into the device, plus network printers when the device finds 3 or fewer of them. |
+| **All of them** | Every printer the device finds. |
+| **Ask me first** | Nothing. Found printers wait under **Found but not added** for you to add them. |
+
+Each device can follow the workspace or choose for itself. On the device's page, under **New printers**, **Add new printers automatically** offers **Use the workspace setting** (the default), **Add the likely ones**, **Add every printer found**, and **Ask me first**.
+
+To add a found printer yourself, see [Add a printer](/docs/printers/add).
+
+## A printer two devices can see
+
+When a second device finds a printer that another device already added, the printer doesn't show up again under **Found but not added**. The server matches them by the printer's own ID.
+
+## Turn a method off
+
+Turn off a method you don't need, for example SNMP on a network with many printers that aren't yours.
+
+<Tabs>
+
+<Tab label="Web app">
+
+Open the device's page. Under **Where to look for printers**, turn off the method.
+
+</Tab>
+
+<Tab label="On the device">
+
+Use the status page at `http://127.0.0.1:47631`, or the command line:
+
+```sh
+printbetter config set discovery.snmp off
+```
+
+The keys are `discovery.mdns`, `discovery.snmp`, `discovery.usb`, and `discovery.os`.
+
+</Tab>
+
+</Tabs>
+
+With every method off, the checkup reports **Discovery** as off instead of a problem.
+
+## Look without a server
+
+`printbetter discover` works on a device that isn't connected yet. It prints each printer's name, model, key, and routes. Use `--timeout` to look longer, up to 60 seconds:
+
+```sh
+printbetter discover --timeout 10
+```
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/printers/add" title="Add a printer">
+
+Choose which found printers people can print to.
+
+</Card>
+
+<Card href="/docs/reference/troubleshooting#no-printers-found" title="No printers found">
+
+What to check when a device finds nothing.
+
+</Card>
+
+</Cards>

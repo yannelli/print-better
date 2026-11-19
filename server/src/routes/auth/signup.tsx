@@ -9,7 +9,7 @@ import { meApi } from '@/lib/api/me'
 import { createPasskey } from '@/lib/webauthn'
 import { FullPageLoading } from '@/routes/guards'
 import { AccountFields, accountErrors, emptyAccount } from './account-fields'
-import { AuthLayout, FormError, linkClass } from './auth-layout'
+import { AuthLayout, DocsLink, FormError, linkClass } from './auth-layout'
 import { useSubmit } from './fields'
 import { InviteCard, useInvitePreview } from './invite-preview'
 import { OrDivider, SsoButtons } from './sso-buttons'
@@ -37,6 +37,7 @@ function SignupForm({ invite, next, onStart }: { invite: string | null; next: st
       <AuthLayout
         title="You need an invite"
         description="New accounts on this server are by invitation. Ask someone who already uses it to send you an invite link, then open that link."
+        footer={<DocsLink />}
       >
         <Link href={loginHref} className={buttonVariants({ size: 'lg' })}>I already have an account</Link>
       </AuthLayout>
@@ -67,12 +68,15 @@ function SignupForm({ invite, next, onStart }: { invite: string | null; next: st
       title="Create your account"
       description={invite ? undefined : 'It takes a minute. You can change any of this later.'}
       footer={
-        <span>
-          Already have an account?{' '}
-          <Link href={invite ? `/login?next=${encodeURIComponent(`/invite/${invite}`)}` : loginHref} className={linkClass}>
-            Sign in
-          </Link>
-        </span>
+        <>
+          <span>
+            Already have an account?{' '}
+            <Link href={invite ? `/login?next=${encodeURIComponent(`/invite/${invite}`)}` : loginHref} className={linkClass}>
+              Sign in
+            </Link>
+          </span>
+          <DocsLink />
+        </>
       }
     >
       {preview.data && <InviteCard {...preview.data} />}

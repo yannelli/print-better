@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   Bot,
   Building2,
   House,
@@ -59,6 +60,7 @@ export function useCommandItems(ws: string): CommandItem[] {
     { id: 'nav-account', group: 'Go to', label: 'Your account', keywords: 'password passkey profile tokens', icon: UserRound, run: go('~/account') },
     { id: 'nav-connect', group: 'Go to', label: 'Connect AI', keywords: 'mcp claude chatgpt assistant', icon: Bot, run: go('~/connect') },
   ]
+  items.push({ id: 'nav-docs', group: 'Go to', label: 'Docs', keywords: 'help documentation guide manual how to', icon: BookOpen, run: go('~/docs') })
   if (session?.user?.isAdmin) {
     items.push({ id: 'nav-admin', group: 'Go to', label: 'Server admin', keywords: 'sso signup email', icon: ShieldCheck, run: go('~/admin') })
   }

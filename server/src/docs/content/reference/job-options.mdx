@@ -1,0 +1,139 @@
+Every print job can carry options, such as copies, two-sided printing, and paper size. This page lists each option and its values. It also explains how a printer's defaults and abilities shape the result.
+
+## Example
+
+In the [REST API](/docs/printing/api) and in [MCP tools](/docs/reference/mcp), options go in an `options` object:
+
+```json
+{
+  "printerId": "your_printer_id",
+  "text": "Hello from Print Better",
+  "options": {
+    "copies": 2,
+    "sides": "two-sided-long-edge",
+    "colorMode": "monochrome",
+    "media": "iso_a4_210x297mm",
+    "pageRanges": "1-3,5"
+  }
+}
+```
+
+Every option is optional. Leave one out to use the printer's default.
+
+## Options
+
+| Option | Values | What it does |
+| --- | --- | --- |
+| `copies` | A whole number from 1 to 999 | How many copies to print. |
+| `media` | A paper size name, such as `na_letter_8.5x11in` | The paper size. Use a name from the printer's `capabilities.media`. |
+| `sides` | `one-sided`, `two-sided-long-edge`, `two-sided-short-edge` | One side, or both sides. Long edge turns pages like a book. Short edge flips them up, like a notepad. |
+| `colorMode` | `auto`, `color`, `monochrome` | Color or black and white. `auto` lets the printer decide. |
+| `orientation` | `auto`, `portrait`, `landscape` | Page direction. `auto` follows the document. |
+| `pageRanges` | Pages and ranges, such as `1-3,5` | Prints only these pages. Pages start at 1. |
+| `fit` | `fit`, `fill`, `none` | `fit` shrinks the page to fit the paper. `fill` fills the whole paper and may trim the edges. `none` prints at actual size. |
+| `quality` | `draft`, `normal`, `high` | Print quality. `draft` is faster and uses less ink. |
+| `source` | A tray name, such as `tray-1` | The paper tray. Use a name from the printer's `capabilities.sources`. |
+| `mediaType` | A paper type name, such as `labels` | The kind of paper. Use a name from the printer's `capabilities.mediaTypes`. |
+
+The server rejects option names it doesn't know, so a typo never prints the wrong thing. It also checks every value against the lists above. `pageRanges` can be up to 100 characters, and spaces in it are removed.
+
+### Page ranges
+
+Write page numbers and ranges, separated by commas: `1-3,5,8-10`. Every range needs a first and a last page.
+
+### Paper sizes, trays, and paper types
+
+Paper sizes use standard names that include the size, such as `na_letter_8.5x11in`, `na_legal_8.5x14in`, or `iso_a4_210x297mm`. The web app shows them as names like "Letter (8.5 × 11 in)".
+
+Trays and paper types use the printer's own names, such as `tray-1`, `manual`, `stationery`, or `labels`. Each printer reports the ones it has.
+
+## Where you can set each option
+
+| Option | Web app print dialog | Printer default settings |
+| --- | --- | --- |
+| `copies` | **Copies** | **Copies** |
+| `media` | **Paper** | **Paper** |
+| `sides` | **Sides** | **Sides** |
+| `colorMode` | **Color** | **Color** |
+| `orientation` | **Page direction** | **Page direction** |
+| `pageRanges` | **Pages** | Not offered |
+| `fit` | **Size on the page** | **Size on the page** |
+| `quality` | **Quality** | **Quality** |
+| `source` | Not offered | Not offered |
+| `mediaType` | Not offered | Not offered |
+
+On a Mac, the [print window](/docs/printing/print-window#options-in-the-print-window) sets `media` with **Paper Size**, `source` with **Paper Feed**, and `mediaType` with **Paper Type**. It also sets `quality` with **Quality**, `sides` with **Two-Sided**, and `colorMode` with **Color**.
+
+The API and AI assistants can set every option. Jobs sent [by email](/docs/printing/email) and test pages carry no options, so they use the printer's defaults.
+
+In the web app, these labels stand for these values:
+
+| Web app label | Value |
+| --- | --- |
+| **One side**, **Both sides, like a book**, **Both sides, flip up** | `one-sided`, `two-sided-long-edge`, `two-sided-short-edge` |
+| **Color**, **Black and white** | `color`, `monochrome` |
+| **Automatic**, **Portrait (tall)**, **Landscape (wide)** | `auto`, `portrait`, `landscape` |
+| **Shrink to fit the page**, **Fill the whole page**, **Actual size** | `fit`, `fill`, `none` |
+| **Draft (faster, uses less ink)**, **Normal**, **Best** | `draft`, `normal`, `high` |
+
+## How printer defaults work
+
+Each printer has [default settings](/docs/printers/settings#default-settings). Admins set them on the printer's page. The API sets them with the printer's `defaults` field, which replaces all of them at once.
+
+When a job prints, each option is decided in this order:
+
+1. The value on the job, when it has one.
+2. Otherwise, the printer's default setting.
+3. Otherwise, the printer's own setting.
+
+The device next to the printer combines them when the job prints. If a default changes while a job waits, the job uses the new default for every option it didn't set.
+
+The web app's print dialog sends only the options you change. Everything you leave alone follows the printer's defaults.
+
+## How printer abilities limit options
+
+Each device reports what its printers can do, in each printer's `capabilities`:
+
+```json
+{
+  "color": true,
+  "duplex": true,
+  "copiesMax": 99,
+  "media": ["na_letter_8.5x11in", "iso_a4_210x297mm"],
+  "mediaDefault": "na_letter_8.5x11in",
+  "sources": ["auto", "tray-1", "manual"],
+  "mediaTypes": ["stationery", "labels"],
+  "qualities": ["draft", "normal", "high"]
+}
+```
+
+Get them with `GET /api/workspaces/:ws/printers/:id`, or ask an AI assistant to look at the printer.
+
+The web app offers only what the printer reports. **Color** appears only for color printers. **Sides** appears only for printers that print on both sides. **Paper** lists the printer's sizes, and **Copies** stops at the printer's limit.
+
+The server accepts any valid value, even one the printer lacks. The device decides at print time:
+
+- Over IPP, which most network printers use, the device sends only values the printer says it supports. It leaves out the rest, and the printer uses its own setting. For example, `two-sided-long-edge` on a one-sided printer prints on one side.
+- Trays and paper types reach the printer only when it lists them.
+- `color` on a black-and-white printer prints in black and white.
+- When the device converts a document into the printer's own format, `quality` sets the sharpness. It aims for 150 dpi for `draft`, 300 for `normal`, and 600 for `high`, as close as the printer allows.
+
+Copies and page ranges are never dropped, because that would change what prints. If the printer can't apply them, the device makes the copies or picks the pages itself. If it can't do that either, the job stops and says why. For example: **This printer can't print selected pages or extra copies over this connection.**
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/printers/settings" title="Printer settings">
+
+Set the defaults every print starts with.
+
+</Card>
+
+<Card href="/docs/printing/api" title="Print with the API">
+
+Send jobs with options from your own scripts.
+
+</Card>
+
+</Cards>

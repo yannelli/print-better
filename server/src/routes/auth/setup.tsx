@@ -9,7 +9,7 @@ import { qk } from '@/lib/query'
 import { createPasskey, passkeyError } from '@/lib/webauthn'
 import { FullPageLoading } from '@/routes/guards'
 import { emptyAccount } from './account-fields'
-import { AuthLayout } from './auth-layout'
+import { AuthLayout, DocsLink } from './auth-layout'
 import { useSubmit } from './fields'
 import { AccountStep, StepIndicator, WelcomeStep, WorkspaceStep } from './setup-steps'
 
@@ -80,7 +80,12 @@ export default function Setup() {
 
   const [title, description] = TITLES[step]
   return (
-    <AuthLayout title={title} description={description} aside={step === 'welcome' ? undefined : <StepIndicator current={step === 'workspace' ? 1 : 0} />}>
+    <AuthLayout
+      title={title}
+      description={description}
+      aside={step === 'welcome' ? undefined : <StepIndicator current={step === 'workspace' ? 1 : 0} />}
+      footer={<DocsLink />}
+    >
       {step === 'welcome' && <WelcomeStep onNext={() => setStep('account')} />}
       {step === 'account' && (
         <AccountStep
