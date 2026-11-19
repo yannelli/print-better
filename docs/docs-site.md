@@ -1,4 +1,4 @@
-# Writing the docs site
+# Writing the Docs Site
 
 Created: 2026-11-19. Last updated: 2026-11-19.
 
@@ -16,13 +16,13 @@ The docs site is part of the web app. Every Print Better server serves it at `/d
 
 To add a page: add it to `nav.ts`, create the MDX file, and run `pnpm --dir server check:docs`.
 
-## Page shape
+## Page Shape
 
 - Do not write a `#` heading, frontmatter, or `export const meta`. The site shows the title and description from `nav.ts` above the page.
 - Start with the answer or the first action, or go straight to the first section. The description from `nav.ts` already sits above the page, so skip intros that only announce what the page covers.
 - Use `##` for sections and `###` for subsections. Both appear in the "On this page" list.
 - Use Title Case for page and group titles in `nav.ts`, headings, `<Steps>` step headings, and `title` attributes on `<Callout>` and `<Card>`:
-  - Lowercase a, an, the, and, but, or, for, nor, as, at, by, in, of, on, to, up, via, and vs, unless the word comes first or last: "Set up Email to Print", "What You Don't Need to Back Up".
+  - Lowercase a, an, the, and, but, or, for, nor, as, at, by, in, of, on, to, up, via, and vs, unless the word comes first or last, or belongs to a phrasal verb (Set Up, Sign In, Turn On): "Set Up Email to Print", "What You Don't Need to Back Up".
   - Code stays exact: `printbetter`, `wrangler.jsonc`.
   - Heading ids stay lowercase, so the case doesn't change anchors.
 - Link text that names a page or heading uses its Title Case title: `[Printer Discovery](/docs/devices/discovery)`.
@@ -38,7 +38,7 @@ Use these without an import.
 | `<Steps>` | A procedure. Write each step as a `###` heading inside `<Steps>`. The site numbers them. |
 | `<Tabs>` with `<Tab label="...">` | The same task done in different ways, for example macOS and Linux, or curl and JavaScript. |
 | `<Cards>` with `<Card href="/docs/..." title="...">` | Links to the next pages. Put one sentence inside each card. |
-| `<PermissionTable />` | The six printer access permissions and what each one allows. |
+| `<PermissionTable />` | The 6 printer access permissions and what each one allows. |
 | `<RoleTable />` | The built-in printer access roles and their permissions. |
 
 The two tables read their data from `server/shared/access.ts` and their wording from `server/src/lib/access-words.ts`, so they always match the app.
@@ -74,7 +74,7 @@ Select **Add a device** and follow the steps.
 - Account and admin screens: `/account`, `/admin`, `/connect`.
 - Other sites: full `https://` URLs. They open in a new tab.
 
-## Writing rules
+## Writing Rules
 
 - US English. Second person ("you"). Present tense. Active voice. Contractions are fine.
 - Terse and structured: headings, lists, tables, and code blocks, with very little prose.
@@ -100,7 +100,7 @@ Select **Add a device** and follow the steps.
 - Write only what the code does today. Do not describe planned features.
 - No real people, hostnames, IP addresses, emails, server URLs, or ids. Use examples such as "Office laser", "Front desk Mac", `alex@example.com`, and `https://your-print-better.example`.
 
-## Checking pages
+## Checking Pages
 
 Run these from the repository root.
 
@@ -110,7 +110,7 @@ Run these from the repository root.
 | `pnpm --dir server check:docs --allow-missing` | Skips pages listed in `nav.ts` that have no file yet. |
 | `pnpm --dir server check:docs devices` | Reports only problems under `content/devices`. |
 
-## How it is built
+## How It Is Built
 
 Checked on 2026-11-19 against the installed packages.
 

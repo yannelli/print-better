@@ -4,7 +4,13 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ## [Unreleased]
 
+### Added
+
+- **web:** Adds **Show more** to the **Activity** tab, which loads older changes 50 at a time. It used to stop at the latest 50.
+
 ### Fixed
+
+- **linux:** Adds the machine-wide service user to the `lpadmin` group where the system has one (Debian, Ubuntu, Raspberry Pi OS), so it can create its print queues for other devices' printers. Existing installs join it at their next update.
 
 - **deploy:** Saves the `APP_SECRET` and `AUTH_PEPPER` that `scripts/deploy.sh` creates to `~/.config/print-better/secrets.env` (readable only by you), since Cloudflare never shows a secret again.
 - **extensions:** Names the **Server admin > Extensions** screen correctly in the messages for an extension that is off or unavailable.
