@@ -1,3 +1,4 @@
+import PrintBetterKit
 import SwiftUI
 import UIKit
 
@@ -9,6 +10,7 @@ final class ShareViewController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        ThisDevice.model = UIDevice.current.model
         let host = UIHostingController(rootView: ShareView(model: model))
         addChild(host)
         host.view.frame = view.bounds

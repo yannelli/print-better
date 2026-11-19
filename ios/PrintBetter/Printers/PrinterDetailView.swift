@@ -48,7 +48,7 @@ struct PrinterDetailView: View {
                 .padding(.bottom, 8)
             }
         } else {
-            ContentUnavailableView("Printer Not Available", systemImage: "printer", description: Text("This printer isn't shared with this iPhone anymore."))
+            ContentUnavailableView("Printer Not Available", systemImage: "printer", description: Text("This printer isn't shared with this \(ThisDevice.model) anymore."))
         }
     }
 }

@@ -28,7 +28,7 @@ public protocol SecretStore: Sendable {
 
 public struct KeychainError: Error, Equatable, LocalizedError {
     public let status: OSStatus
-    public var errorDescription: String? { "The Keychain refused (\(status)). Restart your iPhone, then try again." }
+    public var errorDescription: String? { "The Keychain refused (\(status)). Restart your \(ThisDevice.model), then try again." }
 }
 
 /// One generic-password item, optionally in a keychain access group shared with app extensions.

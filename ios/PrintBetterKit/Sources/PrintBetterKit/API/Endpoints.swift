@@ -1,6 +1,6 @@
 import Foundation
 
-/// The device endpoints in docs/protocol.md that an iPhone uses.
+/// The device endpoints in docs/protocol.md that an iPhone or iPad uses.
 extension APIClient {
     public func instance() async throws -> InstanceInfo {
         try await get("/api/instance")

@@ -14,7 +14,7 @@ struct ShareView: View {
                 case .notPaired:
                     ContentUnavailableView(
                         "Connect Print Better First", systemImage: "printer",
-                        description: Text("Open the Print Better app and connect this iPhone to your server. Then share again."))
+                        description: Text("Open the Print Better app and connect this \(ThisDevice.model) to your server. Then share again."))
                 case let .ready(session):
                     PrintForm(session: session, compact: true, onDone: model.close) {
                         if session.preparing {

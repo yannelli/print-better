@@ -33,7 +33,7 @@ struct QRScannerSheet: View {
     }
 
     private var hint: some View {
-        Text(wrongCode ? "This isn't a Print Better pairing code. In the web app, open Devices > Add a device and choose iPhone." : "In the web app, open Devices > Add a device and choose iPhone. Then point the camera at the QR code.")
+        Text(wrongCode ? "This isn't a Print Better pairing code. In the web app, open Devices > Add a device and choose iPhone or iPad." : "In the web app, open Devices > Add a device and choose iPhone or iPad. Then point the camera at the QR code.")
             .font(.callout)
             .multilineTextAlignment(.center)
             .padding()

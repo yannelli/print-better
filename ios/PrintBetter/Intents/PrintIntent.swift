@@ -25,7 +25,7 @@ struct PrintIntent: AppIntent {
 
     func perform() async throws -> some IntentResult & ProvidesDialog {
         guard let credentials = try AppConfig.credentials.load() else {
-            throw PrintBetterError.message("Open Print Better and connect this iPhone first.")
+            throw PrintBetterError.message("Open Print Better and connect this \(ThisDevice.model) first.")
         }
         let folder = try DocumentPreparer.workFolder()
         defer { try? FileManager.default.removeItem(at: folder) }

@@ -1,7 +1,7 @@
 import PrintBetterKit
 import SwiftUI
 
-/// The server and workspace this iPhone uses, its name, help, and a way to unpair.
+/// The server and workspace this device uses, its name, help, and a way to unpair.
 struct SettingsView: View {
     @Environment(AppModel.self) private var app
     @State private var confirmingUnpair = false
@@ -21,9 +21,9 @@ struct SettingsView: View {
                 Section {
                     LabeledContent("Name", value: app.identity?.name ?? credentials.deviceName)
                 } header: {
-                    Text("This iPhone")
+                    Text("This \(ThisDevice.model)")
                 } footer: {
-                    Text("To rename this iPhone, open Devices in the web app.")
+                    Text("To rename this \(ThisDevice.model), open Devices in the web app.")
                 }
             }
             Section {
@@ -34,7 +34,7 @@ struct SettingsView: View {
                 }
             }
             Section {
-                Button("Unpair This iPhone", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
+                Button("Unpair This \(ThisDevice.model)", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) {
                     confirmingUnpair = true
                 }
             } footer: {
@@ -43,10 +43,10 @@ struct SettingsView: View {
         }
         .navigationTitle("Settings")
         .refreshable { await app.refreshIdentity() }
-        .confirmationDialog("Unpair this iPhone?", isPresented: $confirmingUnpair, titleVisibility: .visible) {
+        .confirmationDialog("Unpair this \(ThisDevice.model)?", isPresented: $confirmingUnpair, titleVisibility: .visible) {
             Button("Unpair", role: .destructive) { app.unpair() }
         } message: {
-            Text("You'll need to connect again to print. This iPhone stays under Devices in the web app until someone removes it there.")
+            Text("You'll need to connect again to print. This \(ThisDevice.model) stays under Devices in the web app until someone removes it there.")
         }
     }
 }

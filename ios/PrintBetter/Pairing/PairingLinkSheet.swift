@@ -19,14 +19,14 @@ struct PairingLinkSheet: View {
             Form {
                 Section {
                     LabeledContent("Server", value: link.server.displayName)
-                    TextField("Name", text: $model.deviceName, prompt: Text("iPhone"))
+                    TextField("Name", text: $model.deviceName, prompt: Text(ThisDevice.model))
                         .textInputAutocapitalization(.words)
                 } footer: {
-                    Text("Only connect to a server you trust. Everything you print from this iPhone goes to it.")
+                    Text("Only connect to a server you trust. Everything you print from this \(ThisDevice.model) goes to it.")
                 }
                 if let current = app.credentials {
                     Section {
-                        ErrorRow("This iPhone is connected to \(current.server.displayName). Connecting here replaces that connection.")
+                        ErrorRow("This \(ThisDevice.model) is connected to \(current.server.displayName). Connecting here replaces that connection.")
                     }
                 }
                 if let error = model.error {

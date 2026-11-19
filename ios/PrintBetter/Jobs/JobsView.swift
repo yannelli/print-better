@@ -1,7 +1,7 @@
 import PrintBetterKit
 import SwiftUI
 
-/// Recent jobs from this iPhone. Refreshes every few seconds while one is still waiting or printing.
+/// Recent jobs from this device. Refreshes every few seconds while one is still waiting or printing.
 struct JobsView: View {
     let jobs: JobsModel
     let printers: [Printer]
@@ -28,7 +28,7 @@ struct JobsView: View {
         }
         .overlay {
             if jobs.loaded, jobs.jobs.isEmpty, jobs.error == nil {
-                ContentUnavailableView("No Jobs Yet", systemImage: "tray", description: Text("Documents you print from this iPhone show up here."))
+                ContentUnavailableView("No Jobs Yet", systemImage: "tray", description: Text("Documents you print from this \(ThisDevice.model) show up here."))
             } else if !jobs.loaded {
                 ProgressView()
             }

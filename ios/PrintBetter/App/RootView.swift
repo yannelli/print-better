@@ -1,7 +1,7 @@
 import PrintBetterKit
 import SwiftUI
 
-/// Pairing until this iPhone has a token, then the tabs.
+/// Pairing until this device has a token, then the tabs.
 struct RootView: View {
     @Environment(AppModel.self) private var model
 
@@ -17,11 +17,11 @@ struct RootView: View {
         .sheet(item: $model.pendingLink) { link in
             PairingLinkSheet(link: link, app: model)
         }
-        .alert("This iPhone was removed", isPresented: $model.revoked) {
+        .alert("This \(ThisDevice.model) was removed", isPresented: $model.revoked) {
             Button("Connect Again") { model.unpair() }
             Button("Not Now", role: .cancel) {}
         } message: {
-            Text("Someone removed this iPhone from Print Better. Connect it again to print.")
+            Text("Someone removed this \(ThisDevice.model) from Print Better. Connect it again to print.")
         }
         .alert("Can't read the Keychain", isPresented: .constant(model.keychainError != nil)) {
             Button("OK") { model.keychainError = nil }

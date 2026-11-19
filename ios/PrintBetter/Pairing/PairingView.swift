@@ -1,7 +1,7 @@
 import PrintBetterKit
 import SwiftUI
 
-/// The first screen: connect this iPhone with a server address and the browser, or with a QR code.
+/// The first screen: connect this device with a server address and the browser, or with a QR code.
 struct PairingView: View {
     let app: AppModel
     @State private var model: PairingModel
@@ -46,12 +46,12 @@ struct PairingView: View {
                     .submitLabel(.go)
                     .focused($addressFocused)
                     .onSubmit { model.signIn() }
-                TextField("Name", text: $model.deviceName, prompt: Text("iPhone"))
+                TextField("Name", text: $model.deviceName, prompt: Text(ThisDevice.model))
                     .textInputAutocapitalization(.words)
             } header: {
                 Text("Server")
             } footer: {
-                Text("The name is how this iPhone appears under Devices in the web app.")
+                Text("The name is how this \(ThisDevice.model) appears under Devices in the web app.")
             }
             if let error = model.error {
                 Section { ErrorRow(error) }
@@ -96,7 +96,7 @@ private struct WelcomeHeader: View {
         VStack(spacing: 12) {
             BrandMark(size: 88)
             Text("Print Better").font(.largeTitle.bold())
-            Text("Connect this iPhone to your Print Better server to print to your workspace's printers from anywhere.")
+            Text("Connect this \(ThisDevice.model) to your Print Better server to print to your workspace's printers from anywhere.")
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
         }
@@ -115,7 +115,7 @@ struct ApprovalWaitView: View {
             Section {
                 VStack(spacing: 16) {
                     ProgressView().controlSize(.large)
-                    Text("Approve this iPhone").font(.title2.bold())
+                    Text("Approve this \(ThisDevice.model)").font(.title2.bold())
                     Text(code.userCode)
                         .font(.system(.largeTitle, design: .monospaced).bold())
                         .textSelection(.enabled)

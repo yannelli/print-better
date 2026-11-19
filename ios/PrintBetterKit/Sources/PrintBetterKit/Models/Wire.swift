@@ -51,19 +51,20 @@ public struct IssuedDevice: Decodable, Sendable, Equatable {
     }
 }
 
-/// How this device describes itself when it pairs. The server lists it as an iPhone.
+/// How this device describes itself when it pairs. The server lists it as an iPhone or an iPad by `os`.
 public struct DeviceInfo: Encodable, Sendable, Equatable {
     public var hostname: String
-    public var os = "ios"
+    public var os: String
     public var arch = "arm64"
     public var version: String
     public var name: String?
     /// A `pbe_` pairing code, for `POST /api/client/enroll` only.
     public var token: String?
 
-    public init(name: String, version: String, token: String? = nil) {
+    public init(name: String, version: String, token: String? = nil, model: String = ThisDevice.model) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        self.hostname = trimmed.isEmpty ? "iPhone" : String(trimmed.prefix(100))
+        self.hostname = trimmed.isEmpty ? model : String(trimmed.prefix(100))
+        self.os = ThisDevice.os(for: model)
         self.name = trimmed.isEmpty ? nil : String(trimmed.prefix(100))
         self.version = String(version.prefix(32))
         self.token = token

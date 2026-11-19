@@ -6,10 +6,10 @@ public enum PrintBetterError: Error, Equatable, Sendable, LocalizedError {
     case server(status: Int, code: String, message: String)
     case offline
     case unreachable(host: String)
-    /// The device token stopped working: someone removed this iPhone in the web app.
+    /// The device token stopped working: someone removed this device in the web app.
     case revoked
     case badResponse
-    /// A problem on this iPhone, such as a document no printer takes, already in plain words.
+    /// A problem on this device, such as a document no printer takes, already in plain words.
     case message(String)
 
     public var code: String? {
@@ -30,7 +30,7 @@ public enum PrintBetterError: Error, Equatable, Sendable, LocalizedError {
         case let .server(status, code, message): Self.words(status: status, code: code, message: message)
         case .offline: "You're offline. Check your internet connection and try again."
         case let .unreachable(host): "Can't reach \(host). Check the address and your internet connection."
-        case .revoked: "This iPhone was removed from Print Better. Connect it again to print."
+        case .revoked: "This \(ThisDevice.model) was removed from Print Better. Connect it again to print."
         case .badResponse: "The server sent an answer this app doesn't understand. Check that the address is your Print Better server."
         case let .message(message): message
         }
@@ -38,7 +38,7 @@ public enum PrintBetterError: Error, Equatable, Sendable, LocalizedError {
 
     private static func words(status: Int, code: String, message: String) -> String {
         switch code {
-        case "printer_access_denied": "You can't print to this printer from this iPhone."
+        case "printer_access_denied": "You can't print to this printer from this \(ThisDevice.model)."
         case "printer_not_found": "This printer isn't available anymore. Pull down on the printer list to refresh it."
         case "too_large": "This document is too big to print. \(message)."
         case "unsupported_type": "Print Better can print PDFs, photos and text."

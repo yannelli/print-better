@@ -57,7 +57,7 @@ struct ModelTests {
         #expect(JobOptions().isEmpty)
     }
 
-    @Test func describesTheDeviceAsAnIPhone() throws {
+    @Test func describesTheDeviceAsAnIPhoneOrAnIPad() throws {
         let data = try JSONEncoder().encode(DeviceInfo(name: "  Front Desk iPhone ", version: "1.0", token: "pbe_1"))
         let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: String])
         #expect(object == ["hostname": "Front Desk iPhone", "name": "Front Desk iPhone", "os": "ios", "arch": "arm64", "version": "1.0", "token": "pbe_1"])
@@ -65,5 +65,8 @@ struct ModelTests {
         let fallback = try #require(JSONSerialization.jsonObject(with: blank) as? [String: String])
         #expect(fallback["hostname"] == "iPhone")
         #expect(fallback["name"] == nil && fallback["token"] == nil)
+        let iPad = try JSONEncoder().encode(DeviceInfo(name: "", version: "1.0", model: "iPad"))
+        let tablet = try #require(JSONSerialization.jsonObject(with: iPad) as? [String: String])
+        #expect(tablet["hostname"] == "iPad" && tablet["os"] == "ipados")
     }
 }
