@@ -97,19 +97,28 @@ impl Attempt<'_> {
         if let Some(why) = reasons::blocking(&attrs.status) {
             return Err(Error::NotReady(why));
         }
-        let target = Target::ipp(&attrs, cups);
+        let mut target = Target::ipp(&attrs, cups);
+        let pjl_sides = !cups && convert::pjl_sides(&attrs, self.options);
+        if pjl_sides {
+            // Copies and pages are made here, so a PJL-wrapped file is the whole job.
+            target.copies_max = 1;
+            target.page_ranges = false;
+        }
         let prepared = self.prepare(&target, converted).await?;
         // A CUPS queue counts pages from its own filters, which often don't match the paper.
         let expected = if cups { None } else { count_expected(prepared, &attrs).await };
-        let job = IppJob {
-            name: self.doc.name.clone(),
-            user: self.engine.opts.requesting_user.clone(),
-            format: prepared.format.mime().to_string(),
-            options: prepared.options.clone(),
+        let wrapper = if pjl_sides { pjl::wrap(prepared.format, &self.doc.name, &prepared.options) } else { None };
+        let (format, body) = match wrapper {
+            Some((head, tail)) => {
+                let file = tokio::fs::read(&prepared.path).await?;
+                ("application/octet-stream".to_string(), IppBody::Bytes([head, file, tail].concat()))
+            }
+            None => (prepared.format.mime().to_string(), IppBody::File(prepared.path.clone())),
         };
+        let job = IppJob { name: self.doc.name.clone(), user: self.engine.opts.requesting_user.clone(), format, options: prepared.options.clone() };
         self.emit(PrintEvent::Submitting { route: self.route.kind });
         let id = tokio::select! {
-            r = ipp.print_job(uri, &job, IppBody::File(prepared.path.clone())) => r?,
+            r = ipp.print_job(uri, &job, body) => r?,
             _ = self.cancel.canceled() => return Err(Error::Canceled),
         };
         self.emit(PrintEvent::Printing { pages_done: None });

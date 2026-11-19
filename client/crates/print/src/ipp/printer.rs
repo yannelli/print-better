@@ -58,6 +58,7 @@ pub fn parse(g: &Group) -> PrinterAttrs {
             || g.get("identify-actions-supported").is_some(),
         page_ranges_supported: page_ranges_supported(g),
         sides_default: g.get("sides-default").and_then(Attribute::str).and_then(sides),
+        auto_sense: g.get("document-format-supported").is_some_and(|a| a.strs().any(|f| f == "application/octet-stream")),
     }
 }
 

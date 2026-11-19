@@ -3,6 +3,7 @@
 
 mod expect;
 mod follow;
+mod pjl;
 
 use super::{CancelFlag, Engine, EngineOptions, PrintOutcome};
 use crate::backends::tests::{EventLog, closed_port, connected_within, drop_after, listener, read_all, stall};

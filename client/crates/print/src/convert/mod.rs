@@ -17,7 +17,7 @@ pub(crate) mod tests;
 
 pub(crate) use media::Media;
 pub(crate) use pages::PageSet;
-pub(crate) use plan::{Channel, Plan, Target, label, plan};
+pub(crate) use plan::{Channel, Plan, Target, label, pjl_sides, plan};
 
 use crate::engine::CancelFlag;
 use crate::error::{Error, Result};

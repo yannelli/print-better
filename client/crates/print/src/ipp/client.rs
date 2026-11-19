@@ -85,6 +85,8 @@ pub struct PrinterAttrs {
     /// page-ranges-supported: the printer itself prints just the requested pages.
     pub page_ranges_supported: bool,
     pub sides_default: Option<Sides>,
+    /// document-format-supported lists application/octet-stream: the printer detects the language itself.
+    pub auto_sense: bool,
 }
 
 /// HTTP/1.1 IPP client over TCP or TLS; IPPS pins printer certs on first use (they are self-signed).

@@ -4,6 +4,12 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-11-19
+
+### Fixed
+
+- **printing:** One-sided jobs no longer come out two-sided on HP printers that default to two-sided. A LaserJet Pro M404 logged `sides=one-sided` on a PDF and printed both sides anyway. When a job asks for other sides than the printer's default, and the printer takes PJL and auto-detects the document format, the PDF now goes out with a PJL header that sets duplex. Copies and page selection for those jobs are made on the device.
+
 ## [0.1.7] - 2026-11-19
 
 ### Added
