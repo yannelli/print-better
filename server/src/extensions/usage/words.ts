@@ -1,5 +1,5 @@
 import type { PriceList, UsageMeter } from '@shared/usage'
-import { formatAmount, formatMicros } from '@shared/usage-text'
+import { formatLeft, formatMicros } from '@shared/usage-text'
 
 /** Typed money to micros; null unless it is a plain amount with at most 6 decimals. */
 export function parseMoney(text: string): number | null {
@@ -25,11 +25,8 @@ export function cycleWord(m: Pick<UsageMeter, 'start' | 'end'>): string {
 export const resetDay = (end: number, timeZone: string): string => new Date(end).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone })
 
 /** "84 of 500 pages left this month, resets Dec 1". */
-export function meterLine(m: UsageMeter, currency: string, timeZone: string): string {
-  const left = Math.max(0, m.left)
-  const amounts = m.unit === 'cost' ? `${formatMicros(left, currency)} of ${formatMicros(m.amount, currency)}` : `${left.toLocaleString()} of ${formatAmount(m.unit, m.amount, currency)}`
-  return `${amounts} left ${cycleWord(m)}, resets ${resetDay(m.end, timeZone)}`
-}
+export const meterLine = (m: UsageMeter, currency: string, timeZone: string): string =>
+  `${formatLeft(m.unit, m.left, m.amount, currency)} left ${cycleWord(m)}, resets ${resetDay(m.end, timeZone)}`
 
 /** The meter closest to running out, or one this job goes over. */
 export function tightest<M extends UsageMeter & { over?: boolean }>(meters: readonly M[]): M | undefined {

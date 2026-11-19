@@ -8,6 +8,8 @@ import type { Ctx } from '../services/context'
 import type { Access } from '../services/permissions'
 import { enterpriseCron, enterpriseFinish, enterpriseOff, enterpriseView } from './enterprise/hooks'
 import { ENTERPRISE_STEPS } from './enterprise/steps'
+import { limitsStep } from './print-policies/limits-step'
+import { rulesStep } from './print-policies/rules-step'
 import { printerAccessPolicy } from './printer-access/hook'
 import { settlement } from './usage/settle'
 import { settlementSweep } from './usage/sweep'
@@ -103,7 +105,7 @@ export interface JobStep {
 }
 
 /** In `JobStepName` order: rules and limits (print-policies), then the four enterprise steps. */
-export const JOB_STEPS: JobStep[] = [...ENTERPRISE_STEPS]
+export const JOB_STEPS: JobStep[] = [rulesStep, limitsStep, ...ENTERPRISE_STEPS]
 
 /** Runs once jobs end (completed, failed or canceled), with their rows as they ended. */
 export interface JobFinishHook {

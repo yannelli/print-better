@@ -29,7 +29,8 @@ export interface DraftInput {
   costCenter: unknown
 }
 
-async function groupsOf(ctx: Ctx, workspaceId: string, sender: Sender): Promise<string[]> {
+/** Printer access groups of a member or device; none while Printer access is off. */
+export async function groupsOf(ctx: Ctx, workspaceId: string, sender: Pick<Sender, 'userId' | 'clientId'>): Promise<string[]> {
   if ((!sender.userId && !sender.clientId) || !(await isActive(ctx, workspaceId, 'printer-access'))) return []
   const rows = await all<{ group_id: string }>(
     ctx.env.DB,
