@@ -24,8 +24,8 @@ export const DOC_SECTIONS: DocSection[] = [
     pages: [
       { slug: 'self-hosting/deploy', title: 'Deploy to Cloudflare', description: 'Create the database, storage, and Worker, then open your server for the first time.' },
       { slug: 'self-hosting/configuration', title: 'Configuration', description: 'The settings in wrangler.jsonc, the secrets, and what Server admin controls.' },
-      { slug: 'self-hosting/sign-in', title: 'Sign-in', description: 'Passwords, passkeys, Google sign-in, and who can create an account.' },
-      { slug: 'self-hosting/email', title: 'Email', description: 'Verification and invite emails, and the address that receives email to print.' },
+      { slug: 'self-hosting/sign-in', title: 'Sign-in', description: 'Passwords, passkeys, Google and OpenID Connect sign-in, and who can create an account.' },
+      { slug: 'self-hosting/email', title: 'Email', description: 'Send invites, reset links, and printer alerts, and receive email to print.' },
       { slug: 'self-hosting/updates-and-backups', title: 'Updates and backups', description: 'Update the server, apply database changes, and keep backups.' },
     ],
   },
@@ -33,7 +33,7 @@ export const DOC_SECTIONS: DocSection[] = [
     title: 'Devices',
     pages: [
       { slug: 'devices/macos', title: 'Install on a Mac', description: 'Install the signed Print Better app and pair it with your server.' },
-      { slug: 'devices/linux', title: 'Install on Linux', description: 'Install the client as a system service and pair it with your server.' },
+      { slug: 'devices/linux', title: 'Install on Linux', description: 'Install the client as a systemd service and pair it with your server.' },
       { slug: 'devices/raspberry-pi', title: 'Install on a Raspberry Pi', description: 'Turn a Raspberry Pi into an always-on print server for USB and network printers.' },
       { slug: 'devices/manage', title: 'Manage devices', description: 'Rename, remove, and check the health of the computers in your workspace.' },
       { slug: 'devices/discovery', title: 'Printer discovery', description: "How devices find printers on the network, over USB, and in the system's own printer list." },

@@ -32,10 +32,12 @@ export function PageBody({ slug, onToc }: { slug: string; onToc: (items: TocItem
     if (ready && article.current) onToc(readToc(article.current))
   }, [ready, onToc])
 
-  useEffect(() => {
+  // Scrolls once the content exists, so the target is in place and nothing below shifts it.
+  useLayoutEffect(() => {
     if (!ready) return
     const target = hash && document.getElementById(decodeURIComponent(hash.slice(1)))
     if (target) target.scrollIntoView()
+    else window.scrollTo(0, 0)
   }, [ready, hash])
 
   if (loaded?.slug === slug && 'failed' in loaded) {

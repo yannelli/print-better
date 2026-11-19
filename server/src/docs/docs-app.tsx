@@ -52,6 +52,14 @@ export default function DocsApp() {
   useSearchShortcut(openSearch)
 
   useEffect(() => {
+    const previous = history.scrollRestoration
+    history.scrollRestoration = 'manual'
+    return () => {
+      history.scrollRestoration = previous
+    }
+  }, [])
+
+  useEffect(() => {
     document.title = page ? `${page.title} · Print Better docs` : 'Page not found · Print Better docs'
     setToc([])
     if (!location.hash) window.scrollTo(0, 0)
