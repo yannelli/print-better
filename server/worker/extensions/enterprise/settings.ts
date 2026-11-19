@@ -49,8 +49,8 @@ export async function getEnterprise(ctx: Ctx, workspaceId: string): Promise<Ente
 
 /** Each part is merged; turning approvals or secure release off cancels the jobs waiting for it. */
 export async function patchEnterprise(ctx: Ctx, workspaceId: string, body: Json): Promise<EnterpriseConfig> {
-  onlyKeys(body, PARTS, 'The settings')
   const caller = await enter(ctx, workspaceId, 'write', null, body.privacy === undefined ? 'admin' : 'owner')
+  onlyKeys(body, PARTS, 'The settings')
   const next = structuredClone(caller.settings)
   for (const part of PARTS) {
     const update = body[part]
@@ -76,8 +76,8 @@ const CONTROL_PARTS = { approval: 'approvals', secureRelease: 'release' } as con
 
 /** Admins, or anyone with `settings` on the printer. Each switch needs its part on. */
 export async function setPrinterControls(ctx: Ctx, workspaceId: string, printerId: string, body: Json): Promise<PrinterControls> {
-  onlyKeys(body, Object.keys(CONTROL_PARTS), 'The printer controls')
   const { access, settings } = await enter(ctx, workspaceId, 'write', null)
+  onlyKeys(body, Object.keys(CONTROL_PARTS), 'The printer controls')
   const printer = await first<{ id: string }>(ctx.env.DB, 'SELECT id FROM printers WHERE id = ? AND workspace_id = ?', printerId, workspaceId)
   if (!printer) throw notFound('Printer not found')
   requirePermission(access, printer.id, 'settings')

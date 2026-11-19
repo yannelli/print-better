@@ -41,21 +41,21 @@ export async function listApprovals(ctx: Ctx, workspaceId: string): Promise<Job[
   return rows.map((r) => view(toJob(r)))
 }
 
-async function approvable(ctx: Ctx, workspaceId: string, id: string) {
-  const caller = await enter(ctx, workspaceId, 'print', 'approvals')
+async function approvable(ctx: Ctx, workspaceId: string, id: string, caller: Caller) {
   const row = await visibleJob(ctx, workspaceId, id, caller)
   const hold = requireHeld(row, 'approval')
   if (!mayApprove({ ...caller, userId: caller.user.id }, row)) throw forbidden(row.user_id === caller.user.id ? 'You can’t approve your own job' : 'You can’t approve jobs on this printer')
-  return { caller, row, hold }
+  return { row, hold }
 }
 
 const approvalNote = (name: string, message: string): JobNote => ({ source: 'approval', id: null, name, message })
 
 /** Prints the job, or holds it for release next when its printer or a rule asked for that. */
 export async function approveJob(ctx: Ctx, workspaceId: string, id: string, body: Json): Promise<Job> {
+  const caller = await enter(ctx, workspaceId, 'print', 'approvals')
   onlyKeys(body, ['note'])
   const note = optStr(body, 'note', { max: 500 })
-  const { caller, row, hold } = await approvable(ctx, workspaceId, id)
+  const { row, hold } = await approvable(ctx, workspaceId, id, caller)
   const release = hold.release === true && caller.settings.release.enabled
   const next = release ? ({ status: 'held', hold: { kind: 'release', until: holdUntil(caller.settings, 'release', Date.now()) } } as const) : ({ status: 'queued' } as const)
   const job = await moveOn(ctx, row, 'approval', next, approvalNote(caller.user.name, note ? `Approved: ${note}` : 'Approved'))
@@ -65,9 +65,10 @@ export async function approveJob(ctx: Ctx, workspaceId: string, id: string, body
 
 /** Cancels the job; the sender sees "Not approved: reason". */
 export async function denyJob(ctx: Ctx, workspaceId: string, id: string, body: Json): Promise<Job> {
+  const caller = await enter(ctx, workspaceId, 'print', 'approvals')
   onlyKeys(body, ['reason'])
   const reason = str(body, 'reason', { max: 500 })
-  const { caller, row } = await approvable(ctx, workspaceId, id)
+  const { row } = await approvable(ctx, workspaceId, id, caller)
   const message = `Not approved: ${reason}`
   const [ended] = await endHeld(ctx, workspaceId, [row], { message, action: 'approval.deny', note: approvalNote(caller.user.name, message) })
   if (!ended) throw notHeld('approval')

@@ -16,8 +16,11 @@ afterEach(() => {
 })
 
 const INFO = { id: 'printer-access', name: 'Printer access', summary: expect.any(String), docs: 'docs/printer-access.md' }
-/** The other catalog entries, listed after printer access and off by default; Enterprise controls joins once it is built. */
-const LATER = [{ id: 'print-policies', name: 'Print rules and limits', summary: expect.any(String), docs: 'docs/print-policies.md' }]
+/** The other catalog entries, listed after printer access and off by default. */
+const LATER = [
+  { id: 'print-policies', name: 'Print rules and limits', summary: expect.any(String), docs: 'docs/print-policies.md' },
+  { id: 'enterprise', name: 'Enterprise controls', summary: expect.any(String), docs: 'docs/enterprise.md' },
+]
 const workspaceSwitch = async (ws: string) => (await owner.agent.get(wsPath(ws, '/extensions'))).body[0]
 const auditActions = async (ws: string | null) =>
   (await env.DB.prepare("SELECT action, target, data FROM audit_log WHERE workspace_id IS ? AND action = 'extension.update' ORDER BY id").bind(ws).all()).results

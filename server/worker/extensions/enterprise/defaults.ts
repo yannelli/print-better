@@ -47,8 +47,8 @@ export async function getDefaults(ctx: Ctx, workspaceId: string): Promise<CostCe
 
 /** Merged; null removes a default. Subjects must exist here and cost centers must be active. */
 export async function putDefaults(ctx: Ctx, workspaceId: string, body: Json): Promise<CostCenterDefaults> {
-  onlyKeys(body, KINDS, 'The defaults')
   await enter(ctx, workspaceId, 'write', 'costCenters', 'admin')
+  onlyKeys(body, KINDS, 'The defaults')
   const centers = await costCenters(ctx.env, workspaceId)
   const writes: D1PreparedStatement[] = []
   for (const kind of KINDS) {

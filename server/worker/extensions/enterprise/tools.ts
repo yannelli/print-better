@@ -1,5 +1,6 @@
 import { optStr, str } from '../../http/validate'
 import { bool, choice, inWorkspace, object, output, pick, READ, text, UPDATE, workspaceOf, type Schema, type Tool } from '../../mcp/tool'
+import type { ToolArguments } from '../tools'
 import { getUsageReport } from './exports'
 import { getEnterprise, patchEnterprise, setPrinterControls } from './settings'
 import { costTools } from './tools-costs'
@@ -93,3 +94,13 @@ const settingsTools: Tool[] = [
 
 /** Listed only while the extension is available on the instance (extensions/tools.ts). */
 export const enterpriseTools: Tool[] = [...holdTools, ...costTools, ...settingsTools]
+
+const COST_CENTER = text('Cost center id or code to charge, from list_cost_centers; omit for your default')
+const JOB_STATUSES = ['uploading', 'held', 'queued', 'dispatched', 'printing', 'completed', 'failed', 'canceled']
+
+/** What the extension adds to core and shared tools while it is available. */
+export const enterpriseToolArguments: ToolArguments[] = [
+  { extension: 'enterprise', tool: 'print', properties: { costCenter: COST_CENTER } },
+  { extension: 'enterprise', tool: 'preview_print_job', properties: { costCenter: COST_CENTER } },
+  { extension: 'enterprise', tool: 'list_jobs', properties: { status: choice('Only jobs with this status; held means waiting for approval or release', JOB_STATUSES) } },
+]

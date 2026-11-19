@@ -42,7 +42,7 @@ async function senderName(env: Env, job: Job): Promise<string> {
 }
 
 export const localTime = (at: number, timeZone: string): string =>
-  new Intl.DateTimeFormat('en-US', { timeZone, dateStyle: 'medium', timeStyle: 'short', timeZoneName: 'short' }).format(at)
+  new Intl.DateTimeFormat('en-US', { timeZone, month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(at)
 
 /** A job started waiting for approval: audited, a live notice to open pages, and an email to each approver. */
 export async function announceApproval(ctx: Ctx, job: Job): Promise<void> {

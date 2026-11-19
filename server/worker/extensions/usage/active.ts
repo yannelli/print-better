@@ -18,7 +18,7 @@ export async function requireUsage(ctx: Ctx, workspaceId: string): Promise<void>
   const names = EXTENSIONS.filter((e) => USAGE_EXTENSIONS.includes(e.id)).map((e) => e.name)
   const one = names.length === 1
   throw notFound(
-    `${names.join(' and ')} ${one ? 'is' : 'are'} turned off for this workspace. A server admin makes ${one ? 'it' : 'one'} available under Admin > Extensions, then a workspace owner turns it on under Workspace settings > Extensions.`,
+    `${names.join(' and ')} ${one ? 'is' : 'are'} turned off for this workspace. A server admin makes ${one ? 'it' : 'one'} available under Server admin > Extensions, then a workspace owner turns it on under Workspace settings > Extensions.`,
     'extension_inactive',
   )
 }

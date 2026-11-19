@@ -38,8 +38,8 @@ export async function listCostCenters(ctx: Ctx, workspaceId: string): Promise<Co
 }
 
 export async function createCostCenter(ctx: Ctx, workspaceId: string, body: Json): Promise<CostCenter> {
-  onlyKeys(body, FIELDS)
   await enter(ctx, workspaceId, 'write', 'costCenters', 'admin')
+  onlyKeys(body, FIELDS)
   const id = newId()
   const name = str(body, 'name', NAME)
   const now = Date.now()
@@ -61,8 +61,8 @@ export async function createCostCenter(ctx: Ctx, workspaceId: string, body: Json
 }
 
 export async function updateCostCenter(ctx: Ctx, workspaceId: string, id: string, body: Json): Promise<CostCenter> {
-  onlyKeys(body, FIELDS)
   await enter(ctx, workspaceId, 'write', 'costCenters', 'admin')
+  onlyKeys(body, FIELDS)
   const current = await costCenter(ctx.env, workspaceId, id)
   const code = nullableStr(body, 'code', CODE)
   await unique(() =>

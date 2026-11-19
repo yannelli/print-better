@@ -9,7 +9,7 @@ import { addMember, createPat, setupOwner, type Owner, type Person } from './hel
 
 const ZERO = { bwPageMicros: 0, colorPageMicros: 0, duplexSheetDiscountMicros: 0 }
 const PRICES = { bwPageMicros: 50_000, colorPageMicros: 250_000, duplexSheetDiscountMicros: 10_000 }
-const OFF = 'Print rules and limits is turned off for this workspace.'
+const OFF = 'Print rules and limits and Enterprise controls are turned off for this workspace.'
 
 let owner: Owner
 let member: Person

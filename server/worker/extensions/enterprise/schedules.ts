@@ -71,8 +71,8 @@ export async function listSchedules(ctx: Ctx, workspaceId: string): Promise<Repo
 
 /** Links in each email use the origin it was created from. */
 export async function createSchedule(ctx: Ctx, workspaceId: string, body: Json): Promise<ReportSchedule> {
-  onlyKeys(body, ['name', 'by', 'cycle', 'recipients'])
   const { user } = await enter(ctx, workspaceId, 'write', 'reports', 'admin')
+  onlyKeys(body, ['name', 'by', 'cycle', 'recipients'])
   const name = str(body, 'name', { max: 80 })
   const by = parseDimension(typeof body.by === 'string' ? body.by : null)
   const cycle = parseCycle(body.cycle, 'cycle', ['week', 'month'])

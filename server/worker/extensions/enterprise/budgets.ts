@@ -36,8 +36,8 @@ export async function listBudgets(ctx: Ctx, workspaceId: string): Promise<Budget
 }
 
 export async function createBudget(ctx: Ctx, workspaceId: string, body: Json): Promise<BudgetView> {
-  onlyKeys(body, FIELDS)
   await enter(ctx, workspaceId, 'write', 'costCenters', 'admin')
+  onlyKeys(body, FIELDS)
   const costCenterId = typeof body.costCenterId === 'string' ? body.costCenterId : ''
   if (!(await first(ctx.env.DB, 'SELECT 1 AS one FROM cost_centers WHERE id = ? AND workspace_id = ?', costCenterId, workspaceId))) {
     throw badRequest('costCenterId must be a cost center of this workspace', 'cost_center_invalid')
@@ -63,8 +63,8 @@ export async function createBudget(ctx: Ctx, workspaceId: string, body: Json): P
 }
 
 export async function updateBudget(ctx: Ctx, workspaceId: string, id: string, body: Json): Promise<BudgetView> {
-  onlyKeys(body, FIELDS.filter((f) => f !== 'costCenterId'))
   await enter(ctx, workspaceId, 'write', 'costCenters', 'admin')
+  onlyKeys(body, FIELDS.filter((f) => f !== 'costCenterId'))
   const current = await budget(ctx.env, workspaceId, id)
   await run(
     ctx.env.DB,
