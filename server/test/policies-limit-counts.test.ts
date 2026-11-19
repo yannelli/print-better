@@ -3,8 +3,11 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import type { Cycle } from '../shared/usage'
 import { cycleAt } from '../worker/extensions/usage/cycles'
 import { ok, wsPath } from './helpers/access'
+import { eventually } from './helpers/device'
+import { readReply } from './helpers/http'
+import { jobsPath } from './helpers/jobs'
 import { addMember, setupOwner, type Owner, type Person } from './helpers/world'
-import { limitsPath, office, type Office, pdfJob, turnOnPolicies } from './helpers/usage'
+import { entriesOf, limitsPath, office, type Office, pdfJob, pdfOf, turnOnPolicies } from './helpers/usage'
 
 let owner: Owner
 let member: Person
@@ -80,6 +83,50 @@ describe('a monthly page limit for each member', () => {
     expect((await pdfJob(member.agent, ws, p.color, 5)).status).toBe(200)
     await env.DB.prepare('UPDATE limit_adjustments SET cycle_start = cycle_start - 1 WHERE limit_id = ?').bind(monthly.id).run()
     expect((await mine())[0]).toMatchObject({ amount: 10, left: -5 })
+  })
+
+  it('keeps an extra allowance when the time zone changes', async () => {
+    const yearly = await limit({ name: 'Yearly pages', amount: 10, cycle: { kind: 'year', startMonth: 1 } })
+    ok(await owner.agent.post(limitsPath(ws, `/${yearly.id}/adjustments`), { amount: 5, subject: { type: 'user', id: member.user.id } }), 'extra')
+    // An hour east of UTC, so this year now starts an hour before the allowance's cycle did.
+    ok(await owner.agent.put(wsPath(ws, '/prices'), { timeZone: 'Africa/Lagos' }), 'zone')
+    expect((await mine())[0]).toMatchObject({ amount: 15 })
+    expect(ok(await owner.agent.get(limitsPath(ws, `/${yearly.id}/adjustments`)), 'adjustments')).toHaveLength(1)
+  })
+
+  it('lets jobs sent at the same moment through only as far as a blocking limit has room', async () => {
+    await limit({ amount: 10, cycle: { kind: 'day' } })
+    const replies = await Promise.all(Array.from({ length: 8 }, () => pdfJob(member.agent, ws, p.mono, 10)))
+    expect(replies.map((r) => r.status).sort()).toEqual([200, 403, 403, 403, 403, 403, 403, 403])
+    for (const refused of replies.filter((r) => r.status === 403)) {
+      expect(refused.body.error).toMatchObject({ code: 'policy_blocked', message: expect.stringContaining('this job needs 10 pages and 0 pages are left today') })
+    }
+    expect((await mine())[0]).toMatchObject({ used: 10, left: 0 })
+  })
+
+  it('refuses the retry or upload that loses the race the same way', async () => {
+    await limit({ amount: 10, cycle: { kind: 'day' } })
+    const cancel = async (id: string) => {
+      ok(await member.agent.post(`${jobsPath(ws)}/${id}/cancel`), 'cancel')
+      await eventually(async () => expect((await entriesOf(id)).at(-1)).toMatchObject({ pages: 0, estimated: 0 }))
+    }
+    const canceled = []
+    for (let i = 0; i < 2; i++) {
+      canceled.push(ok(await pdfJob(member.agent, ws, p.mono, 10), 'job').job.id)
+      await cancel(canceled[i])
+    }
+    const retries = await Promise.all(canceled.map((id) => member.agent.post(`${jobsPath(ws)}/${id}/retry`)))
+    expect(retries.map((r) => r.status).sort()).toEqual([200, 403])
+    await cancel(retries.find((r) => r.status === 200)!.body.id)
+
+    const bytes = pdfOf(10)
+    const slot = async () => ok(await member.agent.post(jobsPath(ws), { printerId: p.mono, upload: { fileName: 'doc.pdf', contentType: 'application/pdf', size: bytes.length } }), 'slot')
+    const put = async (s: { uploadUrl: string }) =>
+      readReply(await member.agent.fetch(new URL(s.uploadUrl).pathname, { method: 'PUT', body: bytes, headers: { 'Content-Type': 'application/pdf' } }))
+    const uploads = await Promise.all((await Promise.all([slot(), slot()])).map(put))
+    expect(uploads.map((r) => r.status).sort()).toEqual([200, 403])
+    expect(uploads.find((r) => r.status === 403)!.body.error.message).toContain('this job needs 10 pages and 0 pages are left today')
+    expect((await mine())[0]).toMatchObject({ used: 10 })
   })
 })
 

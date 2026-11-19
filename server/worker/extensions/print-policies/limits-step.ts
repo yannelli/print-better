@@ -6,7 +6,7 @@ import type { JobStep } from '../hooks'
 import { holdAvailable } from '../usage/active'
 import { cycleAt } from '../usage/cycles'
 import { usageSettings } from '../usage/settings'
-import { type Count, countOf, measure } from './meters'
+import { type Count, countOf, measure, roomFor } from './meters'
 import { EXTENSION, loadLimits } from './store'
 
 const CYCLE_WORDS: Record<Cycle['kind'], string> = { day: 'today', week: 'this week', month: 'this month', quarter: 'this quarter', year: 'this year' }
@@ -27,7 +27,8 @@ function overMessage(limit: PrintLimit, impact: UsageImpact, need: number, w: Wo
   )
 }
 
-/** Every limit that counts the job, with what it has left; the first one the job goes over and that blocks refuses it. */
+/** Every limit that counts the job, with what it has left; the first one the job goes over and that blocks refuses it.
+ * Blocking limits it fits are guarded, so jobs sent at the same moment can't pass them together. */
 export const limitsStep: JobStep = {
   extension: EXTENSION,
   name: 'limits',
@@ -45,18 +46,21 @@ export const limitsStep: JobStep = {
       return { kind: 'limit', id: limit.id, name: limit.name, ...meters[i], action: limit.action, over: need > 0 && meters[i].used + need > meters[i].amount }
     })
     decision.meters.push(...impacts)
-    for (const [i, { limit }] of counts.entries()) {
+    for (const [i, count] of counts.entries()) {
+      const { limit } = count
       const impact = impacts[i]
-      if (!impact.over) continue
-      const approval = limit.action === 'approval' && (await holdAvailable(ctx, job.workspaceId, 'approval'))
-      if (limit.action === 'warn') {
+      const need = amountOf(decision.usage, limit.unit)
+      // A limit set to require approval blocks while approvals aren't available.
+      const blocks = limit.action === 'block' || (limit.action === 'approval' && !(await holdAvailable(ctx, job.workspaceId, 'approval')))
+      if (!impact.over) {
+        if (blocks && need > 0) decision.guards.push(roomFor(job.workspaceId, count, need, impact.amount))
+      } else if (limit.action === 'warn') {
         const left = formatLeft(limit.unit, impact.left, impact.amount, words.currency, 'en-US')
         decision.notes.push({ source: 'limit', id: limit.id, name: limit.name, message: `Went over the limit, with ${left} left ${CYCLE_WORDS[limit.cycle.kind]}` })
-      } else if (approval) {
+      } else if (!blocks) {
         decision.approval.push(`Over the limit ${limit.name}`)
       } else {
-        // A limit set to require approval blocks while approvals aren't available.
-        decision.block = overMessage(limit, impact, amountOf(decision.usage, limit.unit), words)
+        decision.block = overMessage(limit, impact, need, words)
         return
       }
     }

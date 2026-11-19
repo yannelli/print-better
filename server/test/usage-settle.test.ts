@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { runCron } from '../worker/cron'
 import { ok, wsPath } from './helpers/access'
 import { eventually } from './helpers/device'
-import { EventSocket, jobsPath } from './helpers/jobs'
+import { EventSocket, freshWorkspace, jobsPath } from './helpers/jobs'
 import { addMember, setupOwner, type Owner, type Person } from './helpers/world'
 import { entriesOf, type EntryRow, limitsPath, office, type Office, pdfJob, switchExtension, turnOnPolicies } from './helpers/usage'
 
@@ -74,6 +74,12 @@ describe('settling usage when a job ends', () => {
     }
   })
 
+  it('keeps the estimate when a completed job reports 0 pages, as printers that don’t count pages do', async () => {
+    const printed = await job(p.mono, 4)
+    report(printed.id, 'completed', { pages: 0 })
+    expect(await settled(printed.id)).toMatchObject({ jobs: 1, pages: 4, sheets: 4, cost_micros: 200_000 })
+  })
+
   it('starts a new estimate for a retry, leaving the failed attempt at zero', async () => {
     const first = await job(p.mono, 3)
     report(first.id, 'failed')
@@ -113,5 +119,29 @@ describe('the settling sweep', () => {
     expect(await entriesOf(retried.id)).toMatchObject([{ jobs: 0, pages: 0, estimated: 0 }])
     expect(await entriesOf(deleted.id)).toMatchObject([{ jobs: 1, pages: 8, estimated: 0 }])
     expect((await jobOf(ended.id)).usage).toMatchObject({ pages: 6, estimated: false })
+  })
+
+  it('settles the other workspaces when one of them fails', async () => {
+    const failing = await job(p.mono, 6)
+    const other = await freshWorkspace(owner)
+    await turnOnPolicies(owner, other)
+    const q = await office(owner, other)
+    try {
+      const fine = ok(await pdfJob(owner.agent, other, q.mono, 2), 'job').job
+      const db = env.DB
+      await db.batch([failing.id, fine.id].map((id) => db.prepare("UPDATE jobs SET status = 'completed', completed_at = ? WHERE id = ?").bind(Date.now(), id)))
+      await db.prepare(`CREATE TRIGGER settle_fails BEFORE UPDATE ON usage_entries WHEN OLD.job_id = '${failing.id}' BEGIN SELECT RAISE(ABORT, 'settle failed'); END`).run()
+      try {
+        await runCron(env)
+      } finally {
+        await db.prepare('DROP TRIGGER settle_fails').run()
+      }
+      expect(await entriesOf(fine.id)).toMatchObject([{ pages: 2, estimated: 0 }])
+      expect(await entriesOf(failing.id)).toMatchObject([{ estimated: 1 }])
+      await runCron(env)
+      expect(await entriesOf(failing.id)).toMatchObject([{ pages: 6, estimated: 0 }])
+    } finally {
+      q.device.close()
+    }
   })
 })

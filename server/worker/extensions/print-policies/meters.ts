@@ -1,6 +1,7 @@
 import type { LimitScope, PrintLimit } from '../../../shared/policies'
 import type { UsageMeter, UsageUnit } from '../../../shared/usage'
 import { type SqlValue, stmt } from '../../lib/db'
+import type { WriteGuard } from '../hooks'
 import type { CycleSpan } from '../usage/cycles'
 
 /** Whose count, for limits that keep one per member or device. */
@@ -69,16 +70,21 @@ export function countFilter(scope: LimitScope, whose: Whose | null): [string, Sq
   }
 }
 
-export function usedStatement(env: Env, workspaceId: string, c: Count): D1PreparedStatement {
+function usedSql(workspaceId: string, c: Count): [string, SqlValue[]] {
   const [where, params] = countFilter(c.limit.scope, c.whose)
-  return stmt(
-    env.DB,
-    `SELECT COALESCE(SUM(${COLUMN[c.limit.unit]}), 0) AS used FROM usage_entries WHERE workspace_id = ? AND at >= ? AND at < ? AND ${where}`,
-    workspaceId,
-    c.span.start,
-    c.span.end,
-    ...params,
-  )
+  const sql = `SELECT COALESCE(SUM(${COLUMN[c.limit.unit]}), 0) AS used FROM usage_entries WHERE workspace_id = ? AND at >= ? AND at < ? AND ${where}`
+  return [sql, [workspaceId, c.span.start, c.span.end, ...params]]
+}
+
+export function usedStatement(env: Env, workspaceId: string, c: Count): D1PreparedStatement {
+  const [sql, params] = usedSql(workspaceId, c)
+  return stmt(env.DB, sql, ...params)
+}
+
+/** The count still has room for `need` within `amount`, when the job is stored. */
+export function roomFor(workspaceId: string, c: Count, need: number, amount: number): WriteGuard {
+  const [sql, params] = usedSql(workspaceId, c)
+  return { sql: `(${sql}) + ? <= ?`, params: [...params, need, amount] }
 }
 
 export interface AllowanceRow {
@@ -98,10 +104,11 @@ export const allowanceStatement = (env: Env, workspaceId: string, limitIds: stri
     since,
   )
 
-/** Extra allowance given to this count for its cycle. */
+/** Extra allowance given to this count for its cycle: any that started within it, so a new time zone or cycle keeps it. */
 export function extraFor(rows: readonly AllowanceRow[], c: Count): number {
   const mine = (r: AllowanceRow) => (c.whose ? (c.whose.type === 'user' ? r.user_id : r.client_id) === c.whose.id : r.user_id === null && r.client_id === null)
-  return rows.filter((r) => r.limit_id === c.limit.id && r.cycle_start === c.span.start && mine(r)).reduce((sum, r) => sum + r.amount, 0)
+  const current = (r: AllowanceRow) => r.cycle_start >= c.span.start && r.cycle_start < c.span.end
+  return rows.filter((r) => r.limit_id === c.limit.id && current(r) && mine(r)).reduce((sum, r) => sum + r.amount, 0)
 }
 
 export function meterOf(c: Count, used: number, extra: number): UsageMeter {

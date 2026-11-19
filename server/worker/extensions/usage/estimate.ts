@@ -1,4 +1,4 @@
-import type { Capabilities, JobOptions, JobUsage } from '../../../shared/printing'
+import type { Capabilities, DocType, JobOptions, JobUsage } from '../../../shared/printing'
 import type { PriceList } from '../../../shared/usage'
 import { EMPTY_CAPABILITIES } from '../../db/map'
 import type { PrinterViewRow } from '../../db/rows'
@@ -31,7 +31,10 @@ export const printsTwoSided = (printer: PrinterFacts, options: JobOptions): bool
 
 export const copiesOf = (printer: PrinterFacts, options: JobOptions): number => effectiveOptions(printer, options).copies ?? 1
 
-/** Distinct pages of a `documentPages`-page document within `pageRanges` ("1-3,5"); an uncounted document is one page. */
+/** A document that couldn't be counted: 1 page per 3,000 bytes of text or 20,000 bytes of anything else, leaning towards more. */
+export const pagesFromSize = (size: number, contentType: DocType): number => Math.max(1, Math.ceil(size / (contentType === 'text/plain' ? 3_000 : 20_000)))
+
+/** Distinct pages of a `documentPages`-page document within `pageRanges` ("1-3,5"); a document not counted yet is one page. */
 export function selectedPages(pageRanges: string | undefined, documentPages: number | null): number {
   if (documentPages === null) return 1
   if (!pageRanges) return documentPages

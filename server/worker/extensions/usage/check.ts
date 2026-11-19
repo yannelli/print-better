@@ -6,7 +6,7 @@ import type { Ctx } from '../../services/context'
 import type { Access } from '../../services/permissions'
 import { JOB_STEPS, type JobDecision, type JobDraft } from '../hooks'
 import { isActive } from '../state'
-import { estimateUsage, printerFacts } from './estimate'
+import { estimateUsage, pagesFromSize, printerFacts } from './estimate'
 import { pricesFor, usageSettings } from './settings'
 
 /** Who sent a job, as the check sees them: a member, a device, or an email sender who isn't a member. */
@@ -26,6 +26,7 @@ export interface DraftInput {
   contentType: DocType
   size: number
   documentPages: number | null
+  counted: boolean
   costCenter: unknown
 }
 
@@ -51,7 +52,9 @@ export async function jobDraft(ctx: Ctx, input: DraftInput): Promise<JobDraft> {
 /** Works the usage out again from the job as the check left it. */
 export async function reestimate(ctx: Ctx, job: JobDraft, decision: JobDecision): Promise<void> {
   const settings = await usageSettings(ctx, job.workspaceId)
-  decision.usage = estimateUsage(printerFacts(decision.printer), decision.options, job.documentPages, pricesFor(settings, decision.printer.id))
+  const pages = job.documentPages ?? (job.counted ? pagesFromSize(job.size, job.contentType) : null)
+  const usage = estimateUsage(printerFacts(decision.printer), decision.options, pages, pricesFor(settings, decision.printer.id))
+  decision.usage = { ...usage, documentPages: job.documentPages }
 }
 
 /** Each active extension's steps in order; a block stops the check. Nothing is stored here. */
@@ -66,6 +69,7 @@ export async function runJobCheck(ctx: Ctx, job: JobDraft, printer: PrinterViewR
     costCenterId: null,
     usage: { documentPages: job.documentPages, pages: 0, sheets: 0, colorPages: 0, costMicros: 0, estimated: true },
     meters: [],
+    guards: [],
     block: null,
     after: [],
   }

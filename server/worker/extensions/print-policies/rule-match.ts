@@ -28,6 +28,8 @@ export function matches(c: RuleConditions, job: JobDraft, d: JobDecision): boole
   if (c.who && !c.who.some(sender)) return false
   if (c.sources && !c.sources.includes(job.source)) return false
   if (c.printers && !c.printers.includes(d.printer.id)) return false
+  // At an upload slot a rule about pages waits for the file, which brings the count.
+  if (c.pages && !job.counted) return false
   if (c.pages?.min !== undefined && d.usage.pages < c.pages.min) return false
   if (c.pages?.max !== undefined && d.usage.pages > c.pages.max) return false
   if (c.minCopies !== undefined && copiesOf(printer, d.options) < c.minCopies) return false

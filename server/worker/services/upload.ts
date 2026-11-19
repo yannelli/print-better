@@ -4,7 +4,7 @@ import type { JobViewRow } from '../db/rows'
 import { jobsEnded } from '../extensions/finish'
 import { jobViewer } from '../extensions/job-view'
 import { usageActive } from '../extensions/usage/active'
-import { checkUpload, uploadUpdate, type Checked } from '../extensions/usage/attempts'
+import { checkUpload, recheck, unchanged, uploadUpdate, type Checked } from '../extensions/usage/attempts'
 import { entryInsert, refuse, runAfter } from '../extensions/usage/outcome'
 import { ApiError, badRequest, conflict } from '../http/errors'
 import { run } from '../lib/db'
@@ -68,6 +68,7 @@ export async function storeUpload(ctx: Ctx, job: JobViewRow, req: Request): Prom
     ? (await ctx.env.DB.batch([uploadUpdate(ctx.env, job, key, sha, checked.accepted), entryInsert(ctx.env, checked.draft, checked.accepted)]))[0].meta.changes
     : await run(ctx.env.DB, "UPDATE jobs SET status = 'queued', file_key = ?, sha256 = ?, updated_at = ? WHERE id = ? AND status = 'uploading'", key, sha, Date.now(), id)
   if (changed === 0) {
+    if (checked?.accepted.guard && (await unchanged(ctx.env, job))) await refuseUpload(ctx, job, key, await recheck(() => checkUpload(ctx, job, key)))
     await ctx.env.FILES.delete(key)
     throw conflict('This job was canceled during the upload', 'not_uploading')
   }

@@ -24,6 +24,7 @@ function draft(over: Partial<JobDraft> = {}): JobDraft {
     contentType: 'application/pdf',
     size: 2 * 1024 * 1024,
     documentPages: 10,
+    counted: true,
     costCenter: undefined,
     timeZone: 'America/Chicago',
     // Monday, November 16, 2026, 10:00 in Chicago.
@@ -43,6 +44,7 @@ function decision(options: JobOptions = {}, pages = 10, row = printer()): JobDec
     costCenterId: null,
     usage: { documentPages: pages, pages, sheets: pages, colorPages: 0, costMicros: 0, estimated: true },
     meters: [],
+    guards: [],
     block: null,
     after: [],
   }

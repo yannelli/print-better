@@ -11,10 +11,12 @@ const openEstimate = (row: JobViewRow): JobUsage | null => {
   return usage?.estimated && (TERMINAL_JOB_STATUSES as readonly string[]).includes(row.status) ? usage : null
 }
 
-/** What an ended attempt counts: what printed when the device said, else the estimate if it completed, else nothing. */
+/** What an ended attempt counts: what printed when the device said, else the estimate if it completed, else nothing.
+ * Printers that don't count pages report 0 for a completed job, which keeps the estimate too. */
 export function settledUsage(row: JobViewRow, estimate: JobUsage, printer: PrinterFacts | undefined, settings: UsageSettings): { jobs: number; usage: JobUsage } {
   const completed = row.status === 'completed'
-  const pages = row.pages ?? (completed ? estimate.pages : 0)
+  const reported = completed && row.pages === 0 ? null : row.pages
+  const pages = reported ?? (completed ? estimate.pages : 0)
   const jobs = completed ? 1 : 0
   if (pages === estimate.pages) return { jobs, usage: { ...estimate, estimated: false } }
   const options = parseJson<JobOptions>(row.options, {})

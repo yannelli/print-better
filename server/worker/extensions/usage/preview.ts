@@ -35,6 +35,7 @@ export async function previewJob(ctx: Ctx, workspaceId: string, body: Json): Pro
     contentType,
     size,
     documentPages,
+    counted: true,
     costCenter: body.costCenter,
   })
   const decision = await runJobCheck(ctx, draft, printer, options)
