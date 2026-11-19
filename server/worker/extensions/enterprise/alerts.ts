@@ -1,3 +1,4 @@
+import type { LimitScope } from '../../../shared/policies'
 import type { JobUsage } from '../../../shared/printing'
 import type { UsageImpact, UsageUnit } from '../../../shared/usage'
 import type { JobViewRow } from '../../db/rows'
@@ -7,6 +8,7 @@ import { all, first, run } from '../../lib/db'
 import type { Ctx } from '../../services/context'
 import { appName, loadInstance, outboundEnabled } from '../../services/instance-store'
 import type { JobDraft } from '../hooks'
+import { loadLimits } from '../print-policies/store'
 import { usageSettings } from '../usage/settings'
 import { amountOf, budgetMeter, budgetRows, toBudget } from './meters'
 import { formatMoney } from './csv'
@@ -23,28 +25,21 @@ export interface Count {
   person: string | null
 }
 
-interface LimitScope {
-  id: string
-  scope: string
-  user_id: string | null
-  client_id: string | null
-}
-
 /** Whose count of a limit the job landed in; personal limits count one member. */
-function limitCount(limit: LimitScope | undefined, job: JobDraft): Pick<Count, 'subject' | 'person'> {
+function limitCount(scope: LimitScope | undefined, job: JobDraft): Pick<Count, 'subject' | 'person'> {
   const user = job.userId ? `user:${job.userId}` : null
   const client = job.clientId ? `client:${job.clientId}` : null
-  switch (limit?.scope) {
+  switch (scope?.type) {
     case 'each-member':
       return { subject: user ?? '', person: job.userId }
     case 'member':
-      return { subject: `user:${limit.user_id}`, person: limit.user_id }
+      return { subject: `user:${scope.id}`, person: scope.id }
     case 'group-each':
       return { subject: user ?? client ?? '', person: job.userId }
     case 'each-device':
       return { subject: client ?? '', person: null }
     case 'device':
-      return { subject: `client:${limit.client_id}`, person: null }
+      return { subject: `client:${scope.id}`, person: null }
     default:
       return { subject: '', person: null }
   }
@@ -52,13 +47,10 @@ function limitCount(limit: LimitScope | undefined, job: JobDraft): Pick<Count, '
 
 /** After a job is stored: every limit and budget it counted against, with the job added. */
 export async function alertAfterJob(ctx: Ctx, job: JobDraft, meters: readonly UsageImpact[], usage: JobUsage): Promise<void> {
-  const limitIds = meters.filter((m) => m.kind === 'limit').map((m) => m.id)
-  const limits = limitIds.length
-    ? await all<LimitScope>(ctx.env.DB, 'SELECT id, scope, user_id, client_id FROM print_limits WHERE id IN (SELECT value FROM json_each(?))', JSON.stringify(limitIds))
-    : []
+  const limits = meters.some((m) => m.kind === 'limit') ? await loadLimits(ctx.env, job.workspaceId) : []
   const counts = meters.map((meter): Count => {
     const used = meter.used + amountOf(meter.unit, usage)
-    return meter.kind === 'budget' ? { meter, used, subject: '', person: null } : { meter, used, ...limitCount(limits.find((l) => l.id === meter.id), job) }
+    return meter.kind === 'budget' ? { meter, used, subject: '', person: null } : { meter, used, ...limitCount(limits.find((l) => l.id === meter.id)?.scope, job) }
   })
   await sendAlerts(ctx, job.workspaceId, counts)
 }
