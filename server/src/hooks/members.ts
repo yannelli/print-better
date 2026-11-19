@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Role } from '@shared/types'
 import { workspacesApi } from '@/lib/api/workspaces'
 import { qk } from '@/lib/query'
@@ -49,5 +49,11 @@ export function useDeleteInvite(ws: string) {
 }
 
 export function useAudit(ws: string) {
-  return useQuery({ queryKey: qk.audit(ws), queryFn: () => workspacesApi.audit(ws) })
+  return useInfiniteQuery({
+    queryKey: qk.audit(ws),
+    queryFn: ({ pageParam }) => workspacesApi.audit(ws, pageParam),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+    select: (data) => data.pages.flatMap((p) => p.items),
+  })
 }
