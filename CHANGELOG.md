@@ -4,6 +4,10 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
+### Fixed
+
+- **doctor:** a device with every discovery method turned off shows Discovery as off instead of failing with "No printers found".
+
 ## [0.1.2] - 2026-11-19
 
 ### Added

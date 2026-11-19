@@ -153,6 +153,7 @@ fn without_daemon() -> Result<Vec<diagnose::Check>, Failure> {
             connection: None,
             clock_offset_ms: None,
             discovered: Some(found.len()),
+            discovery_off: diagnose::discovery_off(&options),
             probe: found,
         };
         diagnose::run(&engine, &paths, inputs).await

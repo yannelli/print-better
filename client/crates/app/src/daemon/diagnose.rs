@@ -5,7 +5,7 @@ use crate::fsx;
 use crate::net::{ServerUrl, http};
 use crate::paths::Paths;
 use crate::store::Credentials;
-use pb_print::{Engine, PrinterReport, RouteKind};
+use pb_print::{DiscoverOptions, Engine, PrinterReport, RouteKind};
 use serde::{Deserialize, Serialize};
 use std::time::{Duration, Instant};
 use tokio::time::timeout;
@@ -24,12 +24,18 @@ fn check(name: &str, ok: bool, detail: impl Into<String>) -> Check {
     Check { name: name.into(), ok, detail: detail.into() }
 }
 
+pub fn discovery_off(o: &DiscoverOptions) -> bool {
+    !(o.mdns || o.snmp || o.usb || o.os)
+}
+
 pub struct Inputs {
     pub creds: Option<Credentials>,
     /// Session state; `None` when checking without a running daemon.
     pub connection: Option<(Conn, Option<String>)>,
     pub clock_offset_ms: Option<i64>,
     pub discovered: Option<usize>,
+    /// Every discovery method is off in settings, so finding nothing is expected.
+    pub discovery_off: bool,
     pub probe: Vec<PrinterReport>,
 }
 
@@ -56,7 +62,9 @@ pub async fn run(engine: &Engine, paths: &Paths, inputs: Inputs) -> Vec<Check> {
         checks.push(check("Clock", ok, detail));
     }
     checks.push(storage(paths));
-    if let Some(found) = inputs.discovered {
+    if inputs.discovery_off {
+        checks.push(check("Discovery", true, "Off in this device's settings".to_string()));
+    } else if let Some(found) = inputs.discovered {
         let detail = match found {
             0 => "No printers found. Check that the printer is on and on the same network.".to_string(),
             n => format!("{n} printer(s) found"),
@@ -81,6 +89,7 @@ pub async fn run(engine: &Engine, paths: &Paths, inputs: Inputs) -> Vec<Check> {
 /// Checks for the running daemon: its live connection, clock offset, and added printers.
 pub async fn for_daemon(d: &Daemon) -> Vec<Check> {
     let added = d.added_keys();
+    let off = discovery_off(&crate::settings::discover_options(&d.settings(), None));
     let inputs = d.with_state(|st| {
         let known: Vec<PrinterReport> = st.inventory.printers.values().cloned().collect();
         let added_ones: Vec<PrinterReport> = known.iter().filter(|p| added.contains(&p.key)).cloned().collect();
@@ -89,6 +98,7 @@ pub async fn for_daemon(d: &Daemon) -> Vec<Check> {
             connection: Some((st.conn, st.conn_detail.clone())),
             clock_offset_ms: st.clock_offset_ms,
             discovered: st.inventory.discovered_at.map(|_| known.len()),
+            discovery_off: off,
             probe: if added_ones.is_empty() { known } else { added_ones },
         }
     });
