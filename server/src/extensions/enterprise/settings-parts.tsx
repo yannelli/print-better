@@ -4,6 +4,7 @@ import { Row } from '@/components/page'
 import { wsHref } from '@/components/shell/app-actions'
 import { buttonVariants } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
+import { cn } from '@/lib/utils'
 import { type Choice, ChoiceSelect } from '@/routes/settings/fields'
 import { useUpdateEnterprise } from './hooks'
 import { PartSection, type PartProps } from './part-section'
@@ -17,7 +18,7 @@ function hourChoices(presets: number[], current: number): Choice<string>[] {
 
 function OpenLink({ href, children }: { href: string; children: string }) {
   return (
-    <Link href={href} className={buttonVariants({ variant: 'outline' })}>
+    <Link href={href} className={cn(buttonVariants({ variant: 'outline' }))}>
       {children}
       <ArrowRight data-icon="inline-end" />
     </Link>

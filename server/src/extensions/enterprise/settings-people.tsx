@@ -1,5 +1,6 @@
 import { Row } from '@/components/page'
 import { Switch } from '@/components/ui/switch'
+import { useExtensionActive } from '@/hooks/extensions'
 import { useDraft } from '@/routes/settings/draft'
 import { Block, ChoiceSelect, SaveBar } from '@/routes/settings/fields'
 import { useUpdateEnterprise } from './hooks'
@@ -32,7 +33,7 @@ function Recipients({ ws, recipients, canEdit }: { ws: string; recipients: strin
           <span className="text-sm text-muted-foreground">Only people with an email address get alerts.</span>
         </Block>
       )}
-      {canEdit && (
+      {canEdit && dirty && (
         <SaveBar
           dirty={dirty}
           pending={update.isPending}
@@ -48,20 +49,23 @@ function Recipients({ ws, recipients, canEdit }: { ws: string; recipients: strin
 export function AlertsPart({ ws, settings, canEdit }: PartProps) {
   const update = useUpdateEnterprise(ws)
   const { alerts } = settings
+  const limits = useExtensionActive(ws, 'print-policies')
   return (
     <PartSection ws={ws} part="alerts" settings={settings} canEdit={canEdit}>
-      <Row
-        label="Email people about their own limits"
-        htmlFor="enterprise-alert-personal"
-        description="At 80% and 100% of a limit that counts their jobs. They also see a note on Home."
-      >
-        <Switch
-          id="enterprise-alert-personal"
-          checked={alerts.personal}
-          onCheckedChange={(personal) => update.mutate({ alerts: { personal } })}
-          disabled={!canEdit || update.isPending}
-        />
-      </Row>
+      {limits && (
+        <Row
+          label="Email people about their own limits"
+          htmlFor="enterprise-alert-personal"
+          description="At 80% and 100% of a limit that counts their jobs. They also see a note on Home."
+        >
+          <Switch
+            id="enterprise-alert-personal"
+            checked={alerts.personal}
+            onCheckedChange={(personal) => update.mutate({ alerts: { personal } })}
+            disabled={!canEdit || update.isPending}
+          />
+        </Row>
+      )}
       <Row label="Email admins" htmlFor="enterprise-alert-admins" description="At 80% and 100% of every limit and budget.">
         <Switch
           id="enterprise-alert-admins"

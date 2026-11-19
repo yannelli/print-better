@@ -20,10 +20,16 @@ const PANELS: Record<Part, ComponentType<PartProps>> = {
   privacy: PrivacyPart,
 }
 
+/** The part named in the URL's hash, so links can open one. */
+function partInUrl(): Part {
+  const hash = location.hash.slice(1)
+  return PARTS.find((p) => p.id === hash)?.id ?? 'approvals'
+}
+
 /** Phones get a row of chips that scrolls sideways; wider screens a list beside the part. */
 function PartNav({ settings, part, onSelect }: { settings: EnterpriseSettings; part: Part; onSelect: (part: Part) => void }) {
   return (
-    <nav aria-label="Parts of Enterprise controls" className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:w-56 lg:shrink-0 lg:overflow-visible lg:px-0">
+    <nav aria-label="Parts of Enterprise controls" className="-mx-4 overflow-x-auto px-4 lg:mx-0 lg:w-60 lg:shrink-0 lg:overflow-visible lg:px-0">
       <ul className="flex w-max gap-2 lg:w-full lg:flex-col lg:gap-1">
         {PARTS.map(({ id, label }) => {
           const on = settings[id].enabled
@@ -55,13 +61,17 @@ export default function EnterpriseSettingsTab({ ws }: SlotProps['settingsTab']) 
   const config = useEnterprise(ws)
   const canManage = useCanManage()
   const isOwner = useRole() === 'owner'
-  const [part, setPart] = useState<Part>('approvals')
+  const [part, setPart] = useState<Part>(partInUrl)
+  const select = (next: Part) => {
+    setPart(next)
+    history.replaceState(history.state, '', `#${next}`)
+  }
   const Panel = PANELS[part]
   return (
     <QueryState query={config}>
       {({ settings }) => (
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-10">
-          <PartNav settings={settings} part={part} onSelect={setPart} />
+          <PartNav settings={settings} part={part} onSelect={select} />
           <div className="flex max-w-3xl min-w-0 flex-1 flex-col gap-8">
             <Panel key={part} ws={ws} settings={settings} canEdit={part === 'privacy' ? isOwner : canManage} />
           </div>

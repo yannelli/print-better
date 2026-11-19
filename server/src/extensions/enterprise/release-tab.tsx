@@ -36,7 +36,7 @@ export default function ReleaseTab({ ws }: SlotProps['jobsTab']) {
     <div className="flex max-w-3xl flex-col gap-5">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-[0.9375rem] text-muted-foreground">
-          {everyone ? 'Everyone’s jobs waiting at a printer.' : 'Your jobs wait here until you release them. Open this page on your phone at the printer.'}
+          {everyone ? 'Everyone’s jobs waiting at a printer.' : 'Your jobs wait here until you release them, so they print while you’re at the printer.'}
         </p>
         {canManage && (
           <label htmlFor={`${id}-everyone`} className="flex shrink-0 items-center gap-3 text-[0.9375rem] font-medium">

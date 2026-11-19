@@ -11,6 +11,8 @@ const COLUMNS: { key: keyof UsageTotals; label: string }[] = [
   { key: 'costMicros', label: 'Cost' },
 ]
 
+const dayLabel = (day: string) => new Date(`${day}T00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+
 const value = (totals: UsageTotals, key: keyof UsageTotals, currency: string) =>
   key === 'costMicros' ? formatMicros(totals[key], currency) : totals[key].toLocaleString()
 
@@ -30,7 +32,7 @@ function Totals({ report }: { report: UsageReport }) {
 /** Pages per day as bars; each bar's title gives the day's numbers. */
 function DayChart({ report }: { report: UsageReport }) {
   const most = Math.max(1, ...report.days.map((d) => d.pages))
-  const label = `Pages per day from ${report.from} to ${report.to}, at most ${most} on one day`
+  const label = `Pages per day from ${dayLabel(report.from)} to ${dayLabel(report.to)}, at most ${most} on one day`
   return (
     <figure className="flex flex-col gap-2 rounded-3xl border bg-card p-5 sm:p-6">
       <figcaption className="text-sm font-medium">Pages per day</figcaption>
@@ -38,15 +40,15 @@ function DayChart({ report }: { report: UsageReport }) {
         {report.days.map((d) => (
           <div
             key={d.day}
-            title={`${d.day}: ${d.pages.toLocaleString()} pages, ${d.jobs.toLocaleString()} jobs`}
+            title={`${dayLabel(d.day)}: ${d.pages.toLocaleString()} pages, ${d.jobs.toLocaleString()} jobs`}
             className="min-w-0 flex-1 rounded-t-sm bg-primary/80"
             style={{ height: `${Math.max(d.pages > 0 ? 3 : 0, (d.pages / most) * 100)}%` }}
           />
         ))}
       </div>
       <div className="flex justify-between text-xs text-muted-foreground">
-        <span>{report.from}</span>
-        <span>{report.to}</span>
+        <span>{dayLabel(report.from)}</span>
+        <span>{dayLabel(report.to)}</span>
       </div>
     </figure>
   )

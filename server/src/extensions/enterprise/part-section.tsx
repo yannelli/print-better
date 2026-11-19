@@ -31,7 +31,7 @@ export function PartSection({ ws, part, settings, canEdit, offWarning, children 
   const set = (enabled: boolean) => update.mutate({ [part]: { enabled } }, { onSuccess: () => setAsking(false) })
   return (
     <Section id={id} title={label} description={summary} flush>
-      <Row label={`Turn on ${label.toLowerCase()}`} htmlFor={`${id}-on`} description={settings[part].enabled ? 'On' : 'Off. Nothing changes until you turn it on.'}>
+      <Row label={`Turn on ${label.toLowerCase()}`} htmlFor={`${id}-on`} description={settings[part].enabled ? undefined : 'Off. Nothing changes until you turn it on.'}>
         <Switch
           id={`${id}-on`}
           checked={settings[part].enabled}

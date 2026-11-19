@@ -35,7 +35,7 @@ export default function ApprovalsTab({ ws }: SlotProps['jobsTab']) {
     <QueryState query={approvals}>
       {(jobs) =>
         jobs.length === 0 ? (
-          <EmptyState icon={ShieldCheck} title="Nothing waiting for you" description="Jobs that need your approval show up here, and you get an email for each one." />
+          <EmptyState icon={ShieldCheck} title="Nothing waiting for you" description="Jobs that need your approval show up here." />
         ) : (
           <ul className="flex max-w-3xl flex-col gap-3">
             {jobs.map((job) => (

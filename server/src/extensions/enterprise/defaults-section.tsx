@@ -92,7 +92,16 @@ function AddDefault({ ws, centers, sources, taken }: { ws: string; centers: Cost
         Add a default
       </label>
       <div className="flex flex-col gap-2 lg:flex-row">
-        <SubjectPicker id={`${id}-who`} sources={sources} kinds={sources.kinds} exclude={taken} value={who} onChange={setWho} className="lg:flex-1" />
+        <SubjectPicker
+          id={`${id}-who`}
+          sources={sources}
+          kinds={sources.kinds}
+          exclude={taken}
+          value={who}
+          onChange={setWho}
+          placeholder={sources.kinds.includes('group') ? undefined : 'Search people or devices'}
+          className="lg:flex-1"
+        />
         <ChoiceSelect ariaLabel="Cost center" value={centerId} onChange={setCenterId} options={choices} className="lg:w-56" />
         <Button type="submit" disabled={!who || set.isPending}>
           {set.isPending ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" />}

@@ -44,7 +44,7 @@ function WaitingForYou({ ws }: { ws: string }) {
   if (count === 0) return null
   return (
     <Card icon={ShieldCheck} title={`${plural(count, 'job')} ${count === 1 ? 'waits' : 'wait'} for your approval`}>
-      <Link href={wsHref(ws, '/jobs/approvals')} className={buttonVariants({ variant: 'outline', className: 'w-fit' })}>
+      <Link href={wsHref(ws, '/jobs/approvals')} className={cn(buttonVariants({ variant: 'outline' }), 'w-fit')}>
         Review
       </Link>
     </Card>
@@ -62,7 +62,7 @@ function ReadyForYou({ ws }: { ws: string }) {
           {releaseAll.isPending ? <Spinner data-icon="inline-start" /> : <Unlock data-icon="inline-start" />}
           {count === 1 ? 'Release' : 'Release all'}
         </Button>
-        <Link href={wsHref(ws, '/jobs/release')} className={buttonVariants({ variant: 'outline' })}>
+        <Link href={wsHref(ws, '/jobs/release')} className={cn(buttonVariants({ variant: 'outline' }))}>
           See jobs
         </Link>
       </div>
