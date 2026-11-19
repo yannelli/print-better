@@ -41,6 +41,10 @@ export const qk = {
   cycleUsage: (ws: string, cycle: 'current' | 'previous') => ['ws', ws, 'usage', 'cycle', cycle] as const,
   allowances: (ws: string, limitId: string) => ['ws', ws, 'usage', 'allowances', limitId] as const,
   rules: (ws: string) => ['ws', ws, 'rules'] as const,
+  /** Prefix of Enterprise controls' settings, cost centers and held jobs; an `access` event refreshes it. */
+  enterprise: (ws: string) => ['ws', ws, 'enterprise'] as const,
+  /** Jobs waiting for approval or release; job and approval events refresh it. */
+  holds: (ws: string) => ['ws', ws, 'enterprise', 'holds'] as const,
 }
 
 declare module '@tanstack/react-query' {

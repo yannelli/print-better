@@ -36,6 +36,10 @@ export interface SlotProps {
   homeSection: { ws: string }
   /** A tab on the Usage page. */
   usageTab: { ws: string }
+  /** A tab on Print jobs, next to the job list. */
+  jobsTab: { ws: string }
+  /** Buttons before the core ones on each job in Print jobs. */
+  jobActions: { ws: string; job: Job }
 }
 
 export type SlotName = keyof SlotProps
@@ -44,6 +48,8 @@ export interface SlotContext {
   rights: PrinterRights
   /** Workspace owner or admin. */
   canManage: boolean
+  /** Parts of active extensions that are switched on, e.g. `enterprise.approvals`. */
+  features?: ReadonlySet<string>
 }
 
 export interface SlotEntry<P> {
@@ -75,6 +81,8 @@ export interface ExtensionUi {
   id: UiId
   slots: { [K in SlotName]?: SlotEntry<SlotProps[K]>[] }
   pages?: ExtensionPage[]
+  /** A hook naming the extension's parts that are on, for `features`; it fetches nothing while `active` is false. */
+  useFeatures?: (ws: string, active: boolean) => ReadonlySet<string>
 }
 
 /** The UI ids in effect: the active extensions, plus `usage` while either usage extension is. */

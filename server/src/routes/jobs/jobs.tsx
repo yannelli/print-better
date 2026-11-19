@@ -7,7 +7,9 @@ import { EmptyState, ErrorState, SkeletonRows } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
+import { SlotTabs } from '@/extensions/slot-tabs'
 import { usePrintablePrinters, usePrinterRights } from '@/hooks/access'
+import { useExtensionActive } from '@/hooks/extensions'
 import { useJobs } from '@/hooks/jobs'
 import { usePrinters } from '@/hooks/printers'
 import { useWs } from '@/hooks/workspace'
@@ -21,8 +23,9 @@ const ALL = 'all'
 function Filters({ ws, filters, onChange }: { ws: string; filters: JobFilters; onChange: (next: JobFilters) => void }) {
   const id = useId()
   const printers = (usePrinters(ws).data ?? []).slice().sort((a, b) => a.name.localeCompare(b.name))
-  // `held` only exists with Enterprise controls, so the core filter leaves it out.
-  const statuses = (Object.entries(JOB_STATUS_LABELS) as [JobStatus, { label: string }][]).filter(([status]) => status !== 'held')
+  // `held` only exists with Enterprise controls.
+  const held = useExtensionActive(ws, 'enterprise')
+  const statuses = (Object.entries(JOB_STATUS_LABELS) as [JobStatus, { label: string }][]).filter(([status]) => held || status !== 'held')
   return (
     <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:max-w-2xl">
       <Field>
@@ -65,42 +68,40 @@ export default function Jobs() {
         description="Everything sent to your printers, newest first. This list updates by itself."
         actions={canPrint && <Button onClick={() => openPrint()}>Print something</Button>}
       />
-      <Filters ws={ws} filters={filters} onChange={setFilters} />
-      {jobs.error && !jobs.data ? (
-        <ErrorState error={jobs.error} onRetry={() => jobs.refetch()} />
-      ) : jobs.isPending ? (
-        <SkeletonRows rows={4} />
-      ) : list.length === 0 ? (
-        filtered ? (
-          <EmptyState
-            icon={SearchX}
-            title="No print jobs match"
-            description="Try a different printer or status."
-            action={
-              <Button variant="outline" onClick={() => setFilters({})}>
-                Show all print jobs
-              </Button>
-            }
-          />
+      <SlotTabs name="jobsTab" props={{ ws }} base={`w/${ws}/jobs`} main={{ id: 'all', label: 'All jobs' }}>
+        <Filters ws={ws} filters={filters} onChange={setFilters} />
+        {jobs.error && !jobs.data ? (
+          <ErrorState error={jobs.error} onRetry={() => jobs.refetch()} />
+        ) : jobs.isPending ? (
+          <SkeletonRows rows={4} />
+        ) : list.length === 0 ? (
+          filtered ? (
+            <EmptyState
+              icon={SearchX}
+              title="No print jobs match"
+              description="Try a different printer or status."
+              action={
+                <Button variant="outline" onClick={() => setFilters({})}>
+                  Show all print jobs
+                </Button>
+              }
+            />
+          ) : (
+            <EmptyState icon={ListChecks} title="Nothing printed yet" description="When you print something, it shows up here so you can follow it." />
+          )
         ) : (
-          <EmptyState
-            icon={ListChecks}
-            title="Nothing printed yet"
-            description="When you print something, it shows up here so you can follow it."
-          />
-        )
-      ) : (
-        <div className="flex flex-col gap-6">
-          <JobTable ws={ws} jobs={list} />
-          <JobCards ws={ws} jobs={list} />
-          {jobs.hasNextPage && (
-            <Button variant="outline" className="self-center" onClick={() => jobs.fetchNextPage()} disabled={jobs.isFetchingNextPage}>
-              {jobs.isFetchingNextPage && <Spinner data-icon="inline-start" />}
-              Show more
-            </Button>
-          )}
-        </div>
-      )}
+          <div className="flex flex-col gap-6">
+            <JobTable ws={ws} jobs={list} />
+            <JobCards ws={ws} jobs={list} />
+            {jobs.hasNextPage && (
+              <Button variant="outline" className="self-center" onClick={() => jobs.fetchNextPage()} disabled={jobs.isFetchingNextPage}>
+                {jobs.isFetchingNextPage && <Spinner data-icon="inline-start" />}
+                Show more
+              </Button>
+            )}
+          </div>
+        )}
+      </SlotTabs>
     </>
   )
 }

@@ -40,7 +40,7 @@ function WorkspacePages() {
         <Route path="/" component={Home} />
         <Route path="/printers" component={Printers} />
         <Route path="/printers/:id/:tab?" component={PrinterDetail} />
-        <Route path="/jobs" component={Jobs} />
+        <Route path="/jobs/:tab?" component={Jobs} />
         <Route path="/devices" component={Devices} />
         <Route path="/devices/add" component={AddDevice} />
         <Route path="/devices/:id" component={DeviceDetail} />
