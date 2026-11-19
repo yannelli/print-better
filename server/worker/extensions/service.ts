@@ -1,4 +1,4 @@
-import { EXTENSIONS, type ExtensionInfo, type InstanceExtension, type WorkspaceExtension } from '../../shared/extensions'
+import { EXTENSIONS, type ExtensionId, type ExtensionInfo, type InstanceExtension, type WorkspaceExtension } from '../../shared/extensions'
 import type { Json } from '../http/body'
 import { badRequest, conflict } from '../http/errors'
 import { all } from '../lib/db'
@@ -6,6 +6,7 @@ import { requireInstanceAdmin, requireMember, requireScope } from '../services/a
 import { audit } from '../services/audit'
 import type { Ctx } from '../services/context'
 import { notifyHub } from '../services/hub'
+import { EXTENSION_OFF_HOOKS } from './hooks'
 import { availableExtensions, extensionInfo, saveAvailable, setEnabled, workspaceExtensions } from './state'
 
 function switchValue(body: Json, key: 'available' | 'enabled'): boolean {
@@ -13,6 +14,9 @@ function switchValue(body: Json, key: 'available' | 'enabled'): boolean {
   if (typeof value !== 'boolean') throw badRequest(`${key} must be true or false`)
   return value
 }
+
+const enabledIn = (env: Env, id: ExtensionId) =>
+  all<{ workspace_id: string }>(env.DB, 'SELECT workspace_id FROM workspace_extensions WHERE extension_id = ? AND enabled = 1', id)
 
 async function enabledCounts(env: Env): Promise<Map<string, number>> {
   const rows = await all<{ extension_id: string; n: number }>(env.DB, 'SELECT extension_id, COUNT(*) AS n FROM workspace_extensions WHERE enabled = 1 GROUP BY extension_id')
@@ -27,6 +31,13 @@ const instanceView = (ext: ExtensionInfo, available: Set<string>, counts: Map<st
 
 /** Pages refetch and devices get fresh snapshots after either switch moves. */
 const accessChanged = (ctx: Ctx, workspaceId: string) => notifyHub(ctx, workspaceId, (hub) => hub.accessChanged())
+
+/** Lets an extension clean up where it just stopped applying, e.g. cancel jobs it was holding. */
+async function turnedOff(ctx: Ctx, id: ExtensionId, workspaceIds: readonly string[]): Promise<void> {
+  for (const hook of EXTENSION_OFF_HOOKS.filter((h) => h.extension === id)) {
+    if (workspaceIds.length > 0) await hook.turnedOff(ctx, workspaceIds)
+  }
+}
 
 export async function listInstanceExtensions(ctx: Ctx): Promise<InstanceExtension[]> {
   requireScope(ctx, 'read')
@@ -47,6 +58,7 @@ export async function patchInstanceExtension(ctx: Ctx, id: string, body: Json): 
     else available.delete(ext.id)
     await saveAvailable(ctx.env, available)
     await audit(ctx, null, 'extension.update', ext.id, { available: wanted })
+    if (!wanted) await turnedOff(ctx, ext.id, (await enabledIn(ctx.env, ext.id)).map((w) => w.workspace_id))
     // Best effort: every workspace hears about it, including ones whose settings page only shows availability.
     for (const w of await all<{ id: string }>(ctx.env.DB, 'SELECT id FROM workspaces')) accessChanged(ctx, w.id)
   }
@@ -74,10 +86,11 @@ export async function patchWorkspaceExtension(ctx: Ctx, workspaceId: string, id:
   const ext = extensionInfo(id)
   const wanted = switchValue(body, 'enabled')
   const current = (await workspaceViews(ctx.env, workspaceId)).find((e) => e.id === ext.id) as WorkspaceExtension
-  if (wanted && !current.available) throw conflict(`A server admin has to make ${ext.name} available first, under Admin > Extensions`, 'extension_unavailable')
+  if (wanted && !current.available) throw conflict(`A server admin has to make ${ext.name} available first, under Server admin > Extensions`, 'extension_unavailable')
   if (current.enabled !== wanted) {
     await setEnabled(ctx.env, workspaceId, ext.id, wanted)
     await audit(ctx, workspaceId, 'extension.update', ext.id, { enabled: wanted })
+    if (!wanted && current.available) await turnedOff(ctx, ext.id, [workspaceId])
     accessChanged(ctx, workspaceId)
   }
   return { ...current, enabled: wanted, active: wanted && current.available }

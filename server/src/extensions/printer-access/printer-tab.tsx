@@ -67,7 +67,7 @@ function Content({ ws, printer, access, workspace }: { ws: string; printer: Prin
             canManage ? (
               <>
                 These apply to every printer.{' '}
-                <Link href={wsHref(ws, '/settings')} className="underline underline-offset-4 hover:text-foreground">
+                <Link href={wsHref(ws, '/settings/printer-access')} className="underline underline-offset-4 hover:text-foreground">
                   Change them in Workspace settings
                 </Link>
                 .

@@ -1,0 +1,93 @@
+Check whether a printer is ready, see its ink or toner levels, and make it show you where it is.
+
+## Printer Status
+
+Every printer card and printer page shows a status. Devices check each added printer once a minute and report changes right away.
+
+| Status | What it means |
+| --- | --- |
+| **Ready** | The printer is on and waiting for work. |
+| **Printing** | The printer is printing. |
+| **Needs attention** | The printer stopped. Its own message, if it sends one, appears under the status. |
+| **Not responding** | The device can't reach the printer. Check that the printer is on and connected. |
+| **Offline** | The device that connects the printer is turned off or not connected. |
+| **Checking** | The device hasn't reported the printer's state yet. |
+
+When the printer reports a problem that stops printing, the status names the problem instead, for example **Out of paper**, **Paper jam**, **Out of toner**, or **The cover is open**.
+
+Warnings that don't stop printing appear under the status, for example **Toner is low** or **Paper is running low**.
+
+When an added printer needs attention, a dot appears next to **Printers** in the sidebar.
+
+### Common Problems
+
+| Problem | What to check |
+| --- | --- |
+| **Out of paper** or **Load paper** | Add paper to the tray the printer asks for. |
+| **Paper jam** | Open the printer and clear the jam. |
+| **Out of toner**, **Out of ink or toner** | Replace the cartridge. |
+| **A door is open** or **The cover is open** | Close every door and cover. |
+| **Paper tray is missing** | Push the tray all the way in. |
+| **Output tray is full** | Take the printed pages out. |
+| **Waste box is full** | Replace the waste toner or ink box. |
+| **Drum needs replacing** | Replace the drum unit. |
+| **Paused** | Resume the printer, on the printer itself or in the device's own printer settings. |
+| **Missing a printer driver** | The computer's print system can't drive this printer. See [Troubleshooting](/docs/reference/troubleshooting). |
+
+Problems Print Better doesn't recognize appear in the printer's own words.
+
+### The Status Section
+
+Open a printer to see its **Status** section. When nothing is wrong, it says **Everything looks good. This printer is ready.** Otherwise it lists each problem, worst first.
+
+If the device is offline, the section says so. Jobs wait until the device is back.
+
+When the printer sends a message of its own, it appears after **The printer says:**.
+
+## Ink, Toner, and Other Supplies
+
+The **Status** section lists every supply the printer reports, with a level bar and a percentage:
+
+- A supply at 15% or less shows **Low**, for example **Low, 12%**.
+- **Level unknown** means the printer reports the supply but not how full it is.
+- **This printer doesn't report its ink or toner levels.** means it reports no supplies at all.
+
+Printer cards show up to 4 supplies.
+
+On a Mac, the print window shows the same levels for printers on your other devices. See [Supply Levels on a Mac](/docs/printing/print-window#supply-levels-on-a-mac).
+
+## Check the Status Now
+
+The device must be online. When it isn't, the button is turned off and the row asks you to turn the device on.
+
+Open the printer. Under **Tools**, find **Check status now** and select **Check again**. The device asks the printer for its latest status and ink levels.
+
+## Make a Printer Identify Itself
+
+Use this to find the right printer in a room full of them. The device must be online. With [Printer Access](/docs/extensions/printer-access) turned on, you also need the **Print** permission.
+
+Open the printer. Under **Tools**, find **Find this printer** and select **Beep or flash**. The printer beeps, flashes its lights, or shows a message, if it can.
+
+## Print a Test Page
+
+Open the printer. Under **Tools**, find **Test page** and select **Print a test page**.
+
+Print Better sends a one-page PDF with the printer's name, its device, and the time. The job appears in [**Print jobs**](/jobs) as **Test page**.
+
+## Next Steps
+
+<Cards>
+
+<Card href="/docs/printing/jobs" title="Print Jobs">
+
+Follow a job and see why one didn't print.
+
+</Card>
+
+<Card href="/docs/reference/troubleshooting" title="Troubleshooting">
+
+Fix common problems with devices, printers, and jobs.
+
+</Card>
+
+</Cards>

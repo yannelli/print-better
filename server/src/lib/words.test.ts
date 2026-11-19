@@ -16,6 +16,7 @@ import {
   deviceKind,
   jobOrigin,
   jobStatus,
+  printedWithProblem,
   printerProblems,
   printerStatus,
   reasonWords,
@@ -109,6 +110,15 @@ describe('jobStatus', () => {
     })
     expect(jobStatus({ status: 'completed', statusMessage: null }).label).toBe('Printed')
   })
+
+  it('warns about a completed job that came with a message', () => {
+    const short = { status: 'completed' as const, statusMessage: "The printer stopped after 4 of 11 pages. It didn't report an error." }
+    expect(jobStatus(short)).toEqual({ label: 'Printed with a problem', tone: 'warn', detail: short.statusMessage })
+    expect(printedWithProblem(short)).toBe(true)
+    expect(printedWithProblem({ status: 'completed', statusMessage: null })).toBe(false)
+    expect(printedWithProblem({ status: 'failed', statusMessage: 'Out of paper' })).toBe(false)
+    expect(jobStatus({ status: 'completed', statusMessage: null })).toEqual({ label: 'Printed', tone: 'ok' })
+  })
 })
 
 describe('devices', () => {
@@ -157,9 +167,13 @@ describe('devices', () => {
 describe('jobOrigin', () => {
   const job = { sourceClientName: null, requestedBy: null }
 
-  it('names the source for jobs from the website, email and the like', () => {
-    expect(jobOrigin({ ...job, source: 'web' })).toBe('From website')
+  it('names the source for jobs from the website, email and the like, keeping proper names', () => {
+    expect(jobOrigin({ ...job, source: 'web' })).toBe('From the website')
     expect(jobOrigin({ ...job, source: 'email' })).toBe('From email')
+    expect(jobOrigin({ ...job, source: 'api' })).toBe('From the API')
+    expect(jobOrigin({ ...job, source: 'mcp' })).toBe('From an AI assistant')
+    expect(jobOrigin({ ...job, source: 'lan' })).toBe('From the local network')
+    expect(jobOrigin({ ...job, source: 'test' })).toBe('Test page')
   })
 
   it('names the computer and the person for jobs from a print dialog', () => {

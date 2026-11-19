@@ -1,7 +1,9 @@
 import { lazy, Suspense } from 'react'
 import { Route, Switch } from 'wouter'
-import { FullPageLoading, RequireAuth, RootRedirect, UserRoute, WorkspaceRoute } from '@/routes/guards'
+import { extensionRoutes } from '@/extensions/pages'
+import { FullPageLoading, RequireAuth, RootRedirect, UserRoute, WorkspaceRoute, WorkspaceScreenRedirect } from '@/routes/guards'
 import { Loading } from '@/components/states'
+import { ACCOUNT_ROUTE, WORKSPACE_FREE_ROUTE } from '@/lib/app-links'
 import NotFound from '@/routes/not-found'
 
 const Setup = lazy(() => import('@/routes/auth/setup'))
@@ -29,6 +31,8 @@ const Account = lazy(() => import('@/routes/account/account'))
 const Admin = lazy(() => import('@/routes/admin/admin'))
 const ConnectAi = lazy(() => import('@/routes/connect/connect-ai'))
 
+const DocsApp = lazy(() => import('@/docs/docs-app'))
+
 function WorkspacePages() {
   return (
     <Suspense fallback={<Loading />}>
@@ -36,12 +40,13 @@ function WorkspacePages() {
         <Route path="/" component={Home} />
         <Route path="/printers" component={Printers} />
         <Route path="/printers/:id/:tab?" component={PrinterDetail} />
-        <Route path="/jobs" component={Jobs} />
+        <Route path="/jobs/:tab?" component={Jobs} />
         <Route path="/devices" component={Devices} />
         <Route path="/devices/add" component={AddDevice} />
         <Route path="/devices/:id" component={DeviceDetail} />
         <Route path="/members/:tab?" component={Members} />
-        <Route path="/settings" component={WorkspaceSettings} />
+        <Route path="/settings/:tab?" component={WorkspaceSettings} />
+        {extensionRoutes()}
         <Route component={NotFound} />
       </Switch>
     </Suspense>
@@ -64,6 +69,7 @@ export function App() {
   return (
     <Suspense fallback={<FullPageLoading />}>
       <Switch>
+        <Route path={/^\/docs(\/.*)?$/} component={DocsApp} />
         <Route path="/setup" component={Setup} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
@@ -91,7 +97,8 @@ export function App() {
             <WorkspacePages />
           </WorkspaceRoute>
         </Route>
-        <Route path={/^\/(account|admin|connect)(\/.*)?$/}>
+        <Route path={WORKSPACE_FREE_ROUTE} component={WorkspaceScreenRedirect} />
+        <Route path={ACCOUNT_ROUTE}>
           <UserRoute>
             <UserPages />
           </UserRoute>

@@ -1,0 +1,338 @@
+For a guided start, see [With the API](/docs/printing/api).
+
+## Basics
+
+- Base address: `https://your-print-better.example/api`. Paths in the tables below are relative to it.
+- Requests and responses are JSON, except file uploads and downloads.
+- `:ws` is a workspace ID. Get yours from `GET /auth/session` or `GET /workspaces`.
+
+## Authentication
+
+Send a personal API token in the `Authorization` header:
+
+```sh
+curl https://your-print-better.example/api/workspaces \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN"
+```
+
+Create a token under **Your account**, then **Apps and tokens**. See [API Tokens](/docs/workspaces/tokens).
+
+Tokens start with `pbt_`. A token can be limited to 1 workspace and can expire.
+
+The web app uses a session cookie instead. Requests with that cookie that change something must send an `Origin` header that matches the server.
+
+OAuth tokens from AI assistants (`pbo_`) work only with the [MCP server](/docs/reference/mcp). The REST API returns `401` for them.
+
+## Scopes
+
+| Scope | Allows |
+| --- | --- |
+| `read` | Reading and listing. |
+| `print` | Creating, uploading, canceling, retrying, and deleting jobs, and test pages. |
+| `write` | Every other change. |
+
+Personal API tokens hold all 3 scopes. A missing scope returns `403` with the code `insufficient_scope`.
+
+The **Scope** column in the tables also uses these values:
+
+- **session**: The endpoint needs a signed-in browser. Tokens get `403 session_required`.
+- **none**: The endpoint needs no sign-in.
+- **any**: Any token scope works.
+
+## Roles
+
+Many endpoints also need a role in the workspace:
+
+- Members can read, print, and manage their own jobs.
+- Admins and owners can change printers, devices, members, and settings.
+
+The tables mark these endpoints with **Admins** or **Owners**. **Server admins** are the accounts that can open **Server admin**.
+
+With the [Printer Access](/docs/extensions/printer-access) extension active, each printer's permissions replace the admin rule for printers and jobs. Printers and jobs you can't see are left out of lists and return `404`.
+
+## Errors
+
+Errors use the HTTP status and a JSON body:
+
+```json
+{ "error": { "code": "printer_required", "message": "Choose a printer (this workspace has no default printer)" } }
+```
+
+| Status | Common codes |
+| --- | --- |
+| `400` | `invalid_request`, `printer_required`, `size_mismatch`, `email_disabled`, `cost_center_invalid` |
+| `401` | `unauthorized`, `invalid_token`, `invalid_credentials` |
+| `403` | `forbidden`, `insufficient_scope`, `session_required`, `bad_origin`, `printer_access_denied`, `policy_blocked` |
+| `404` | `not_found`, `extension_inactive` |
+| `409` | `conflict`, `client_offline`, `printer_not_added`, `job_finished`, `job_not_retryable`, `file_purged`, `last_owner`, `job_not_held`, `part_off`, `cost_center_in_use`, `name_taken` |
+| `413` | `too_large` |
+| `415` | `unsupported_type` |
+| `429` | `rate_limited` |
+
+## Pagination
+
+`GET /workspaces/:ws/jobs` and `GET /workspaces/:ws/audit` return pages, newest first:
+
+```json
+{ "items": [], "nextCursor": "MTc2..." }
+```
+
+Pass `?limit=` for the page size (50 by default, 200 at most). Pass `nextCursor` back as `?cursor=` to get the next page. When `nextCursor` is `null`, there are no more pages.
+
+## Two-Step Upload
+
+Send small documents inline as `text`, `url`, or `base64`. For larger files, create the job first and then upload the file.
+
+<Steps>
+
+### Create the Job
+
+```sh
+curl -X POST https://your-print-better.example/api/workspaces/$WS/jobs \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"printerId":"'$PRINTER'","upload":{"fileName":"report.pdf","contentType":"application/pdf","size":182044}}'
+```
+
+The response holds the job, with status `uploading`, and an absolute `uploadUrl`.
+
+### Upload the File
+
+```sh
+curl -X PUT "$UPLOAD_URL" \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN" \
+  -H "Content-Type: application/pdf" \
+  --data-binary @report.pdf
+```
+
+The `Content-Type` must match the declared type, or you get `415 unsupported_type`. The body must be exactly `size` bytes, or you get `400 size_mismatch`. The job then moves to `queued`.
+
+</Steps>
+
+Uploads have these limits:
+
+- Types: `application/pdf`, `image/jpeg`, `image/png`, and `text/plain`.
+- Size: The workspace's upload limit, 50 MB by default.
+- Time: An upload that never finishes fails after 1 hour.
+
+Job options are listed in [Job Options](/docs/reference/job-options).
+
+## Server and Sign-In
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/instance` | none | Server name, version, sign-in options, and whether setup is needed. |
+| POST | `/auth/setup` | none | Creates the first account and workspace. Needs the setup code. |
+| GET | `/auth/session` | `read` | The signed-in user and their workspaces. |
+| POST | `/auth/register` | none | Creates an account, with an invite or when sign-up is open. |
+| POST | `/auth/login` | none | Signs in with a username or email and a password. |
+| POST | `/auth/logout` | none | Signs out this session. |
+| POST | `/auth/passkey/register/options` | session | Starts adding a passkey. |
+| POST | `/auth/passkey/register/verify` | session | Saves the new passkey. |
+| POST | `/auth/passkey/signup/options` | none | Starts creating an account with a passkey. |
+| POST | `/auth/passkey/signup/verify` | none | Creates the account and signs in. |
+| POST | `/auth/passkey/login/options` | none | Starts a passkey sign-in. |
+| POST | `/auth/passkey/login/verify` | none | Finishes a passkey sign-in. |
+| GET | `/auth/sso/:provider/start` | none | Sends the browser to Google or your OpenID Connect provider. `link=1` connects it to the signed-in account. |
+| GET | `/auth/sso/:provider/callback` | none | Where the provider sends the browser back. |
+| POST | `/auth/verify-email` | none | Confirms an email address with the token from the email. |
+| POST | `/auth/recover` | none | Signs in with a recovery code, optionally setting a new password. |
+| POST | `/auth/reset/request` | none | Emails a password reset link. |
+| POST | `/auth/reset/confirm` | none | Sets a new password from a reset link. |
+
+## Your Account
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/me` | `read` | Your profile. |
+| PATCH | `/me` | `write` | Changes your name, email, or username. |
+| PUT | `/me/password` | session | Sets or changes your password. |
+| POST | `/me/email/verification` | session | Sends a verification email. |
+| GET | `/me/identities` | `read` | Connected Google or organization accounts. |
+| DELETE | `/me/identities/:provider` | session | Disconnects one. |
+| GET | `/me/passkeys` | `read` | Your passkeys. |
+| PATCH | `/me/passkeys/:id` | session | Renames a passkey. |
+| DELETE | `/me/passkeys/:id` | session | Removes a passkey. |
+| GET | `/me/sessions` | session | Where you are signed in. |
+| DELETE | `/me/sessions/:id` | session | Signs out one session. |
+| POST | `/me/recovery-codes` | session | Creates 10 new recovery codes. |
+| GET | `/me/tokens` | `read` | Your API tokens and connected apps. |
+| POST | `/me/tokens` | session | Creates an API token. The response holds it once. |
+| DELETE | `/me/tokens/:id` | `write` | Deletes a token, or disconnects an app. |
+
+## Workspaces and Members
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/workspaces` | `read` | Your workspaces and your role in each. |
+| POST | `/workspaces` | `write` | Creates a workspace. You become its owner. |
+| GET | `/workspaces/:ws` | `read` | One workspace with its settings. |
+| PATCH | `/workspaces/:ws` | `write` | Admins: renames it or changes its settings. |
+| DELETE | `/workspaces/:ws` | `write` | Owners: deletes it. |
+| GET | `/workspaces/:ws/members` | `read` | Members and their roles. |
+| PATCH | `/workspaces/:ws/members/:userId` | `write` | Admins: changes a role. Only owners grant or remove the owner role. |
+| DELETE | `/workspaces/:ws/members/:userId` | `write` | Admins: removes a member. Anyone can remove themselves. |
+| GET | `/workspaces/:ws/invites` | `read` | Admins: open invites. |
+| POST | `/workspaces/:ws/invites` | `write` | Admins: creates an invite link, emailed when an address is given. |
+| DELETE | `/workspaces/:ws/invites/:id` | `write` | Admins: cancels an invite. |
+| GET | `/invites/:token` | none | Previews an invite. |
+| POST | `/invites/:token/accept` | `write` | Joins the workspace. |
+| GET | `/workspaces/:ws/audit` | `read` | Admins: the activity log, one page at a time. |
+| GET | `/workspaces/:ws/events` | any | A WebSocket of live changes for open pages. |
+
+## Devices
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/workspaces/:ws/clients` | `read` | Devices, with online state and settings. |
+| GET | `/workspaces/:ws/clients/:id` | `read` | One device. |
+| PATCH | `/workspaces/:ws/clients/:id` | `write` | Admins: renames a device or changes its settings. |
+| DELETE | `/workspaces/:ws/clients/:id` | `write` | Admins: removes a device and its printers. |
+| POST | `/workspaces/:ws/clients/:id/commands` | `write` | Admins: runs `discover`, `refresh`, `identify`, `logs`, `diagnose`, `restart`, or `update` on an online device. |
+| GET | `/workspaces/:ws/enrollments` | `read` | Admins: open setup codes. |
+| POST | `/workspaces/:ws/enrollments` | `write` | Admins: creates a setup code with install commands. Single use and 24 hours by default. |
+| DELETE | `/workspaces/:ws/enrollments/:id` | `write` | Admins: cancels a setup code. |
+| GET | `/device/:userCode` | `read` | Describes a device waiting for approval. |
+| POST | `/device/:userCode/approve` | `write` | Admins of the chosen workspace: approves the device. |
+| POST | `/device/:userCode/deny` | `write` | Turns the device away. |
+
+## Printers
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/workspaces/:ws/printers` | `read` | Added and found printers. `?added=true` or `?added=false` filters them. |
+| GET | `/workspaces/:ws/printers/:id` | `read` | One printer with its status, supplies, and options. |
+| PATCH | `/workspaces/:ws/printers/:id` | `write` | Admins: name, location, defaults, sharing, email address, or adds and removes it. |
+| DELETE | `/workspaces/:ws/printers/:id` | `write` | Admins: forgets a printer. It comes back as found if the device sees it again. |
+| POST | `/workspaces/:ws/printers/:id/identify` | `write` | Makes the printer beep, blink, or show a message. |
+| POST | `/workspaces/:ws/printers/:id/refresh` | `write` | Asks the device for the printer's current status. |
+| POST | `/workspaces/:ws/printers/:id/test-page` | `print` | Prints the built-in one-page test. |
+| GET | `/workspaces/:ws/access/me` | `read` | What you may do on each printer you can see. |
+
+## Jobs
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/workspaces/:ws/jobs` | `read` | Jobs, newest first. Filter with `printerId` and `status`. |
+| POST | `/workspaces/:ws/jobs` | `print` | Creates a job from `text`, `url`, `base64`, or an `upload` slot. Uses the default printer without `printerId`. |
+| PUT | `/workspaces/:ws/jobs/:id/file` | `print` | Uploads the file for an `upload` job. |
+| GET | `/workspaces/:ws/jobs/:id` | `read` | One job with its status and message. |
+| GET | `/workspaces/:ws/jobs/:id/file` | `read` | Downloads the document, until it is deleted. |
+| POST | `/workspaces/:ws/jobs/:id/cancel` | `print` | Cancels an unfinished job. Members cancel their own. |
+| POST | `/workspaces/:ws/jobs/:id/retry` | `print` | Prints a failed or canceled job again. Members retry their own. |
+| DELETE | `/workspaces/:ws/jobs/:id` | `print` | Admins: deletes a finished job and its document. |
+
+## Server Admin
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/admin/settings` | `read` | Server admins: name, sign-up, sign-in, and email settings. Secrets show only whether they are set. |
+| PATCH | `/admin/settings` | `write` | Server admins: changes them. A string sets a secret, `null` clears it. |
+| GET | `/admin/users` | `read` | Server admins: every account. |
+| PATCH | `/admin/users/:id` | `write` | Server admins: makes someone a server admin, or not. |
+| DELETE | `/admin/users/:id` | `write` | Server admins: deletes an account. |
+| POST | `/admin/users/:id/reset-password` | `write` | Server admins: returns a one-time reset link. |
+
+## Extensions
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/admin/extensions` | `read` | Server admins: each extension and whether it is available. |
+| PATCH | `/admin/extensions/:id` | `write` | Server admins: makes an extension available, or not. |
+| GET | `/workspaces/:ws/extensions` | `read` | Extensions in this workspace: available, enabled, active. |
+| PATCH | `/workspaces/:ws/extensions/:id` | `write` | Owners: turns an available extension on or off. |
+
+## Printer Access
+
+These endpoints need the [Printer Access](/docs/extensions/printer-access) extension turned on. While it is off, they return `404 extension_inactive`, except `GET /access/subject`. All paths start with `/workspaces/:ws`.
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/access` | `read` | The default role, roles, and workspace-wide grants. |
+| PATCH | `/access` | `write` | Admins: sets the default role for every printer. |
+| GET | `/access/printers` | `read` | Access summaries for the printers you can see. |
+| GET | `/access/explain` | `read` | Why someone has their permissions on a printer. Admins, or `access` on that printer. |
+| GET | `/access/subject` | `read` | Admins: a member's, group's, or device's permissions on every printer. |
+| POST | `/access/roles` | `write` | Admins: creates a custom role. |
+| PATCH | `/access/roles/:id` | `write` | Admins: edits a custom role. |
+| DELETE | `/access/roles/:id` | `write` | Admins: deletes a custom role that nothing uses. |
+| POST | `/access/grants` | `write` | Admins: grants a role on every printer. |
+| DELETE | `/access/grants/:id` | `write` | Removes a grant. Admins, or `access` on its printer. |
+| GET | `/groups` | `read` | Groups of members and devices. |
+| POST | `/groups` | `write` | Admins: creates a group. |
+| PATCH | `/groups/:id` | `write` | Admins: renames or describes a group. |
+| DELETE | `/groups/:id` | `write` | Admins: deletes a group and its grants. |
+| PUT | `/groups/:id/members/:type/:memberId` | `write` | Admins: adds a member (`user`) or device (`client`). |
+| DELETE | `/groups/:id/members/:type/:memberId` | `write` | Admins: removes one. |
+| GET | `/printers/:id/access` | `read` | A printer's Everyone setting and grants. Needs `access` on it. |
+| PATCH | `/printers/:id/access` | `write` | Sets a printer's Everyone role. Needs `access` on it. |
+| POST | `/printers/:id/access/grants` | `write` | Grants a role on one printer. Needs `access` on it. |
+
+## Print Rules and Limits
+
+These endpoints need the [Print Rules and Limits](/docs/extensions/print-rules-and-limits) extension turned on. While it is off, they return `404 extension_inactive`. All paths start with `/workspaces/:ws`.
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/policies/rules` | `read` | Admins: rules, top to bottom. |
+| POST | `/policies/rules` | `write` | Admins: adds a rule at the bottom. |
+| PATCH | `/policies/rules/:id` | `write` | Admins: changes a rule. |
+| DELETE | `/policies/rules/:id` | `write` | Admins: deletes a rule. |
+| PUT | `/policies/rules/order` | `write` | Admins: sets the order, with every rule id once. |
+| GET | `/policies/limits` | `read` | Admins: limits with this cycle's counts. |
+| POST | `/policies/limits` | `write` | Admins: adds a limit. |
+| PATCH | `/policies/limits/:id` | `write` | Admins: changes a limit. |
+| DELETE | `/policies/limits/:id` | `write` | Admins: deletes a limit and its extra allowances. |
+| GET | `/policies/limits/:id/adjustments` | `read` | Admins: this cycle's extra allowances. |
+| POST | `/policies/limits/:id/adjustments` | `write` | Admins: gives an extra amount for this cycle. |
+| GET | `/usage/me` | `read` | The limits that count your jobs, with what's left. |
+| GET | `/usage?cycle=current` | `read` | Admins: every limit's counts. `cycle=previous` for the cycle before. |
+| POST | `/jobs/preview` | `print` | What would happen to a job sent now. Nothing is printed. |
+| GET | `/prices` | `read` | The currency, time zone, and prices. |
+| PUT | `/prices` | `write` | Admins: changes them. |
+
+A rule or limit that refuses a job returns `403 policy_blocked` with its message. Jobs it checked carry `policy` (what changed, and what the sender asked for) and `usage` (pages, sheets, and cost).
+
+## Enterprise Controls
+
+These endpoints need the [Enterprise Controls](/docs/extensions/enterprise) extension turned on. While it is off, they return `404 extension_inactive`, and while their part is off, `409 part_off`. All paths start with `/workspaces/:ws`.
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/enterprise` | `read` | Each part's settings, and printers with approval or release on. |
+| PATCH | `/enterprise` | `write` | Admins: changes parts. Owners for `privacy`. |
+| PATCH | `/printers/:id/enterprise` | `write` | Sets `approval` and `secureRelease` on a printer. Admins, or `settings` on it. |
+| GET | `/approvals` | `read` | Jobs waiting for your approval. |
+| POST | `/jobs/:id/approve` | `print` | Approves a job. Takes an optional `note`. |
+| POST | `/jobs/:id/deny` | `print` | Cancels a job waiting for approval. Takes a `reason`. |
+| GET | `/release` | `read` | Your jobs waiting to be released. Admins add `?everyone=true`. |
+| POST | `/jobs/:id/release` | `print` | Releases a job. The sender, owners, and admins. |
+| POST | `/release/all` | `print` | Releases all of your jobs. |
+| GET | `/cost-centers` | `read` | Cost centers, and your default. |
+| POST | `/cost-centers` | `write` | Admins: adds a cost center. |
+| PATCH | `/cost-centers/:id` | `write` | Admins: changes one. |
+| DELETE | `/cost-centers/:id` | `write` | Admins: deletes one no job was charged to, else `409 cost_center_in_use`. |
+| GET | `/cost-centers/defaults` | `read` | Admins: defaults for members, groups, and devices. |
+| PUT | `/cost-centers/defaults` | `write` | Admins: sets defaults. `null` removes one. |
+| GET | `/budgets` | `read` | Admins: budgets with this cycle's usage. |
+| POST | `/budgets` | `write` | Admins: adds a budget. |
+| PATCH | `/budgets/:id` | `write` | Admins: changes a budget. |
+| DELETE | `/budgets/:id` | `write` | Admins: deletes a budget. |
+| GET | `/reports/usage?by=&from=&to=` | `read` | Admins: a usage report. `format=csv` downloads it. |
+| GET | `/reports/schedules` | `read` | Admins: scheduled report emails. |
+| POST | `/reports/schedules` | `write` | Admins: schedules a weekly or monthly report. |
+| DELETE | `/reports/schedules/:id` | `write` | Admins: stops one. |
+| GET | `/audit/export?from=&to=` | `read` | Admins: the audit log as CSV. |
+
+While it is on, `POST /jobs` takes `costCenter` (an id or a code) and `GET /jobs` takes `status=held`. A job that waits has the status `held`, with `held.kind` set to `approval` or `release`.
+
+## Other Endpoints
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| POST | `/api/hooks/resend` | Receives email from Resend for email to print. Checks the webhook signature. |
+| GET | `/install.sh` | The install script for Macs and Linux. |
+| GET | `/dl/latest.json`, `/dl/:version/:file` | Client downloads. |
+| POST | `/mcp` | The MCP server. See [MCP Tools](/docs/reference/mcp). |
+
+Devices use their own endpoints under `/api/client/`, with a `pbc_` device key. They are for `printbetter` only.

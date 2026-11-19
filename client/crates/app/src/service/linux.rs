@@ -1,4 +1,4 @@
-//! systemd: a user unit, or a hardened system unit running as `printbetter` (group `lp`)
+//! systemd: a user unit, or a hardened system unit running as `printbetter` (groups `lp` and `lpadmin`)
 //! with a udev rule for USB printer-class devices.
 
 use super::{Action, SYSTEM_ALREADY, command, output, remove, report, require_root, takeover, templates, write};
@@ -89,17 +89,14 @@ fn install_system() -> Outcome {
     Ok(())
 }
 
-/// Dedicated system user in group `lp`, so it can reach CUPS and USB printers.
+/// Dedicated system user, in the print groups this system has.
 fn ensure_user() -> Outcome {
-    if command("id", &["-u", "printbetter"]).is_ok() {
-        let _ = command("usermod", &["-a", "-G", "lp", "printbetter"]);
-        return Ok(());
+    if command("id", &["-u", "printbetter"]).is_err() {
+        let base = ["--system", "--no-create-home", "--home-dir", "/var/lib/printbetter", "--shell", "/usr/sbin/nologin", "--user-group"];
+        command("useradd", &[&base[..], &["printbetter"]].concat())?;
     }
-    let base = ["--system", "--no-create-home", "--home-dir", "/var/lib/printbetter", "--shell", "/usr/sbin/nologin", "--user-group"];
-    if command("useradd", &[&base[..], &["--groups", "lp", "printbetter"]].concat()).is_ok() {
-        return Ok(());
-    }
-    command("useradd", &[&base[..], &["printbetter"]].concat()).map(drop)
+    update::helper::join_print_groups();
+    Ok(())
 }
 
 fn uninstall(system: bool) -> Outcome {

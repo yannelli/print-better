@@ -4,6 +4,8 @@ mod compress;
 pub(crate) mod decode;
 mod image;
 mod pages_media;
+pub(crate) mod pdfbuild;
+mod pdfcount;
 mod place;
 mod plan;
 mod raster;

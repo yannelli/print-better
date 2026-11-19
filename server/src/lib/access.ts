@@ -7,6 +7,8 @@ export interface PrinterRights {
   /** Owner or admin: everything on every printer. */
   all: boolean
   can: (printerId: string | null | undefined, permission: PrinterPermission) => boolean
+  /** The permission on at least one printer. */
+  canAny: (permission: PrinterPermission) => boolean
 }
 
 /** Until `/access/me` answers, and while printer access is off, today's role rules apply unchanged. */
@@ -18,7 +20,9 @@ export function printerRights(me: MyPrinterAccess | undefined, role: Role | unde
     if (!managed) return LEGACY_MEMBER_PERMISSIONS.includes(permission)
     return !!printerId && !!me?.printers[printerId]?.includes(permission)
   }
-  return { managed, all, can }
+  const canAny = (permission: PrinterPermission) =>
+    all || (managed ? Object.values(me?.printers ?? {}).some((list) => list.includes(permission)) : LEGACY_MEMBER_PERMISSIONS.includes(permission))
+  return { managed, all, can, canAny }
 }
 
 export interface JobRights {
@@ -37,3 +41,7 @@ export function jobRights(job: Pick<Job, 'userId' | 'printerId'>, userId: string
     remove: rights.can(job.printerId, 'jobs.manage'),
   }
 }
+
+/** Enterprise controls: owners and admins approve any held job; with Printer access, `jobs.manage` approves other members'. */
+export const mayApprove = (job: Pick<Job, 'userId' | 'printerId'>, userId: string | null | undefined, rights: PrinterRights): boolean =>
+  rights.all || (rights.managed && job.userId !== null && job.userId !== userId && rights.can(job.printerId, 'jobs.manage'))

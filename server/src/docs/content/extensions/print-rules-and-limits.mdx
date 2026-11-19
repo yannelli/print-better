@@ -1,0 +1,118 @@
+Print rules and limits checks every print job before it's queued. Rules can change a job, send it to another printer, or refuse it. Limits cap how much each person, group, device, or printer prints in a day, week, month, quarter, or year.
+
+## Turn On Print Rules and Limits
+
+Print rules and limits is an [extension](/docs/extensions). A server admin makes it available under **Server admin** > **Extensions**, then a workspace owner turns it on in **Settings** > [**Extensions**](/settings/extensions). See [Turn On an Extension](/docs/extensions#turn-on-an-extension).
+
+<Callout type="note" title="Turning It On Changes Nothing by Itself">
+
+There are no rules or limits until you add them, so jobs print as before.
+
+</Callout>
+
+Owners and admins manage rules and limits under **Usage** in the navigation. The currency, time zone, and prices are in **Settings** > [**Prices**](/settings/prices).
+
+## Where It Applies
+
+Every job is checked, wherever it comes from: the web app, the API, AI assistants, email to print, a computer's print window, and test pages. Jobs already printing are never stopped, and LAN sharing isn't checked.
+
+Rules and limits apply to owners and admins too, unless one is set to **Doesn't apply to owners and admins**.
+
+## Add a Rule
+
+<Steps>
+
+### Open Rules
+
+Open **Usage**, select the **Rules** tab, then select **New rule**.
+
+### Choose When It Applies
+
+Under **When**, select **Add a condition**. A job has to match every condition. A rule without conditions applies to every job.
+
+### Choose What It Does
+
+Under **Then**, pick the actions. They run in order.
+
+### Save It
+
+Select **Add rule**. New rules go at the bottom.
+
+</Steps>
+
+Rules run top to bottom. Each rule whose conditions all match applies its actions, and later rules see the job as earlier ones left it. A rule that blocks stops the job right there. Use the arrows to change the order, and the switch to turn a rule off.
+
+| Condition | Matches when |
+| --- | --- |
+| **Who sent it** | It's from one of these people, groups, or devices. Groups need [Printer Access](/docs/extensions/printer-access). |
+| **Where it came from** | It came from the web app, the API, AI assistants, email, a computer's print window, or test pages. |
+| **Printer** | It goes to one of these printers. |
+| **Pages** | Its pages, counting copies, are at least or at most a number. |
+| **Copies** | It asks for at least this many copies. |
+| **Color** | It prints in color, or in black and white. A job set to automatic on a color printer prints in color. |
+| **Sides** | It asks for one-sided or two-sided printing. |
+| **File type** | It's a PDF, an image, or text. |
+| **File size** | Its file is at least this many MB. |
+| **Time** | It's sent on these days, between these times, in the workspace time zone. An end before the start runs past midnight. |
+
+| Action | What it does |
+| --- | --- |
+| **Block** | Refuses the job with your message, shown wherever it was sent from. |
+| **Print two-sided** | Long edge, when the printer can. |
+| **Print in black and white** | Prints in black and white. |
+| **Limit copies** | At most this many copies. |
+| **Send to another printer** | Moves the job, only if the sender may print there and the printer's device is online. Otherwise it stays, with a note. |
+| **Add a note** | Shows your note on the job. |
+
+Every change a rule makes shows under the job in [Print Jobs](/docs/printing/jobs), for example "Big jobs on both sides: Printed two-sided".
+
+## Add a Limit
+
+<Steps>
+
+### Open Limits
+
+Open **Usage**, select the **Limits** tab, then select **New limit**.
+
+### Choose Who It Counts
+
+| Choice | What it counts |
+| --- | --- |
+| **Each member** | Every member has their own count. |
+| **One member** | That member's jobs. |
+| **A group, shared** | 1 count for everyone in the group. Needs Printer Access. |
+| **Each member of a group** | Everyone in the group has their own count. Needs Printer Access. |
+| **Each device** | Jobs from each computer's print window. |
+| **One device** | That device's jobs. |
+| **One printer** | Every job sent to it, from anyone. |
+| **The whole workspace** | Every job. |
+
+Jobs from a computer's print window have no member, so **Each member** and **One member** limits don't count them. Device limits do, and so do printer, workspace, and group limits for groups the device is in. To cap what a computer prints, add a device limit.
+
+### Choose the Amount
+
+Pick what it counts (pages, sheets of paper, jobs, or cost), how much, and when it starts over: every day, week, month, quarter, or year. Counts start over at midnight in the workspace time zone.
+
+### Choose What Happens
+
+Under **When a job would go over**, pick **Refuse the job** or **Print it with a warning**, then select **Add limit**.
+
+</Steps>
+
+A job is checked against every limit that counts it, together with everything already printed or waiting this cycle. A refused job says what's left and when the count starts over, for example "Over the limit Monthly pages: this job needs 30 pages and 20 pages are left this month. It starts over on Dec 1."
+
+Pages are printed sides, times copies. A job counts as soon as it's sent, and the count is corrected with the pages the printer reports when it ends. Failed and canceled jobs count only what printed.
+
+## Give Extra for This Cycle
+
+Select **Extra allowance** on a limit. For limits that keep a count for each member or device, pick whose count. The extra ends when the count starts over, and it shows in [Activity](/docs/workspaces/activity).
+
+## What Everyone Sees
+
+- **Usage** > **Overview**: the limits that count your jobs, with what's left. Owners and admins also see every limit's counts, for this cycle or the last.
+- **Home**: the limit closest to running out, while a limit counts your jobs.
+- The print dialog: what the job leaves you, or why it would be refused. **What happens to this job** has the details.
+
+## Turn It Off
+
+Rules and limits stop applying right away. Rules, limits, extra allowances, prices, and usage history are kept, so turning it back on restores them.

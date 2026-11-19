@@ -51,6 +51,7 @@ async fn execute(d: Arc<Daemon>, run: Run) {
     });
     match &outcome {
         Outcome::Done(pages) => log::info!("job {} completed ({} pages)", run.rec.id, pages.unwrap_or(0)),
+        Outcome::Warned(_, warning) => log::warn!("job {} completed with a warning: {warning}", run.rec.id),
         Outcome::Canceled => log::info!("job {} canceled", run.rec.id),
         Outcome::Failed(why) => log::warn!("job {} failed: {why}", run.rec.id),
         Outcome::Retry(why) => log::info!("job {} will retry: {why}", run.rec.id),
@@ -90,7 +91,10 @@ async fn attempt(d: &Daemon, run: &Run) -> Outcome {
         }
     };
     match result {
-        Ok(done) => Outcome::Done(done.pages),
+        Ok(done) => match done.warning {
+            Some(warning) => Outcome::Warned(done.pages, warning),
+            None => Outcome::Done(done.pages),
+        },
         Err(Error::Canceled) => Outcome::Canceled,
         Err(e) if e.is_transient() => Outcome::Retry(print_error::sentence(&e)),
         Err(e) => Outcome::Failed(print_error::sentence(&e)),

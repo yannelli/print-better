@@ -1,8 +1,10 @@
-# Client protocol (v1)
+# Client Protocol (v1)
 
-Canonical message shapes: `server/shared/protocol.ts` (TypeScript) and `client/crates/app/src/proto.rs` (Rust). This file defines the semantics. JSON is camelCase; message `type` values are snake_case.
+The message shapes are defined in `server/shared/protocol.ts` (TypeScript) and `client/crates/app/src/proto.rs` (Rust). This file defines the semantics.
 
-## HTTP endpoints used by the client
+JSON is camelCase. Message `type` values are snake_case.
+
+## HTTP Endpoints Used by the Client
 
 All responses are JSON unless noted. Errors: `{ "error": { "code", "message" } }`.
 
@@ -22,43 +24,52 @@ All responses are JSON unless noted. Errors: `{ "error": { "code", "message" } }
 | `GET /api/client/jobs?limit=&cursor=` | `Bearer pbc_…` | `{ items, nextCursor }`: jobs this device sent, newest first |
 | `GET /api/client/latest?os=&arch=&kind=` | `Bearer pbc_…` | `{ version, url, sha256, size }` or 404 `no_build`. `kind` (macOS only): `pkg` for the machine-wide install (`macos-pkg`), `app` or absent for the per-user zip (`macos-universal`); Linux gets its arch tarball (`armv6`/`armv7` for 32-bit ARM). An `ios` or `ipados` device always gets 404 `no_build` |
 
-- Enrollment tokens are single-use by default; enrolling consumes one use atomically.
-- Device codes: `userCode` is 8 chars from `BCDFGHJKLMNPQRSTVWXZ` shown as `XXXX-XXXX`, 10 min lifetime, poll interval 5 s; a poll less than 4 s after the previous one (1 s of slack) returns `slow_down`, and the client then adds 5 s to its interval (RFC 8628).
-- A revoked client gets 401 on every endpoint and should drop its credentials only after the user confirms (`printbetter unpair`), so a server misconfiguration cannot silently orphan devices.
+- Enrollment tokens are single-use by default. Enrolling consumes 1 use atomically.
+- Device codes:
+  - `userCode` is 8 chars from `BCDFGHJKLMNPQRSTVWXZ`, shown as `XXXX-XXXX`.
+  - Lifetime: 10 min. Poll interval: 5 s.
+  - A poll less than 4 s after the previous one (1 s of slack) returns `slow_down`, and the client then adds 5 s to its interval (RFC 8628).
+- A revoked client gets 401 on every endpoint. It should drop its credentials only after the user confirms (`printbetter unpair`), so a server misconfiguration cannot silently orphan devices.
 
-## WebSocket session
+## WebSocket Session
 
-1. Client connects, sends `hello` first. Anything else first closes the socket with code 4400.
-2. Hub replies `welcome` (identity, settings, printer configs), then `remote_printers`, then re-offers every `queued`/`dispatched` job for this client as `job` messages, oldest first. While the client is connected, a job still `queued` a minute after it was queued is offered again on every alarm sweep (30 s) until the client acks it.
-3. Client sends a `printers` snapshot after its first discovery and whenever inventory changes; hub replies `printer_config`.
-4. Keepalive: client sends the text frame `ping` every 25 s; hub auto-responds `pong` without waking. No `pong` within 10 s → client reconnects. Hub closes sockets idle for 90 s (alarm sweep).
-5. Reconnect: jittered exponential backoff 1 s → 60 s cap; reset after 60 s connected. 401 on upgrade → stop and surface "unpaired" in tray/status page.
-6. One live socket per client: a new connection closes the old one with code 4409.
+1. The client connects and sends `hello` first. Any other first message closes the socket with code 4400.
+2. The hub replies `welcome` (identity, settings, printer configs), then `remote_printers`, then re-offers every `queued`/`dispatched` job for this client as `job` messages, oldest first. While the client is connected, a job still `queued` a minute after it was queued is offered again on every alarm sweep (30 s) until the client acks it.
+3. The client sends a `printers` snapshot after its first discovery and whenever inventory changes. The hub replies `printer_config`.
+4. Keepalive: The client sends the text frame `ping` every 25 s, and the hub auto-responds `pong` without waking. If no `pong` arrives within 10 s, the client reconnects. The hub closes sockets idle for 90 s (alarm sweep).
+5. Reconnect: jittered exponential backoff from 1 s up to a 60 s cap, reset after 60 s connected. A 401 on upgrade stops reconnecting and shows "unpaired" in the tray and status page.
+6. 1 live socket per client: A new connection closes the old one with code 4409.
 
 Close codes: 4400 protocol error, 4401 unauthorized/revoked, 4409 replaced, 4500 server error.
 
 ## Inventory
 
 - `PrinterReport.key` is stable per client, derived in this order: `uuid:<printer-uuid>`, `usb:<vid>:<pid>:<serial>`, `os:<queue-name>`, `net:<host>:<port>`.
-- The snapshot replaces this client's previous report. Printers missing from it keep their row and settings but get `status.state = "offline"`; users delete them explicitly.
-- New keys become `discovered`; auto-add policy (`smart`/`all`/`none`, see architecture.md) may mark them `added`.
+- The snapshot replaces this client's previous report. Printers missing from it keep their row and settings but get `status.state = "offline"`. Users delete them explicitly.
+- New keys become `discovered`. The auto-add policy (`smart`/`all`/`none`, see architecture.md) may mark them `added`.
 - `printer_status` carries only changes from the 60 s health poll.
 - `printer_config` tells the client which printers are added (only added printers are health-polled, LAN-shared, and accept jobs), their names (used for LAN share names) and default job options.
 
 ## Jobs
 
-- `job` is idempotent. Client persists `JobOffer` before acking with `job_status: dispatched`. If the id is already known locally, it re-sends the latest status instead of printing again.
+- `job` is idempotent. The client persists `JobOffer` before acking with `job_status: dispatched`. If the id is already known locally, it re-sends the latest status instead of printing again.
 - `job_status.attempt` echoes `JobOffer.attempt` (omitted means the job's current attempt), so a late report from an earlier attempt cannot overwrite a retry.
-- Client fetches `fileUrl` with its token, verifies `sha256`, merges `options` over printer `defaults`.
-- Progress: `dispatched` (accepted, possibly waiting for the printer, `message` explains) → `printing` (submitted to the device) → `completed` (with `pages` when known) | `failed` (`message` required) | `canceled`.
-- Hub rules: terminal states are final; a status earlier in the order than the current one is ignored, except `printing → dispatched`, which a device sends when it backs off to retry (transient errors guarantee nothing reached the printer); reports for any `attempt` other than the job's current one are ignored.
-- `cancel`: client aborts download/convert, or sends IPP Cancel-Job when already submitted, then reports `canceled`. If the printer already finished, it reports `completed`.
-- Paused client (`settings.paused`): jobs are acked and held with message "Paused on <client name>".
-- Local retention: terminal job ids are kept 7 days for dedup; spooled files are deleted on terminal state.
+- The client fetches `fileUrl` with its token, verifies `sha256`, and merges `options` over the printer's `defaults`.
+- Progress, in order:
+  1. `dispatched`: accepted, possibly waiting for the printer (`message` explains)
+  2. `printing`: submitted to the device
+  3. one terminal state: `completed` (with `pages` when known, and a `message` when it finished with a warning, such as a printer that stopped early), `failed` (`message` required) or `canceled`
+- Hub rules:
+  - Terminal states are final.
+  - A status earlier in the order than the current one is ignored, except `printing → dispatched`. A device sends that when it backs off to retry (transient errors guarantee nothing reached the printer).
+  - Reports for any `attempt` other than the job's current one are ignored.
+- `cancel`: The client aborts download/convert, or sends IPP Cancel-Job when already submitted, then reports `canceled`. If the printer already finished, it reports `completed`.
+- Paused client (`settings.paused`): Jobs are acked and held with the message "Paused on <client name>".
+- Local retention: Terminal job ids are kept 7 days for dedup. Spooled files are deleted on terminal state.
 
 ## Commands
 
-`command` → exactly one `result` with the same `id`. Hub waits up to 20 s, then reports a timeout to the caller.
+Each `command` gets exactly 1 `result` with the same `id`. The hub waits up to 20 s, then reports a timeout to the caller.
 
 | name | args | result data |
 |---|---|---|
@@ -71,29 +82,45 @@ Close codes: 4400 protocol error, 4401 unauthorized/revoked, 4409 replaced, 4500
 | `update` | `{}` | `{ from, to }` once a newer release is found; the device then downloads, verifies and installs it in the background and restarts into `to`. Error when already current (never downgrades) or the install can't update itself (Windows) |
 | `unpair` | `{}` | `{}` then the client deletes credentials and stops. Sent only when the device is removed (`DELETE …/clients/:id` or MCP `remove_device`), just before the hub closes the socket with 4401; the commands endpoint refuses it |
 
-## Remote printers
+## Remote Printers
 
 Desktops show the workspace's printers on other devices as local printers (docs/remote-printers.md). The loopback IPP server for them listens on `REMOTE_PRINT_PORT` (8632).
 
-- `remote_printers` is a full snapshot: every `added` printer in the workspace whose device is not the receiver, sorted by name. With printer access active (docs/printer-access.md) it holds only printers the receiving device may print to, and any access change re-sends it. `online` is true when the owning device is connected and the printer state is not `offline`. The hub sends it after every `welcome` and again whenever that client's snapshot changes (printer added, removed, renamed or edited, a state or supply level change, the owning device connecting or disconnecting). Bursts may coalesce; an unchanged snapshot is never re-sent, so health polls that change nothing produce no message.
-- Each printer carries `supplies` from its last status. Capabilities may include `sources` (trays), `mediaTypes` and `qualities`; devices that cannot tell omit them, and jobs may then carry `source` and `mediaType`.
-- The server always sends the snapshot; `settings.remotePrinters` (default `true`) tells the client whether to create the system queues, and `settings.remotePrintersHidden` which printers to leave out.
-- `remote_printers.direct` (omitted when empty) lists `{ id, uuid }` for printers in `printers` that the receiver reports itself. They stay in `printers`: a device that finds a printer itself still gets its `pb_` queue unless the user hides it.
-- `system_printers` (client to server) carries `report: SystemPrinters`: per printer `{ id, state, queue, installed, installedName, direct }` (`added | hidden | waiting | error`; `installed` is a queue for the same printer set up without Print Better, `installedName` its description), `active`, `error`, `defaultQueue`, `defaultName` (its description), `defaultPrinterId`, `defaultProblem` (`hidden | waiting | unavailable | failed`) and `lastUsed` (macOS Last Printer Used). Sent after every `welcome` and whenever it changes. The hub sanitizes it, stores it on the device and broadcasts a `client` event; `Client.systemPrinters` stays `null` for devices that never send it.
-- Printing: `POST /api/client/jobs`, then `PUT` the file to `uploadUrl`, then poll `GET /api/client/jobs/:id`. The printer must be `added` and in the device's workspace, else 404 `printer_not_found`. With printer access active the device also needs `print` on it, checked at create and again at upload: 403 `printer_access_denied` when it can see the printer, 404 `printer_access_denied` when it can't. The client then fails the job in the system queue with "You can't print to this printer from this computer". Types are `DOC_TYPES`; a `size` over the workspace `maxUploadMb` is 413 `too_large`; `options` are validated like `POST /workspaces/:ws/jobs`. `title` (200), `fileName` (255) and `requestedBy` (100, the IPP `requesting-user-name`) are trimmed and clipped to those lengths rather than refused.
-- These jobs record source `device`, `sourceClientId`, `sourceClientName` and `requestedBy`, and go through the same queue, dispatch, status and cancel rules as any other job. A device sees and cancels only jobs it created (404 otherwise). If the printer's device is offline the job waits `queued` until it reconnects.
+- `remote_printers` is a full snapshot: every `added` printer in the workspace whose device is not the receiver, sorted by name.
+  - With printer access active (docs/printer-access.md), it holds only printers the receiving device may print to, and any access change re-sends it.
+  - `online` is true when the owning device is connected and the printer state is not `offline`.
+  - The hub sends it after every `welcome`, and again whenever that client's snapshot changes: a printer added, removed, renamed or edited, a state or supply level change, or the owning device connecting or disconnecting.
+  - Bursts may coalesce. An unchanged snapshot is never re-sent, so health polls that change nothing produce no message.
+- Each printer carries `supplies` from its last status. Capabilities may include `sources` (trays), `mediaTypes` and `qualities`; devices that cannot tell omit them. Jobs may carry `source` and `mediaType`, chosen from those lists.
+- The server always sends the snapshot. `settings.remotePrinters` (default `true`) tells the client whether to create the system queues, and `settings.remotePrintersHidden` tells it which printers to leave out.
+- `remote_printers.direct` (omitted when empty) lists `{ id, uuid }` for printers in `printers` that the receiver reports itself. They stay in `printers`: A device that finds a printer itself still gets its `pb_` queue unless the user hides it.
+- `system_printers` (client to server) carries `report: SystemPrinters`:
+  - per printer: `{ id, state, queue, installed, installedName, direct }`. `state` is `added | hidden | waiting | error`. `installed` is a queue for the same printer set up without Print Better, and `installedName` is its description.
+  - `active`, `error`
+  - `defaultQueue`, `defaultName` (its description), `defaultPrinterId`
+  - `defaultProblem` (`hidden | waiting | unavailable | failed`)
+  - `lastUsed` (macOS Last Printer Used)
+- The client sends `system_printers` after every `welcome` and whenever it changes. The hub sanitizes it, stores it on the device and broadcasts a `client` event. `Client.systemPrinters` stays `null` for devices that never send it.
+- Printing: `POST /api/client/jobs`, then `PUT` the file to `uploadUrl`, then poll `GET /api/client/jobs/:id`.
+  - The printer must be `added` and in the device's workspace, else 404 `printer_not_found`.
+  - With printer access active, the device also needs `print` on the printer, checked at create and again at upload. The answer is 403 `printer_access_denied` when the device can see the printer, and 404 `printer_access_denied` when it can't. The client then fails the job in the system queue with "You can't print to this printer from this computer".
+  - Types are `DOC_TYPES`. A `size` over the workspace `maxUploadMb` is 413 `too_large`. `options` are validated like `POST /workspaces/:ws/jobs`.
+  - `title` (200), `fileName` (255) and `requestedBy` (100, the IPP `requesting-user-name`) are trimmed and clipped to those lengths rather than refused.
+- These jobs record source `device`, `sourceClientId`, `sourceClientName` and `requestedBy`, and follow the same queue, dispatch, status and cancel rules as any other job. A device sees and cancels only jobs it created (404 otherwise). If the printer's device is offline, the job waits `queued` until it reconnects.
 
-## Browser events
+## Browser Events
 
 `GET /api/workspaces/:ws/events` pushes `UiEvent` (`server/shared/protocol.ts`) to open pages: `printer`, `printer_removed`, `job`, `client`, `client_removed`, `workspace` and `access`.
 
-- `access` has no payload. It follows any printer access change and either extension switch moving; pages refetch printers, jobs and `/access/me`.
-- With printer access active, `printer` and `job` events reach only members who can see that printer or job; the other events reach every member.
+- `access` has no payload. It is sent after any printer access change and when either extension switch moves. Pages then refetch printers, jobs and `/access/me`.
+- With printer access active, `printer` and `job` events reach only members who can see that printer or job. The other events reach every member.
 
 ## Settings
 
-Server-owned with last-write-wins on `updatedAt`. The client applies `settings` from `welcome`/`settings` messages; local CLI changes (`printbetter tray off`, `printbetter pause`) are applied immediately, persisted, and sent as a client `settings` message (on reconnect if offline). The hub stores whichever `updatedAt` is newer and echoes the winner.
+Settings are server-owned, with last-write-wins on `updatedAt`. The client applies `settings` from `welcome`/`settings` messages.
 
-## LAN sharing
+Local CLI changes (`printbetter tray off`, `printbetter pause`) are applied immediately, persisted, and sent as a client `settings` message (on reconnect if offline). The hub stores whichever `updatedAt` is newer and echoes the winner.
+
+## LAN Sharing
 
 When `settings.lanSharing` is on, the client advertises each added printer with `lanShare: true` over DNS-SD and serves IPP on port 8631. Jobs received this way go through the same local queue and are reported with `lan_job` (history only; the server never re-dispatches them).

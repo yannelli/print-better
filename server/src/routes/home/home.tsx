@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/page'
 import { wsHref } from '@/components/shell/app-actions'
 import { EmptyState, ErrorState, SkeletonRows } from '@/components/states'
 import { buttonVariants } from '@/components/ui/button'
+import { Slot } from '@/extensions/slot'
 import { usePrintablePrinters } from '@/hooks/access'
 import { useUser } from '@/hooks/auth'
 import { useClients } from '@/hooks/devices'
@@ -76,7 +77,10 @@ export default function Home() {
       ) : (
         <div className="flex flex-col gap-12">
           <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)] lg:gap-10">
-            {printable.length > 0 ? <PaperDrop /> : <p className="rounded-3xl border border-dashed px-6 py-8 text-muted-foreground">{NO_PRINT_ACCESS}</p>}
+            <div className="flex flex-col gap-4">
+              {printable.length > 0 ? <PaperDrop /> : <p className="rounded-3xl border border-dashed px-6 py-8 text-muted-foreground">{NO_PRINT_ACCESS}</p>}
+              <Slot name="homeSection" props={{ ws }} />
+            </div>
             <section aria-labelledby="home-printers" className="flex flex-col gap-3">
               <h2 id="home-printers" className="px-1 text-lg font-semibold tracking-tight">
                 Your printers

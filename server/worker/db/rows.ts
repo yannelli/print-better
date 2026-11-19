@@ -166,6 +166,11 @@ export interface JobRow {
   completed_at: number | null
   source_client_id: string | null
   requested_by: string | null
+  /** JSON `JobPolicy`, `JobHold` and `JobUsage`; null until an extension sets them (docs/usage.md). */
+  policy: string | null
+  held: string | null
+  usage: string | null
+  cost_center_id: string | null
 }
 
 /** Job joined with its printer's name and, for device jobs, the submitting device's name. */

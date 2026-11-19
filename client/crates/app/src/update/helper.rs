@@ -95,8 +95,17 @@ fn record(file: &Path, outcome: &Outcome) {
     }
 }
 
-/// `try-restart` leaves a stopped service stopped.
+/// `lp` reaches CUPS and USB printers; `lpadmin` (CUPS admin on Debian and Ubuntu) lets the service
+/// manage its `pb_` queues. A group this system lacks is skipped.
+pub fn join_print_groups() {
+    for group in ["lp", "lpadmin"] {
+        let _ = std::process::Command::new("usermod").args(["-a", "-G", group, "printbetter"]).output();
+    }
+}
+
+/// `try-restart` leaves a stopped service stopped. Installs from before `lpadmin` join it here.
 fn restart_service() -> Result<(), String> {
+    join_print_groups();
     let output = std::process::Command::new("systemctl")
         .args(["try-restart", "printbetter.service"])
         .output()

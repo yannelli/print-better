@@ -9,7 +9,12 @@ const JOB_ID = text('Job id, from list_jobs or print')
 const jobIdOf = (args: Record<string, unknown>) => str(args, 'jobId', { max: 64 })
 const STATUSES = ['uploading', 'queued', 'dispatched', 'printing', 'completed', 'failed', 'canceled'] as const
 
-const describe = (j: Job) => `"${j.title}" on ${j.printerName ?? 'a removed printer'}: ${j.status}${j.statusMessage ? ` (${j.statusMessage})` : ''}`
+/** A completed job's message is a warning that some of it may not have printed. */
+function state(j: Job) {
+  if (!j.statusMessage) return j.status
+  return j.status === 'completed' ? `completed with a warning: ${j.statusMessage}` : `${j.status} (${j.statusMessage})`
+}
+const describe = (j: Job) => `"${j.title}" on ${j.printerName ?? 'a removed printer'}: ${state(j)}`
 
 export const jobTools: Tool[] = [
   {
@@ -30,7 +35,8 @@ export const jobTools: Tool[] = [
       options: JOB_OPTIONS,
     }),
     run: async (ctx, args) => {
-      const body = pick(args, ['printerId', 'title', 'text', 'url', 'base64', 'contentType', 'fileName', 'options'])
+      // costCenter is accepted only while an extension adds it to this tool (extensions/tools.ts).
+      const body = pick(args, ['printerId', 'title', 'text', 'url', 'base64', 'contentType', 'fileName', 'options', 'costCenter'])
       const { job } = await createJob(ctx, await workspaceOf(ctx, args), body)
       return output(`Queued ${describe(job)}. Job id ${job.id}; check progress with get_job.`, { job })
     },

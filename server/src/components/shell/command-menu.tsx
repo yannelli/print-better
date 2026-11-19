@@ -5,9 +5,6 @@ import { Kbd } from '@/components/ui/kbd'
 import { cn } from '@/lib/utils'
 import { type CommandItem, filterCommands, useCommandItems } from './command-items'
 
-export const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
-export const MOD_KEY = isMac ? '⌘' : 'Ctrl'
-
 function grouped(items: CommandItem[]) {
   const groups = new Map<string, CommandItem[]>()
   for (const item of items) groups.set(item.group, [...(groups.get(item.group) ?? []), item])

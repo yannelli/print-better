@@ -4,7 +4,7 @@ import { useTab } from '@/routes/settings/use-tab'
 import type { SlotProps } from './registry'
 import { SlotItem, useSlot } from './slot'
 
-type TabSlot = 'printerTab' | 'membersTab'
+type TabSlot = 'printerTab' | 'membersTab' | 'jobsTab'
 
 /** The page's own content, plus a tab per active extension entry. With none active, just the content, no tabs. */
 export function SlotTabs<K extends TabSlot>({

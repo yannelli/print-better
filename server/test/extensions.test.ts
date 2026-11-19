@@ -16,13 +16,18 @@ afterEach(() => {
 })
 
 const INFO = { id: 'printer-access', name: 'Printer access', summary: expect.any(String), docs: 'docs/printer-access.md' }
+/** The other catalog entries, listed after printer access and off by default. */
+const LATER = [
+  { id: 'print-policies', name: 'Print rules and limits', summary: expect.any(String), docs: 'docs/print-policies.md' },
+  { id: 'enterprise', name: 'Enterprise controls', summary: expect.any(String), docs: 'docs/enterprise.md' },
+]
 const workspaceSwitch = async (ws: string) => (await owner.agent.get(wsPath(ws, '/extensions'))).body[0]
 const auditActions = async (ws: string | null) =>
   (await env.DB.prepare("SELECT action, target, data FROM audit_log WHERE workspace_id IS ? AND action = 'extension.update' ORDER BY id").bind(ws).all()).results
 
 describe('instance switch', () => {
   it('lists the catalog for instance admins only, everything off by default', async () => {
-    expect((await owner.agent.get('/api/admin/extensions')).body).toEqual([{ ...INFO, available: false, enabledWorkspaces: 0 }])
+    expect((await owner.agent.get('/api/admin/extensions')).body).toEqual([INFO, ...LATER].map((e) => ({ ...e, available: false, enabledWorkspaces: 0 })))
     const member = await addMember(owner)
     expect((await member.agent.get('/api/admin/extensions')).status).toBe(403)
     expect((await member.agent.patch('/api/admin/extensions/printer-access', { available: true })).status).toBe(403)
@@ -39,7 +44,7 @@ describe('workspace switch', () => {
   it('shows members the state, lets only owners flip it, and needs availability to turn on', async () => {
     const ws = await freshWorkspace(owner, 'Switches')
     const admin = await addMember(owner, 'admin', ws)
-    expect((await admin.agent.get(wsPath(ws, '/extensions'))).body).toEqual([{ ...INFO, available: false, enabled: false, active: false }])
+    expect((await admin.agent.get(wsPath(ws, '/extensions'))).body).toEqual([INFO, ...LATER].map((e) => ({ ...e, available: false, enabled: false, active: false })))
     expect((await admin.agent.patch(wsPath(ws, '/extensions/printer-access'), { enabled: true })).status).toBe(403)
     const refused = await owner.agent.patch(wsPath(ws, '/extensions/printer-access'), { enabled: true })
     expect(refused).toMatchObject({ status: 409, body: { error: { code: 'extension_unavailable' } } })

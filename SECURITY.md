@@ -9,7 +9,9 @@
 
 ## Reporting a Vulnerability
 
-Report vulnerabilities privately through GitHub's "Report a vulnerability" button on this repo's Security tab. Don't open public issues, discussions, or pull requests for security problems.
+Report vulnerabilities privately with the "Report a vulnerability" button on this repo's Security tab.
+
+Don't open public issues, discussions, or pull requests for security problems.
 
 Include:
 - The affected version or commit, and whether it is the server, the client, or both
@@ -17,11 +19,15 @@ Include:
 - The security impact and how an attacker could use it
 - A proof of concept or minimal example, if you have one (remove tokens, server addresses, printer names, and personal data)
 
-I'll acknowledge reports within 48 hours and keep you updated until a fix ships. Fixes are released as patch versions and announced in GitHub releases.
+I'll acknowledge reports within 48 hours and keep you updated until a fix ships.
+
+Fixes are released as patch versions and announced in GitHub releases.
 
 ## Scope
 
-Print Better is self-hosted. Each deployment holds its owner's accounts, passkeys, API and device tokens, OAuth grants, SSO and email keys, and the documents people print. Each paired client can reach printers on its local network. Reports about these are in scope:
+Print Better is self-hosted. Each deployment holds its owner's accounts, passkeys, API and device tokens, OAuth grants, SSO and email keys, and the documents people print. Each paired client can reach printers on its local network.
+
+Reports about these are in scope:
 
 - Reading another workspace's printers, jobs, documents, devices, or members
 - Printing, pairing a device, or changing settings without a valid session, token, or role

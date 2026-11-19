@@ -1,6 +1,8 @@
 import type { AuditEntry } from '@shared/types'
 import { History } from 'lucide-react'
 import { Section } from '@/components/page'
+import { Button } from '@/components/ui/button'
+import { Spinner } from '@/components/ui/spinner'
 import { EmptyState, QueryState } from '@/components/states'
 import { useAudit } from '@/hooks/members'
 import { dateTime, timeAgo } from '@/lib/format'
@@ -72,14 +74,14 @@ function describe(action: string) {
 export function ActivitySection({ ws }: { ws: string }) {
   const audit = useAudit(ws)
   return (
-    <Section id="activity" title="Recent activity" description="Changes made in this workspace, newest first." flush>
+    <Section id="activity" description="Changes made in this workspace, newest first." flush>
       <QueryState query={audit}>
-        {(page) =>
-          page.items.length === 0 ? (
+        {(items) =>
+          items.length === 0 ? (
             <EmptyState icon={History} title="Nothing yet" description="Changes to printers, devices and people will show up here." className="border-0" />
           ) : (
             <ul>
-              {page.items.map((entry) => (
+              {items.map((entry) => (
                 <li key={entry.id} className="flex flex-col gap-0.5 border-b px-5 py-3.5 last:border-b-0 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6 sm:px-6">
                   <span className="text-[0.9375rem]">
                     <span className="font-medium">{entry.actorName ?? ACTORS[entry.actorType]}</span>
@@ -92,6 +94,14 @@ export function ActivitySection({ ws }: { ws: string }) {
                   </time>
                 </li>
               ))}
+              {audit.hasNextPage && (
+                <li className="flex justify-center px-5 py-3.5 sm:px-6">
+                  <Button variant="outline" onClick={() => audit.fetchNextPage()} disabled={audit.isFetchingNextPage}>
+                    {audit.isFetchingNextPage && <Spinner data-icon="inline-start" />}
+                    Show more
+                  </Button>
+                </li>
+              )}
             </ul>
           )
         }

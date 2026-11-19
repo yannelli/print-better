@@ -95,6 +95,7 @@ export function printerStatus(printer: Printer): StatusWords {
 
 const JOB: Record<JobStatus, StatusWords> = {
   uploading: { label: 'Uploading', tone: 'info' },
+  held: { label: 'On hold', tone: 'warn' },
   queued: { label: 'Waiting', tone: 'neutral' },
   dispatched: { label: 'Sending to printer', tone: 'info' },
   printing: { label: 'Printing', tone: 'info' },
@@ -103,8 +104,11 @@ const JOB: Record<JobStatus, StatusWords> = {
   canceled: { label: 'Canceled', tone: 'neutral' },
 }
 
+/** Completed, but the device warned that some of it may not have printed (the message says why). */
+export const printedWithProblem = (job: Pick<Job, 'status' | 'statusMessage'>) => job.status === 'completed' && !!job.statusMessage
+
 export function jobStatus(job: Pick<Job, 'status' | 'statusMessage'>): StatusWords {
-  const base = JOB[job.status]
+  const base = printedWithProblem(job) ? { label: 'Printed with a problem', tone: 'warn' as const } : JOB[job.status]
   return job.statusMessage ? { ...base, detail: job.statusMessage } : base
 }
 
@@ -184,19 +188,18 @@ export const SIDES: Record<Sides, string> = {
   'two-sided-short-edge': 'Both sides, flip up',
 }
 
-export const SOURCES: Record<Job['source'], string> = {
-  web: 'Website',
-  api: 'API',
-  mcp: 'AI assistant',
-  email: 'Email',
-  lan: 'Local network',
+const ORIGINS: Record<Exclude<Job['source'], 'device'>, string> = {
+  web: 'From the website',
+  api: 'From the API',
+  mcp: 'From an AI assistant',
+  email: 'From email',
+  lan: 'From the local network',
   test: 'Test page',
-  device: 'Device',
 }
 
-/** Where a job came from, e.g. "From website" or "From Kitchen Mac (sam)" for one printed from a computer's print dialog. */
+/** Where a job came from, e.g. "From the API" or "From Kitchen Mac (sam)" for one printed from a computer's print dialog. */
 export function jobOrigin(job: Pick<Job, 'source' | 'sourceClientName' | 'requestedBy'>): string {
-  if (job.source !== 'device') return `From ${SOURCES[job.source].toLowerCase()}`
+  if (job.source !== 'device') return ORIGINS[job.source]
   const device = job.sourceClientName ?? 'a removed device'
   return job.requestedBy ? `From ${device} (${job.requestedBy})` : `From ${device}`
 }

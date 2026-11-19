@@ -1,7 +1,12 @@
-# Print Better Rust client: verified research (2026-11-18)
+# Print Better Rust Client: Verified Research (2026-11-18)
 
-Host: macOS arm64, rustc 1.97.1, zig 0.17.0, cargo-zigbuild 0.24.0 (latest 0.24.1), no cargo-xwin. Nothing installed or compiled; code samples are NOT compiled.
-UNVERIFIED = not confirmed from a primary source today. "Weight" = crate counts from my own crates.io-metadata resolver (newest compatible versions, target cfg evaluated, includes proc-macro/build crates), not `cargo tree`.
+The Print Better client is a single Rust binary. It connects to the server over WSS, finds printers over mDNS and USB, rasterizes PDFs when a printer needs pixels, shows a tray icon, and has to build from 1 macOS arm64 machine for macOS, Windows, Linux and Raspberry Pi. These notes pick the crates and platform APIs for that and record what each one costs in dependencies.
+
+Setup and markers:
+- Host: macOS arm64, rustc 1.97.1, zig 0.17.0, cargo-zigbuild 0.24.0 (latest 0.24.1), no cargo-xwin.
+- Nothing was installed or compiled. The code samples are NOT compiled.
+- UNVERIFIED: not confirmed from a primary source today.
+- "Weight": crate counts from my own crates.io-metadata resolver (newest compatible versions, target cfg evaluated, includes proc-macro/build crates), not `cargo tree`.
 
 ## 1. Crates
 
@@ -25,12 +30,12 @@ Source: crates.io API (/api/v1/crates/NAME/VER[/dependencies]); API reads from c
 ### tokio
 - Minimal: `tokio = { version = "1.54.1", features = ["rt","net","time","sync","io-util"] }` = 6 crates (tokio, bytes, libc, mio, pin-project-lite, socket2). Skip `macros` (pulls proc-macro2/quote/syn) and `rt-multi-thread`; use `Builder::new_current_thread().enable_all()` (Pi Zero is single core). `signal`/`process` add signal-hook-registry/more windows-sys features.
 
-### hyper 1.x over tokio-rustls (no hyper-rustls)
+### hyper 1.x Over tokio-rustls (No hyper-rustls)
 - Verified API: `hyper::client::conn::http1::handshake<T: hyper::rt::Read+Write+Unpin, B>(io) -> Result<(SendRequest<B>, Connection<T,B>)>` (hyper-1.12.0 src/client/conn/http1.rs:150). `TokioIo` (adapter tokio<->hyper IO) is behind hyper-util feature `tokio`.
 - Features: `hyper = { version="1.12.0", default-features=false, features=["client","http1"] }`, `hyper-util = { version="0.1.21", default-features=false, features=["tokio"] }`, `http-body-util = "0.1.5"`. hyper+util+body-util+tokio = 18 crates total (adds atomic-waker, futures-core, http, http-body, httparse, itoa, smallvec, try-lock, want).
 - Sketch (not compiled): `let tls = TlsConnector::from(Arc::new(cfg)).connect(ServerName::try_from(host.to_owned())?, tcp).await?; let (mut tx, conn) = hyper::client::conn::http1::handshake(TokioIo::new(tls)).await?; tokio::spawn(conn);` then `tx.send_request(Request::builder().uri(path).header(HOST, host).body(Empty::<Bytes>::new())?)`.
 
-### rustls: choose ring, not aws-lc-rs
+### rustls: Choose ring, Not aws-lc-rs
 - 0.23.x: provider chosen by cargo feature; default features = aws_lc_rs+logging+prefer-post-quantum+std+tls12 (rustls-0.23.46 Cargo features). Use `default-features=false`. tokio-rustls defaults ALSO enable aws_lc_rs (default = logging, tls12, aws_lc_rs), so set `default-features=false` there too.
 ```toml
 rustls = { version = "0.23.46", default-features = false, features = ["ring", "std", "tls12"] }
@@ -59,7 +64,7 @@ tokio-tungstenite = { version = "0.30.0", default-features = false, features = [
 ### serde / serde_json
 - `serde = { version="1.0.229", default-features=false, features=["derive","std"] }`, `serde_json = "1.0.154"` = 11 crates; derive adds serde_derive, proc-macro2, quote, syn 3.0.10, unicode-ident (build-time). serde_json now depends on `zmij` (float formatting), not ryu (resolver output).
 
-### mdns-sd 0.22 (browse + register)
+### mdns-sd 0.22 (Browse + Register)
 - Deps (12 crates incl. itself): fastrand, flume 0.12, futures-core/sink, if-addrs 0.15, libc, log, mio, socket-pktinfo, socket2, spin. Own daemon thread, no tokio; events via flume channels (`recv_async()` with default feature `async`). Raw UDP sockets on 5353, not the macOS Bonjour API. README: "still beta"; no unicast responses (QU), no multipacket known-answer on responder.
 - Verified API: `ServiceDaemon::new()`, `browse("_ipp._tcp.local.")` (must end `._tcp.local.`/`._udp.local.`) -> `Receiver<ServiceEvent>` with `SearchStarted | ServiceFound(ty,fullname) | ServiceResolved(Box<ResolvedService{host,port,addresses,txt_properties,fullname}>) | ServiceRemoved | SearchStopped`. Register: `daemon.register(ServiceInfo::new("_printbetter._tcp.local.", "instance", "host.local.", "", 8631, &props[..])?.enable_addr_auto())`; also `unregister`, `monitor`, `shutdown`, `enable_interface/disable_interface(IfKind::..)`.
 - Printer browse set: `_ipp._tcp`, `_ipps._tcp`, `_printer._tcp` (LPD), `_pdl-datastream._tcp` (raw 9100). Use resolved IPs directly (see musl note in section 4).
@@ -71,7 +76,7 @@ tokio-tungstenite = { version = "0.30.0", default-features = false, features = [
 - GET_DEVICE_ID (verified against CUPS backend/usb-libusb.c:1090): `ControlIn{control_type: Class, recipient: Interface, request: 0, value: config_index, index: (iface<<8)|alt, length: 1024}`, 5 s. Reply: first 2 bytes = length big-endian (CUPS retries LSB-first if <14 or >buflen), then `MFG:..;MDL:..;CMD:..;`. Linux kernel confirms wIndex=(iface<<8|alt).
 - Platform: Linux needs write access to /dev/bus/usb/BBB/DDD (section 6); usblp holds the interface, so use `detach_and_claim_interface` (CUPS also detaches usblp). macOS: IOKit, no permission setup, "devices with a kernel driver are inaccessible"; whether Apple's stack owns printer-class interfaces: UNVERIFIED. Windows: needs WinUSB; `interfaces()` is empty unless composite on usbccgp; `Device::control_in` unsupported (use `Interface::control_in`), and with Interface recipient the low byte of `index` must equal the interface number, which GET_DEVICE_ID's (iface<<8|alt) violates (inference). Printers bind usbprint.sys, so on Windows use the spooler only; nusb is pointless for printer-class there.
 
-### hayro 0.9.0 (PDF to pixels)
+### hayro 0.9.0 (PDF to Pixels)
 - Facade over hayro-syntax/-interpret/-font/-cmap/-jpeg2000/-jbig2/-ccitt + vello_cpu 0.3, kurbo, image(png), pic-scale, fearless_simd. 77 crates total (largest single contributor; includes moxcms, skrifa/read-fonts, brotli, phf, thiserror, syn). Default features `embed-fonts` (+~240 KB, 14 standard font substitutes) and `embed-cmaps` (size UNVERIFIED). `forbid(unsafe_code)`, CPU only.
 - Verified API (hayro-0.9.0 src/lib.rs:278, examples/render.rs):
 ```rust
@@ -89,13 +94,13 @@ for page in pdf.pages().iter() {
 - Maturity (README + CHANGELOG): "experimental"; 0.9.0 (2026-11-02) had breaking changes (RenderSettings fields, RenderCache not Clone, removed `simd`/`logging` features); every 0.x bump breaks API. Gaps: knockout groups, CMYK blending, 3D, blending/isolation, color-key masking; "ways to trigger timeouts and out-of-memory errors on untrusted input"; CJK fallback fonts must be supplied via `InterpreterSettings.font_resolver` (example loads Noto CJK from disk). Doc discrepancy: lib docs say no encryption support but hayro-syntax 0.9.0 ships RC4/AES/SHA crypto and `new_with_password`.
 - Pi Zero (ARM1176, 512 MB): expect slow and memory-heavy; prefer sending PDF natively over IPP (most AirPrint/IPP Everywhere printers accept application/pdf) and rasterize only for GDI/raw-only paths. UNVERIFIED perf; fearless_simd/pic-scale on 32-bit ARM fall back to scalar (UNVERIFIED).
 
-### Image decoders, deflate, CLI
+### Image Decoders, Deflate, CLI
 - png 0.18.1 (10 crates: bitflags, crc32fast, fdeflate, flate2, miniz_oxide 0.8+0.9, simd-adler32, adler2, cfg-if): `Decoder::new(reader)`, `set_transformations(Transformations::EXPAND | STRIP_16)`, `read_info()?`, `output_buffer_size() -> Option<usize>`, `next_frame(&mut buf)`.
 - zune-jpeg 0.5.15 (2 crates: zune-core): `JpegDecoder::new(&data).decode()? -> Vec<u8>`; options via `new_with_options(.., DecoderOptions)`; CMYK/gray supported; default features x86, neon, std (SIMD intrinsics, `unsafe` only there). hayro already pulls both, so cost is shared if hayro ships.
 - miniz_oxide 0.9.1: pure-Rust deflate/inflate; already transitive via png/flate2; add directly only for raw zlib needs.
 - lexopt 0.3.2: 0 deps, ~37 KiB release overhead vs clap 574 KiB, clap-minimal 377 KiB (rosetta-rs/argparse-rosetta-rs, snapshot date UNVERIFIED). clap deps: default 11 crates, derive 17, `default-features=false, features=["std"]` 4. Use lexopt.
 
-### Stack weight (Linux musl, my resolver)
+### Stack Weight (Linux musl, My Resolver)
 - tokio+hyper+rustls(ring)+tungstenite[handshake]+mdns-sd+nusb+serde(derive)+png+zune-jpeg+hayro+lexopt = 141 crates (macOS +objc2 min = 147; Windows +windows-sys = 140). hayro is 77 of them. Adding ksni: 183.
 ```toml
 [dependencies]
@@ -109,7 +114,7 @@ nusb = "0.2.9"
 lexopt = "0.3.2"
 ```
 
-## 2. Tray / menu bar
+## 2. Tray / Menu Bar
 
 Source: crates.io API (features/deps), objc2-app-kit-0.3.2 src/generated/*.rs, dispatch2-0.3.1 src, windows-sys-0.61.2 src, https://github.com/iovxw/ksni, https://developer.apple.com/documentation/bundleresources/information-property-list/lsuielement, MS Learn Window Features + Shell_NotifyIcon.
 
@@ -139,7 +144,7 @@ app.run(); // blocks main thread; keep `item` alive until here
 - Cross-thread updates: `dispatch2::DispatchQueue::main().exec_async(|| ..)` (or `dispatch2::run_on_main`); UI objects are !Send, store them in `MainThreadBound`/thread_local on the main thread. Custom actions need a `define_class!` target (not shown).
 - LSUIElement (Info.plist, boolean): "agent app that runs in the background and doesn't appear in the Dock" (Apple). Ship as .app (CFBundleIdentifier, LSUIElement=true, NSLocalNetworkUsageDescription); a bare binary can use Accessory policy but lacks bundle identity for privacy/Login Items (section 5).
 
-### Windows (windows-sys 0.61.2, hand-rolled; no extra crates)
+### Windows (windows-sys 0.61.2, Hand-Rolled; No Extra Crates)
 - Features: `Win32_Foundation`, `Win32_Graphics_Gdi` (gates WNDCLASSW/RegisterClassW), `Win32_System_LibraryLoader` (GetModuleHandleW), `Win32_UI_Shell` (Shell_NotifyIconW), `Win32_UI_WindowsAndMessaging` (NOTIFYICONDATAW is gated on it; windows, menus, CreatePopupMenu, TrackPopupMenu, LoadIconW, CreateIconFromResourceEx). windows-sys has Win32 flat APIs only (no COM wrappers).
 - Flow: RegisterClassW, CreateWindowExW (hidden), `Shell_NotifyIconW(NIM_ADD)` with NIF_MESSAGE|NIF_ICON|NIF_TIP|NIF_SHOWTIP and uCallbackMessage=WM_APP+1, then `NIM_SETVERSION` with uVersion=NOTIFYICON_VERSION_4 (MS: must be called after every NIM_ADD, not persisted across logoff; v4 sends WM_CONTEXTMENU/NIN_SELECT in LOWORD(lParam)). On context menu: SetForegroundWindow(hwnd), CreatePopupMenu, AppendMenuW(MF_STRING|MF_SEPARATOR), TrackPopupMenu(TPM_RIGHTBUTTON), then PostMessageW(WM_NULL) (classic dismiss workaround, UNVERIFIED), DestroyMenu. `NIM_DELETE` on exit. Loop: GetMessageW/TranslateMessage/DispatchMessageW.
 - Gotcha: MS says message-only windows (HWND_MESSAGE) "do not receive broadcast messages", so they cannot get the `TaskbarCreated` broadcast (RegisterWindowMessageW) used to re-add the icon after Explorer restarts (inference). Use an unshown top-level window.
@@ -150,7 +155,9 @@ app.run(); // blocks main thread; keep `item` alive until here
 - tray-icon 0.26.1 (MSRV 1.90): default feature `libappindicator` = GTK3 + libappindicator system libs (dynamic C, breaks static musl and zig cross-builds). Its `ksni` feature works (92 crates with muda). Not recommended.
 - Recommendation: macOS objc2 hand-rolled; Windows windows-sys hand-rolled; Linux ksni behind an optional `tray` cargo feature or separate binary. Keep the tray a separate process from the daemon (IPC over local socket); mandatory on macOS (section 5).
 
-## 3. Windows printing (windows-sys 0.61.2)
+## 3. Windows Printing (windows-sys 0.61.2)
+
+Windows offers 2 ways to print. The client can send the printer's own bytes to the spooler with the RAW datatype, or draw a bitmap onto a GDI device context and let the driver convert it.
 
 Source: windows-sys-0.61.2 src/Windows/Win32/{Graphics/Printing,Graphics/Gdi,Storage/Xps,System/Registry}/mod.rs; MS Learn EnumPrinters, PRINTER_INFO_2, CreateDCW, Run and RunOnce Registry Keys.
 ```toml
@@ -166,7 +173,7 @@ windows-sys = { version = "0.61.2", features = ["Win32_Foundation","Win32_Graphi
 - Draw: `SetStretchBltMode(hdc, HALFTONE)`; `StretchDIBits(hdc, dx,dy,dw,dh, 0,0,w,h, bits, &BITMAPINFO, DIB_RGB_COLORS, SRCCOPY)` with BITMAPINFOHEADER{biHeight = -h (top-down), biBitCount 24 or 32, biCompression BI_RGB}; pixel order is BGR(A), so convert from hayro RGBA. Large pages (600 dpi Letter 24-bit ~101 MB): send in horizontal bands (~512 rows; driver limits UNVERIFIED).
 - Autostart: HKCU\Software\Microsoft\Windows\CurrentVersion\Run (REG_SZ via `RegCreateKeyExW`/`RegSetValueExW`/`RegDeleteValueW`); no admin; MS: value is a command line "no longer than 260 characters", runs at each logon, system may delay Run programs, ignored in Safe Mode. Explorer/Task Manager disable state is stored separately under ...\Explorer\StartupApproved\Run (secondary sources; UNVERIFIED), so never force-re-enable. Task Scheduler (logon trigger gives elevation, delay, other account, restart policies) has no windows-sys bindings: shell out to `schtasks /Create /XML` or add the heavier `windows` crate. Recommend HKCU Run; a Windows service cannot own the tray (session 0; UNVERIFIED detail).
 
-## 4. Cross-compiling from macOS arm64
+## 4. Cross-Compiling From macOS arm64
 
 Source: cargo-zigbuild 0.24.1 tarball (src/zig/*.rs, README), https://github.com/rust-cross/cargo-xwin and 0.23.1 tarball, https://doc.rust-lang.org/rustc/platform-support.html, ring-0.17.14 build.rs, rustc compiler/rustc_codegen_ssa/src/common.rs, `zig targets`, local `rustup target list --installed`.
 - Installed: aarch64/x86_64-apple-darwin, aarch64/x86_64-unknown-linux-musl. `lipo`, `codesign`, `xcrun notarytool` (1.1.3) present. `x86_64-w64-mingw32-dlltool` and `llvm-dlltool` are NOT on PATH. `zig targets` lists arm-linux-musleabihf, aarch64-windows-gnu.
@@ -181,7 +188,9 @@ Source: cargo-zigbuild 0.24.1 tarball (src/zig/*.rs, README), https://github.com
 - cargo-xwin 0.23.1 (MSVC ABI): `cargo xwin build --target x86_64-pc-windows-msvc`; needs clang (`brew install llvm`, README), downloads MS CRT/SDK after license acceptance (https://go.microsoft.com/fwlink/?LinkId=2086102), `XWIN_ARCH` default x86_64,aarch64; `aarch64-pc-windows-msvc` not shown as an example target (source maps aarch64 to ARM64), UNVERIFIED. Safest release path for Windows: build natively on Windows CI runners; use zigbuild gnullvm for local smoke builds.
 - musl gotcha: musl has no NSS, so nss-mdns `.local` names will not resolve through getaddrinfo in static binaries (UNVERIFIED: the musl functional-differences wiki page does not state it). Use mdns-sd resolved IPs. musl DNS-over-TCP needs musl >=1.2.4 (Rust targets ship 1.2.5, verified).
 
-## 5. macOS: Local Network privacy, entitlements, LaunchAgent
+## 5. macOS: Local Network Privacy, Entitlements, LaunchAgent
+
+macOS asks the user before a process can use the local network, unless the process is exempt. Whether the client triggers that prompt depends on how it is launched.
 
 Source: Apple TN3179 (https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy, via the tutorials JSON endpoint), Apple DTS thread https://developer.apple.com/forums/thread/763753, https://eclecticlight.co/2026/01/14/how-local-network-privacy-could-affect-you/, Apple Hardened Runtime + entitlement pages, launchd.plist(5), SMAppService docs.
 - Needs local network access (TN3179): outgoing TCP connect, UDP send (unicast, multicast, broadcast), connecting a UDP socket, receiving UDP multicast/broadcast, resolving `.local`, all Bonjour ops. Not needed: listen/accept TCP, receive UDP unicast. Checked in the kernel stack, so it covers BSD sockets, i.e. mdns-sd (multicast 224.0.0.251) and raw 9100/IPP connects. No multicast entitlement on macOS (iOS only).
@@ -191,7 +200,7 @@ Source: Apple TN3179 (https://developer.apple.com/documentation/technotes/tn3179
 - Identity: tracked by code signature; ad hoc/unsigned is unreliable, sign with Developer ID (TN3179). Main executable needs a unique LC_UUID (default linker behavior; do not strip it). No reset API before the Settings (-) button (TN3179 says "macOS 27.2"); testing workaround: new user account or VM snapshot.
 - Prompt quirks: processes that exit right after a denied LAN call may never show the alert (FB16131937), so do not exit on first failure. Trigger it on purpose (TN3179): connect a UDP socket to a LAN address (no packet sent).
 - Daemon caveats (Apple DTS): root LaunchDaemon "should always be allowed", but 15.0 had a bad bug (fixed in 15.1+) and a known DNS/LNP bug (r. 133953401) can still block it; running a daemon with `UserName` is "an unsupported configuration". DTS design advice: put persistent network + privilege in a daemon, UI agent talks to it over IPC.
-- Recommendation: root LaunchDaemon (printing, mDNS, WSS; zero prompts, nothing to click) + signed LSUIElement tray .app (agent) over a unix socket. If one agent process is preferred, expect one Allow prompt and run it as a bundle. Cost: daemon install needs admin approval once (pkg or SMAppService.daemon).
+- Recommendation: root LaunchDaemon (printing, mDNS, WSS; zero prompts, nothing to click) + signed LSUIElement tray .app (agent) over a unix socket. If 1 agent process is preferred, expect 1 Allow prompt and run it as a bundle. Cost: daemon install needs admin approval once (pkg or SMAppService.daemon).
 - Hardened runtime: Apple's entitlement list has runtime exceptions (allow-jit, allow-unsigned-executable-memory, allow-dyld-environment-variables, disable-library-validation, disable-executable-page-protection, debugger) and resource access (audio-input, camera, location, addressbook, calendars, photos, apple-events). No network or USB entry; `com.apple.security.device.usb` is documented for the App Sandbox. A non-sandboxed Developer ID app signed with `codesign --options runtime` + notarized needs no entitlements for sockets, mDNS, USB or CUPS (Rust has no JIT). Sandbox-only entitlements (network.client/server, device.usb, print) matter only for a Mac App Store build; the network ones were not re-fetched (UNVERIFIED).
 - LaunchAgent plist (keys verified in launchd.plist(5)): `Label`, `ProgramArguments` (absolute), `RunAtLoad` true, `KeepAlive` dict `{SuccessfulExit=false}` (restart on crash, not on clean quit; `NetworkState` is "not implemented"), `ThrottleInterval` (default 10 s), `ProcessType` (Background/Adaptive/Interactive), `LimitLoadToSessionType` Aqua, `AssociatedBundleIdentifiers`, `StandardOutPath`/`StandardErrorPath`, `EnvironmentVariables`. Location `~/Library/LaunchAgents/<Label>.plist`; load with `launchctl bootstrap gui/$(id -u) <plist>` (UNVERIFIED flag details). Daemons: `/Library/LaunchDaemons` root:wheel (ownership rule UNVERIFIED).
 - SMAppService (macOS 13+): `mainApp`, `agent(plistName:)`, `daemon(plistName:)`, `register()` "subject to user approval", plists inside the bundle (location UNVERIFIED). Rust binding crate `objc2-service-management` not checked (crates.io rate limit); otherwise a tiny Swift helper or write plist + launchctl.
@@ -232,9 +241,9 @@ DeviceAllow=char-usb rw
 SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ENV{ID_USB_INTERFACES}=="*:0701??:*", GROUP="lp", MODE="0660", TAG+="uaccess"
 ```
   then `udevadm control --reload && udevadm trigger -s usb`. GROUP+MODE serves the service user; `uaccess` adds an ACL for the logged-in desktop user only (not service users). Matches any printer-class interface, including MFPs (composite). Rule ordering vs usb_id is fine at prefix 70 (usb_id runs in 50).
-- Direct /dev/usb/lp0 writes (std::fs) need no nusb but are unidirectional and give no GET_DEVICE_ID; usblp ioctl for the ID exists (UNVERIFIED). Pick one owner per device: cupsd, usblp/lp node, or nusb.
+- Direct /dev/usb/lp0 writes (std::fs) need no nusb but are unidirectional and give no GET_DEVICE_ID; usblp ioctl for the ID exists (UNVERIFIED). Pick 1 owner per device: cupsd, usblp/lp node, or nusb.
 
-## Open risks (UNVERIFIED, test first)
+## Open Risks (UNVERIFIED, Test First)
 - ring 0.17.14 on ARMv6 hardware; gnullvm link with zig (libunwind); cargo-xwin aarch64-msvc; Pi Zero hayro performance.
 - LNP behavior of mdns-sd raw sockets inside a signed .app on macOS 15/26 and 27.x; LaunchDaemon exemption with the 15.x DNS bug.
 - nusb claim on macOS for printer-class interfaces; Windows RAW datatype on XPS/IPP class drivers.

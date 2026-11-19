@@ -65,6 +65,8 @@ impl Status {
         let (state, reason) = match state {
             SharedJobState::Pending => (js::PENDING, "job-queued"),
             SharedJobState::Processing => (js::PROCESSING, "job-printing"),
+            // A completed job with a message finished with a warning, e.g. a short print.
+            SharedJobState::Completed if message.is_some() => (js::COMPLETED, "job-completed-with-warnings"),
             SharedJobState::Completed => (js::COMPLETED, "job-completed-successfully"),
             SharedJobState::Canceled => (js::CANCELED, "job-canceled-by-user"),
             SharedJobState::Aborted => (js::ABORTED, "aborted-by-system"),

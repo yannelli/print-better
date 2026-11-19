@@ -220,7 +220,8 @@ function renderPrinters(st) {
 
 function renderJobs(jobs) {
   const items = jobs.map((job) => {
-    const [label, tone] = JOB[job.status] || JOB.dispatched;
+    const warned = job.status === "completed" && job.message;
+    const [label, tone] = warned ? ["Printed with a problem", "warn"] : JOB[job.status] || JOB.dispatched;
     const done = ["completed", "failed", "canceled"].includes(job.status);
     const pages = job.pages ? `${job.pages} page${job.pages === 1 ? "" : "s"}` : null;
     const facts = [job.printerName, pages, when(job.createdAt)].filter(Boolean).join(" · ");

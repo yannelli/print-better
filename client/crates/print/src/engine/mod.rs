@@ -1,6 +1,7 @@
 //! Engine: the one entry point the app uses. Owned by the print-path implementer;
 //! the public signatures below are frozen (additive changes only).
 
+mod expect;
 mod follow;
 mod print;
 mod reasons;
@@ -42,6 +43,8 @@ pub enum PrintEvent {
 pub struct PrintOutcome {
     pub route: RouteKind,
     pub pages: Option<u32>,
+    /// The job finished, but not cleanly: some of it may not have printed.
+    pub warning: Option<String>,
 }
 
 #[derive(Default)]

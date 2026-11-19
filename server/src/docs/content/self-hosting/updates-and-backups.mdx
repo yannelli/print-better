@@ -1,0 +1,96 @@
+## Update the Server
+
+Read `CHANGELOG.md` before you update. It lists what changed in each version.
+
+From your copy of the repository, get the new code and deploy it:
+
+```sh
+git pull
+scripts/deploy.sh
+```
+
+The deploy script builds the web app, deploys the Worker, and then applies any new database migrations. It skips secrets that already exist, so your secrets stay the same.
+
+Connected devices lose their connection while the Worker restarts. They reconnect on their own within about 1 minute. Jobs sent during that time wait on the server and print once the device is back.
+
+## Database Changes
+
+Database changes live in `server/migrations/` as numbered SQL files. The deploy script applies the ones your database doesn't have yet:
+
+```sh
+pnpm --dir server exec wrangler d1 migrations apply DB --remote
+```
+
+Run this command on its own if a deploy stopped before the migration step.
+
+## Update the Devices
+
+A new client version reaches devices only after you publish it. Build and upload it from your Mac:
+
+```sh
+scripts/release.sh --publish remote
+```
+
+Once the upload finishes, Macs and Linux devices find the new version within about 6 hours and install it by themselves. The **Devices** page marks older devices with **Update available**. See [Automatic Updates](/docs/devices/updates).
+
+## Back Up Your Data
+
+| What | Why | How |
+| --- | --- | --- |
+| The D1 database | Accounts, workspaces, devices, printers, jobs, and settings. | Export it with Wrangler. |
+| `APP_SECRET` | Decrypts the SSO client secrets and email keys stored in the database. | Keep your own copy. Cloudflare can't show it. |
+| `AUTH_PEPPER` | Every password hash depends on it. | Keep your own copy. Cloudflare can't show it. |
+
+`scripts/deploy.sh` saves a copy of both secrets to `~/.config/print-better/secrets.env` when it creates them. See [Secrets](/docs/self-hosting/deploy#secrets).
+
+Export the database to a SQL file:
+
+```sh
+pnpm --dir server exec wrangler d1 export print-better --remote --output print-better.sql
+```
+
+D1 also keeps its own history for point-in-time restores. To see what is available, run:
+
+```sh
+pnpm --dir server exec wrangler d1 time-travel info print-better
+```
+
+To restore, follow Cloudflare's [D1 Time Travel guide](https://developers.cloudflare.com/d1/reference/time-travel/).
+
+## Restore From an Export
+
+An export lists each table's rows right after the table, so it can't be loaded as it is. `scripts/restore-d1.sh` rebuilds it with every table first and loads it into an empty database. It needs `sqlite3`.
+
+```sh
+pnpm --dir server exec wrangler d1 create print-better-restore
+scripts/restore-d1.sh print-better.sql print-better-restore --remote
+```
+
+To run your server on the restored database, set `database_name` and `database_id` under `d1_databases` in `server/wrangler.jsonc`, then run `scripts/deploy.sh`.
+
+## What You Don't Need to Back Up
+
+The R2 bucket holds 2 kinds of files:
+
+- Print documents. The server deletes each one after its workspace's **Keep documents for** time, 24 hours by default.
+- Client downloads. Run `scripts/release.sh --publish remote` again to rebuild them.
+
+The device connections in the Durable Objects rebuild themselves when devices reconnect.
+
+## Next Steps
+
+<Cards>
+
+<Card href="/docs/devices/updates" title="Automatic Updates">
+
+How devices find and install new versions.
+
+</Card>
+
+<Card href="/docs/self-hosting/configuration" title="Configuration">
+
+Every setting in wrangler.jsonc and Server admin.
+
+</Card>
+
+</Cards>

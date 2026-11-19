@@ -1,14 +1,16 @@
 import type { JobOffer, JobStatusMsg, LanJobMsg } from '../../shared/protocol'
 import type { JobOptions, JobStatus } from '../../shared/printing'
-import { JOB_VIEW } from '../db/map'
+import { JOB_VIEW, SOURCE_CLIENT_NAME, toJob } from '../db/map'
 import type { JobRow, JobViewRow } from '../db/rows'
+import { loadJobViews } from '../extensions/job-view'
+import { extensionActive } from '../extensions/state'
 import { sha256 } from '../lib/crypto'
 import { all, first, parseJson, run } from '../lib/db'
 import { base32 } from '../lib/encoding'
 import { isTerminal } from '../services/jobs'
 
-export type OfferRow = JobRow & { printer_key: string; client_id: string }
-export const OFFER_SELECT = 'SELECT j.*, p.key AS printer_key, p.client_id FROM jobs j JOIN printers p ON p.id = j.printer_id'
+export type OfferRow = JobViewRow & { printer_key: string; client_id: string }
+export const OFFER_SELECT = `SELECT j.*, p.name AS printer_name, ${SOURCE_CLIENT_NAME}, p.key AS printer_key, p.client_id FROM jobs j JOIN printers p ON p.id = j.printer_id`
 
 export const toOffer = (r: OfferRow): JobOffer => ({
   id: r.id,
@@ -23,14 +25,21 @@ export const toOffer = (r: OfferRow): JobOffer => ({
   createdAt: r.created_at,
 })
 
+/** Offers as the printing device may see them: Enterprise controls can hide document names from it. */
+export async function offerView(env: Env, workspaceId: string): Promise<(row: OfferRow) => JobOffer> {
+  const view = await loadJobViews(env, workspaceId, (id) => extensionActive(env, workspaceId, id))
+  if (!view) return toOffer
+  return (row) => ({ ...toOffer(row), title: view(toJob(row), { kind: 'device', clientId: row.client_id }).title })
+}
+
 /** Everything a (re)connecting device still owes us, oldest first. */
-export async function pendingOffers(env: Env, clientId: string): Promise<JobOffer[]> {
+export async function pendingOffers(env: Env, workspaceId: string, clientId: string): Promise<JobOffer[]> {
   const rows = await all<OfferRow>(
     env.DB,
     `${OFFER_SELECT} WHERE p.client_id = ? AND j.status IN ('queued', 'dispatched') AND j.file_key IS NOT NULL ORDER BY j.created_at`,
     clientId,
   )
-  return rows.map(toOffer)
+  return rows.length ? rows.map(await offerView(env, workspaceId)) : []
 }
 
 /** Queued jobs a connected device has not acknowledged for a while (a lost dispatch), oldest first. */
@@ -43,7 +52,8 @@ export async function stuckOffers(env: Env, workspaceId: string, olderThan: numb
   )
 }
 
-const RANK: Record<JobStatus, number> = { uploading: 0, queued: 1, dispatched: 2, printing: 3, completed: 4, failed: 4, canceled: 4 }
+// Devices are never offered a held job, so `held` outranks every report and none can move it.
+const RANK: Record<JobStatus, number> = { uploading: 0, queued: 1, dispatched: 2, printing: 3, completed: 4, failed: 4, canceled: 4, held: 5 }
 const REPORTABLE: JobStatus[] = ['dispatched', 'printing', 'completed', 'failed', 'canceled']
 
 export interface StatusOutcome {

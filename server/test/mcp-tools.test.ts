@@ -121,6 +121,25 @@ describe('tool calls', () => {
     expect(listed.data.items.map((j: { id: string }) => j.id)).toContain(offer.job.id)
   })
 
+  it('say when a job printed with a problem', async () => {
+    const station = await connectPrinter(owner, 'usb:04f9:0042:MCP4')
+    stations.push(station)
+    const ws = { workspaceId: owner.workspaceId }
+    const printed = await callTool(token, 'print', { ...ws, printerId: station.printerId, text: 'Eleven pages', title: 'Report' })
+    const offer = await station.device.next('job')
+    const warning = "The printer stopped after 4 of 11 pages. It didn't report an error."
+    station.device.send({ type: 'job_status', jobId: offer.job.id, status: 'completed', message: warning, pages: 4, attempt: 1 })
+    const done = await eventually(async () => {
+      const got = await callTool(token, 'get_job', { ...ws, jobId: printed.data.job.id })
+      expect(got.data.job.status).toBe('completed')
+      return got
+    })
+    expect(done.data.job).toMatchObject({ statusMessage: warning, pages: 4 })
+    expect(done.summary).toBe(`"Report" on ${printed.data.job.printerName}: completed with a warning: ${warning}`)
+    const listed = await callTool(token, 'list_jobs', { ...ws, printerId: station.printerId })
+    expect(listed.summary).toContain(`completed with a warning: ${warning}`)
+  })
+
   it('print base64 documents and explain what is missing', async () => {
     const station = await connectPrinter(owner, 'usb:04f9:0042:MCP2')
     stations.push(station)

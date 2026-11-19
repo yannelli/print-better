@@ -1,0 +1,77 @@
+Extensions are optional features that ship with Print Better. Each one stays off until you turn it on.
+
+## Available Extensions
+
+| Extension | What it does |
+| --- | --- |
+| [Printer Access](/docs/extensions/printer-access) | Choose who can see, print to, and manage each printer, with groups, device rules, and custom roles. |
+| [Print Rules and Limits](/docs/extensions/print-rules-and-limits) | Check every job before it prints: change it, send it to another printer, or refuse it, and cap how much people print. |
+| [Enterprise Controls](/docs/extensions/enterprise) | Approvals, secure release, cost centers and budgets, reports, alerts, and stricter retention and privacy. |
+
+## Turn On an Extension
+
+An extension works only when 2 switches are on, one for the server and one for the workspace.
+
+<Steps>
+
+### Make It Available on the Server
+
+A server admin opens [**Server admin**](/admin/extensions) and selects the **Extensions** tab. Turn on **Available to workspaces** next to the extension.
+
+### Turn It on for the Workspace
+
+A workspace owner opens **Settings** > [**Extensions**](/settings/extensions). Turn on the extension's switch, read what changes, and select **Turn on**.
+
+</Steps>
+
+Pages that are already open update without a reload. Devices update their print windows too.
+
+On the **Extensions** tab, each extension shows its status:
+
+| Status | What it means |
+| --- | --- |
+| **Not available on this server. Ask a server admin to make it available.** | The server admin switch is off. |
+| **Off** | Available, but this workspace hasn't turned it on. Admins and members see **Off. Only owners can turn it on.** |
+| **On for this workspace** | Both switches are on. Admins and members see **On. Only owners can turn it off.** |
+| **Paused because a server admin made it unavailable. Your setup is kept.** | The workspace turned it on, but a server admin turned it off for the server. |
+
+On the server admin's **Extensions** tab, each extension shows how many workspaces turned it on.
+
+## Turn Off an Extension
+
+Either switch turns an extension off:
+
+- A workspace owner turns off the extension's switch in **Settings** > [**Extensions**](/settings/extensions), then selects **Turn off**. This affects only that workspace.
+- A server admin turns off **Available to workspaces**. This stops the extension in every workspace at once.
+
+The usual rules come back right away.
+
+Print Better keeps the extension's data, such as groups, roles, rules, and limits. Turn the extension back on and everything is as you left it. The data is deleted only with the workspace or printer it belongs to.
+
+## How Extensions Behave
+
+While an extension is off, Print Better behaves as if it didn't exist. While it's on, its rules apply in the web app, the API, AI assistants, email to print, and on devices.
+
+Extensions ship with the server, so turning one on never needs a new deploy.
+
+Turning an extension on or off appears in [Activity](/docs/workspaces/activity), and so does every change it makes.
+
+AI assistants see an extension's tools once a server admin makes it available. While it is off in a workspace, those tools explain how to turn it on. See [MCP Tools](/docs/reference/mcp).
+
+## Next Steps
+
+<Cards>
+
+<Card href="/docs/extensions/printer-access" title="Printer Access">
+
+Choose who can see, print to, and manage each printer.
+
+</Card>
+
+<Card href="/docs/extensions/print-rules-and-limits" title="Print Rules and Limits">
+
+Check every job before it prints, and cap how much people print.
+
+</Card>
+
+</Cards>

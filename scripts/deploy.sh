@@ -20,6 +20,9 @@ say "applying database migrations"
 wrangler d1 migrations apply DB --remote
 
 say "checking secrets"
+# Cloudflare never shows a secret again, so keep a private copy of the two that matter for restores.
+secrets_file="${XDG_CONFIG_HOME:-$HOME/.config}/print-better/secrets.env"
+saved=""
 existing="$(wrangler secret list --format json 2>/dev/null || echo '[]')"
 setup_token=""
 for name in SETUP_TOKEN APP_SECRET AUTH_PEPPER; do
@@ -29,8 +32,18 @@ for name in SETUP_TOKEN APP_SECRET AUTH_PEPPER; do
   value="$(openssl rand -base64 48 | tr -d '/+=\n' | cut -c1-48)"
   printf '%s' "$value" | wrangler secret put "$name" >/dev/null
   say "created secret $name"
-  if [ "$name" = SETUP_TOKEN ]; then setup_token="$value"; fi
+  if [ "$name" = SETUP_TOKEN ]; then
+    setup_token="$value"
+  else
+    mkdir -p "$(dirname "$secrets_file")"
+    (umask 077 && printf '# %s %s\n%s=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${url:-}" "$name" "$value" >>"$secrets_file")
+    chmod 600 "$secrets_file"
+    saved=1
+  fi
 done
+if [ -n "$saved" ]; then
+  say "saved the new APP_SECRET and AUTH_PEPPER to $secrets_file. Copy them to a password manager."
+fi
 
 echo
 if [ -n "$setup_token" ] && [ -n "$url" ]; then

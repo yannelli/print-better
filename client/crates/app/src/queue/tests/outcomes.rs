@@ -77,6 +77,17 @@ fn done_completes_with_pages_and_deletes_the_spooled_file() {
 }
 
 #[test]
+fn warned_completes_with_the_warning_as_its_message() {
+    let mut f = Fixture::new();
+    let run = f.start("j", "p1");
+    let warning = "The printer stopped after 4 of 11 pages. It didn't report an error.";
+    f.queue.finish(&run, Outcome::Warned(Some(4), warning.into()), NOW + 1);
+    let rec = f.queue.get("j").unwrap();
+    assert_eq!((rec.status, rec.pages, rec.message.as_deref()), (JobStatus::Completed, Some(4), Some(warning)));
+    assert_eq!(f.reports().last().unwrap().1, JobStatus::Completed);
+}
+
+#[test]
 fn done_without_a_page_count_keeps_the_last_progress_count() {
     let mut f = Fixture::new();
     let run = f.start("j", "p1");
