@@ -1,6 +1,4 @@
-Find the section below that matches what you see with a device, printer, or job, then work through its checks in order.
-
-## Start with a checkup
+## Start With a Checkup
 
 A checkup tests the connection, the clock, storage, discovery, and each printer. Run it in any of these places:
 
@@ -8,11 +6,11 @@ A checkup tests the connection, the clock, storage, discovery, and each printer.
 - On the device's status page at `http://127.0.0.1:47631`, open **Help and troubleshooting** and select **Run checks**.
 - On the device, run `printbetter doctor`. Add `--json` for a copy to share.
 
-See [Manage devices](/docs/devices/manage#check-a-devices-health) for what each check means.
+See [Manage Devices](/docs/devices/manage#check-a-devices-health) for what each check means.
 
 `printbetter status` shows the connection, the printers, the queue, and the update state.
 
-## A device shows offline
+## A Device Shows Offline
 
 The web app shows a device as **Offline** when its connection to the server is closed.
 
@@ -32,9 +30,9 @@ Also check these:
 - **Clock**: If the device's clock is off by more than 2 minutes, turn on automatic date and time.
 - Devices keep using the address they paired with. If you moved to a new domain and turned off the old address, pair them again.
 - A Linux user service stops when you log out. Run `loginctl enable-linger "$USER"` to keep it running.
-- On a new Raspberry Pi, check that the three setup files kept their exact names. The setup code works once, for 7 days. If you can sign in to the Pi, read `/var/log/cloud-init-output.log` and `journalctl -u printbetter`.
+- On a new Raspberry Pi, check that the 3 setup files kept their exact names. The setup code works once, for 7 days. If you can sign in to the Pi, read `/var/log/cloud-init-output.log` and `journalctl -u printbetter`.
 
-## No printers found
+## No Printers Found
 
 1. Turn the printer on. Check that it is on the same network as the device, or plugged into it with USB.
 2. On the device's page, select **Look now**. Or run `printbetter discover` on the device to see what it finds.
@@ -48,9 +46,9 @@ More checks:
 - Bonjour doesn't cross routers. A printer on another network segment won't announce itself to the device.
 - **Found but not added**: With **Ask me first**, found printers wait on the **Printers** page. Add them there.
 
-See [Printer discovery](/docs/devices/discovery).
+See [Printer Discovery](/docs/devices/discovery).
 
-## A printer is missing from the print window
+## A Printer Is Missing From the Print Window
 
 Print Better adds workspace printers to the print window of Macs and Linux computers with CUPS. It adds only printers on your other devices. Printers on the computer's own device don't get a Print Better copy.
 
@@ -72,35 +70,35 @@ The most common problem is `lpadmin: Forbidden`. Adding printers needs CUPS admi
 
 If the section says **Update Print Better on** the computer, update it to 0.1.3 or later.
 
-With [Printer access](/docs/extensions/printer-access) active, the computer itself needs permission to print to the printer.
+With [Printer Access](/docs/extensions/printer-access) active, the computer itself needs permission to print to the printer.
 
-See [From your computer's print window](/docs/printing/print-window).
+See [From Your Computer's Print Window](/docs/printing/print-window).
 
-## A job stays waiting
+## A Job Stays Waiting
 
 Open the job on the **Print jobs** page and read its status and message.
 
 | Status or message | What it means | What to do |
 | --- | --- | --- |
-| **Waiting** | The device that owns the printer hasn't taken the job, for example because it is offline. | See [A device shows offline](#a-device-shows-offline). The job prints when the device is back. |
+| **Waiting** | The device that owns the printer hasn't taken the job, for example because it is offline. | See [A Device Shows Offline](#a-device-shows-offline). The job prints when the device is back. |
 | Paused on the device's name | The device is paused. | Turn off **Pause printing** on the device's page, or run `printbetter resume`. |
 | **Sending to printer**, with a message | The device has the job but can't print yet, for example the printer is off or out of paper. | Fix the printer. The device tries again, waiting up to 5 minutes between tries. |
-| Waiting for the printer to be found | The device can't see the printer. | See [No printers found](#no-printers-found). |
+| Waiting for the printer to be found | The device can't see the printer. | See [No Printers Found](#no-printers-found). |
 | **Uploading** | The file never finished uploading. | It fails after an hour. Send it again. |
 
 A job that makes no progress for the workspace's **Keep trying for** time fails with "Gave up after" that many hours.
 
-## A job didn't print
+## A Job Didn't Print
 
 Read the message on the job. It says why the job failed.
 
 - Print Better prints PDF, JPEG, PNG, and plain text files. Convert other files first.
-- If the message names a printer problem, fix it, then retry the job. See [Print jobs](/docs/printing/jobs).
+- If the message names a printer problem, fix it, then retry the job. See [Print Jobs](/docs/printing/jobs).
 - A job can't be retried once its document is deleted after the **Keep documents for** time. Print the file again.
-- In a print window, "You can't print to this printer from this computer" means [Printer access](/docs/extensions/printer-access) doesn't let that computer print there.
+- In a print window, "You can't print to this printer from this computer" means [Printer Access](/docs/extensions/printer-access) doesn't let that computer print there.
 - In a print window, "Not ready: Print Better is not connected to its server" means the computer can't reach your server. Its print system holds the job and tries again by itself.
 
-## Email to print is refused
+## Email to Print Is Refused
 
 With Cloudflare Email Routing, the sender gets a bounce with one of these reasons. With Resend, the reason is in the Worker's logs.
 
@@ -114,7 +112,7 @@ With Cloudflare Email Routing, the sender gets a bounce with one of these reason
 
 See [Email](/docs/self-hosting/email).
 
-## Updates don't install
+## Updates Don't Install
 
 First check that a newer version is published on your server. The **Devices** page shows **Update available** for devices that are behind. Devices check every 6 hours, so select **Update now** to install at once.
 
@@ -129,9 +127,9 @@ First check that a newer version is published on your server. The **Devices** pa
 | The update is signed by a different team | Publish with the same Developer ID certificates as the installed app. |
 | The update download was damaged | Publish the release again, then select **Update now**. |
 
-A failed update leaves the current version in place. See [Automatic updates](/docs/devices/updates).
+A failed update leaves the current version in place. See [Automatic Updates](/docs/devices/updates).
 
-## Where the logs are
+## Where the Logs Are
 
 | Device | Log |
 | --- | --- |

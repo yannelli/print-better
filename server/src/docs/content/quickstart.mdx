@@ -1,19 +1,17 @@
-Deploy the server, create your account, connect a computer near your printer, and print a test page. You start with an empty Cloudflare account and end with a printed page.
-
-## Before you start
+## Before You Start
 
 You need:
 
 - A Cloudflare account on the **Workers Paid** plan. Password hashing needs more CPU time than the Free plan allows.
 - A computer with Node.js 22.12 or later, pnpm, `git`, `jq`, and `openssl`, to deploy the server.
-- A Mac with Rust, `zig`, `cargo-zigbuild`, and Developer ID certificates, to build the client downloads. See [Publish the client downloads](/docs/self-hosting/deploy#publish-the-client-downloads).
+- A Mac with Rust, `zig`, `cargo-zigbuild`, and Developer ID certificates, to build the client downloads. See [Publish the Client Downloads](/docs/self-hosting/deploy#publish-the-client-downloads).
 - A Mac, a Linux computer, or a Raspberry Pi near your printer. It must stay on for printing to work.
 
 ## Set up Print Better
 
 <Steps>
 
-### Deploy the server
+### Deploy the Server
 
 Clone the Print Better repository, then run the deploy script from its folder.
 
@@ -27,7 +25,7 @@ The script creates the database, the storage bucket, and the Worker. At the end 
 
 [Deploy to Cloudflare](/docs/self-hosting/deploy) explains each step and the secrets it creates.
 
-### Publish the client downloads
+### Publish the Client Downloads
 
 Devices download Print Better from your own server. On your Mac, build and publish the client once:
 
@@ -35,7 +33,7 @@ Devices download Print Better from your own server. On your Mac, build and publi
 scripts/release.sh --publish remote
 ```
 
-### Create your account
+### Create Your Account
 
 1. Open the setup link from the deploy script. Select **Get started**.
 2. Enter **Your name** and a **Username**.
@@ -45,7 +43,7 @@ scripts/release.sh --publish remote
 
 You are now the owner of this workspace and a server admin. The app opens **Add a device** next.
 
-### Add a device
+### Add a Device
 
 On **What will connect your printers?**, choose **Mac**, **Linux computer**, or **Raspberry Pi**. Select **Continue**.
 
@@ -67,7 +65,7 @@ Copy the install command, paste it into a terminal, and press Enter. See [Instal
 
 <Tab label="Raspberry Pi">
 
-Fill in the form and select **Create setup files**. Copy the three files to the memory card, then start the Pi. See [Install on a Raspberry Pi](/docs/devices/raspberry-pi).
+Fill in the form and select **Create setup files**. Copy the 3 files to the memory card, then start the Pi. See [Install on a Raspberry Pi](/docs/devices/raspberry-pi).
 
 </Tab>
 
@@ -75,7 +73,7 @@ Fill in the form and select **Create setup files**. Copy the three files to the 
 
 Select **I’ve done this**, or **I’ve started the Pi**. The page shows **Waiting for your device…** until the device connects, then **Connected**. Select **Continue**.
 
-### Add a printer
+### Add a Printer
 
 The device looks for printers on its network, over USB, and in its own printer list. Some may show **Added automatically**.
 
@@ -83,7 +81,7 @@ Under **Choose the printers to use**, check the printers people should print to.
 
 If nothing shows up, turn the printer on and wait. New printers appear by themselves.
 
-### Print a test page
+### Print a Test Page
 
 Under **Print a test page**, choose the printer if there is more than one. Select **Print a test page**.
 
@@ -91,23 +89,23 @@ When the page says **You’re all set**, the test page is on its way. If no pape
 
 </Steps>
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/printing/web" title="Print from the web app">
+<Card href="/docs/printing/web" title="Print From the Web App">
 
 Upload a document from any browser, including your phone.
 
 </Card>
 
-<Card href="/docs/printing/print-window" title="Print from your computer">
+<Card href="/docs/printing/print-window" title="Print From Your Computer">
 
 Use workspace printers from the print window on a Mac or Linux computer.
 
 </Card>
 
-<Card href="/docs/workspaces/members" title="Invite people">
+<Card href="/docs/workspaces/members" title="Invite People">
 
 Add the people who should print, and choose their roles.
 

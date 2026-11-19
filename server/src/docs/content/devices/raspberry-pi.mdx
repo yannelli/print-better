@@ -1,8 +1,6 @@
-Set up a Raspberry Pi as an always-on print server. The Pi sits next to your printers, connects them to Print Better, and prints the jobs sent to them.
+The Pi sits next to your printers, connects them to Print Better, and prints the jobs sent to them.
 
-You can set up a new Pi from a blank memory card, or install on a Pi that already runs.
-
-## What you need
+## What You Need
 
 - A Raspberry Pi and a memory card.
 - Another computer with a card reader and Raspberry Pi Imager.
@@ -16,13 +14,13 @@ Use the operating system that matches your Pi:
 
 The ARMv6 build for the Pi Zero, Zero W, and Pi 1 is best effort.
 
-## Set up a new Pi
+## Set up a New Pi
 
-The web app writes three setup files for the memory card. It makes them in your browser, so your Wi-Fi and Pi passwords never reach the server.
+The web app writes 3 setup files for the memory card. It makes them in your browser, so your Wi-Fi and Pi passwords never reach the server.
 
 <Steps>
 
-### Fill in the form
+### Fill in the Form
 
 Open [Add a device](/devices/add). Choose **Raspberry Pi** and select **Continue**. Fill in **Set up your Raspberry Pi**:
 
@@ -37,19 +35,19 @@ Open [Add a device](/devices/add). Choose **Raspberry Pi** and select **Continue
 
 Select **Create setup files**.
 
-### Download the files
+### Download the Files
 
 Under **Prepare the memory card**, select **Download all three files**. You get `user-data`, `network-config`, and `meta-data`.
 
-### Write the memory card
+### Write the Memory Card
 
 Open Raspberry Pi Imager on your computer. Choose your Pi model and the operating system above, then your memory card.
 
-When Imager asks about settings, select **Edit settings** and turn on at least one, such as the hostname. The Pi reads the setup files only when a setting is on. Write the card.
+When Imager asks about settings, select **Edit settings** and turn on at least 1, such as the hostname. The Pi reads the setup files only when a setting is on. Write the card.
 
-### Copy the files
+### Copy the Files
 
-Take the card out and put it back in. Open the drive called `bootfs`. Copy the three files onto it and replace the files already there.
+Take the card out and put it back in. Open the drive called `bootfs`. Copy the 3 files onto it and replace the files already there.
 
 Keep the names exactly `user-data`, `network-config`, and `meta-data`, with nothing added to the end.
 
@@ -61,9 +59,9 @@ Put the card in the Pi and plug in the power. Select **I’ve started the Pi** o
 
 The first start takes about 5 to 10 minutes. The Pi joins your network, installs Print Better, and connects to your workspace. The web page notices by itself and moves on to choosing printers.
 
-The setup code in the files works once, for 7 days. If the Pi doesn't connect, see [A device shows offline](/docs/reference/troubleshooting#a-device-shows-offline).
+The setup code in the files works once, for 7 days. If the Pi doesn't connect, see [A Device Shows Offline](/docs/reference/troubleshooting#a-device-shows-offline).
 
-## What the setup files do
+## What the Setup Files Do
 
 On its first start, the Pi:
 
@@ -73,11 +71,11 @@ On its first start, the Pi:
 
 To review the files before you copy them, open **See what’s inside the files**.
 
-## Install on a Pi that already runs
+## Install on a Pi That Already Runs
 
 Use the Linux steps on a Pi that runs Raspberry Pi OS or another Linux. Choose **Linux computer** in **Add a device** and run the command on the Pi. Without a desktop session, it installs the system service. See [Install on Linux](/docs/devices/linux).
 
-## How the Pi runs
+## How the Pi Runs
 
 The Pi runs Print Better as a system service under the `printbetter` user, from startup. It can print to:
 
@@ -89,17 +87,17 @@ The web app lists the Pi as **Raspberry Pi or Linux**.
 
 Settings and pairing are in `/etc/printbetter/`. The log is in `/var/lib/printbetter/logs/printbetter.log`, and `journalctl -u printbetter` shows it too.
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/printers/add" title="Add a printer">
+<Card href="/docs/printers/add" title="Add a Printer">
 
 Choose which found printers people can print to.
 
 </Card>
 
-<Card href="/docs/printers/lan-sharing" title="Share on your network">
+<Card href="/docs/printers/lan-sharing" title="Share on Your Network">
 
 Let phones on the same network print through the Pi.
 

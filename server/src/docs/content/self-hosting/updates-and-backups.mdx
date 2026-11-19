@@ -1,6 +1,4 @@
-Update the server with the deploy script, publish new client versions for your devices, and back up the database and two secrets.
-
-## Update the server
+## Update the Server
 
 Read `CHANGELOG.md` before you update. It lists what changed in each version.
 
@@ -15,7 +13,7 @@ The deploy script builds the web app, deploys the Worker, and then applies any n
 
 Connected devices lose their connection while the Worker restarts. They reconnect on their own within about 1 minute. Jobs sent during that time wait on the server and print once the device is back.
 
-## Database changes
+## Database Changes
 
 Database changes live in `server/migrations/` as numbered SQL files. The deploy script applies the ones your database doesn't have yet:
 
@@ -25,7 +23,7 @@ pnpm --dir server exec wrangler d1 migrations apply DB --remote
 
 Run this command on its own if a deploy stopped before the migration step.
 
-## Update the devices
+## Update the Devices
 
 A new client version reaches devices only after you publish it. Build and upload it from your Mac:
 
@@ -33,11 +31,9 @@ A new client version reaches devices only after you publish it. Build and upload
 scripts/release.sh --publish remote
 ```
 
-Once the upload finishes, Macs and Linux devices find the new version within about 6 hours and install it by themselves. The **Devices** page marks older devices with **Update available**. See [Automatic updates](/docs/devices/updates).
+Once the upload finishes, Macs and Linux devices find the new version within about 6 hours and install it by themselves. The **Devices** page marks older devices with **Update available**. See [Automatic Updates](/docs/devices/updates).
 
-## Back up your data
-
-Back up these three things:
+## Back up Your Data
 
 | What | Why | How |
 | --- | --- | --- |
@@ -61,20 +57,20 @@ pnpm --dir server exec wrangler d1 time-travel info print-better
 
 To restore, follow Cloudflare's [D1 Time Travel guide](https://developers.cloudflare.com/d1/reference/time-travel/).
 
-## What you don't need to back up
+## What You Don't Need to Back Up
 
-The R2 bucket holds two kinds of files:
+The R2 bucket holds 2 kinds of files:
 
 - Print documents. The server deletes each one after its workspace's **Keep documents for** time, 24 hours by default.
 - Client downloads. Run `scripts/release.sh --publish remote` again to rebuild them.
 
 The device connections in the Durable Objects rebuild themselves when devices reconnect.
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/devices/updates" title="Automatic updates">
+<Card href="/docs/devices/updates" title="Automatic Updates">
 
 How devices find and install new versions.
 

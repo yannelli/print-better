@@ -1,6 +1,6 @@
-Print Better has two parts: a server you run on Cloudflare, and a small program called `printbetter` that runs on a computer next to your printers.
+Print Better has 2 parts: a server you run on Cloudflare, and a small program called `printbetter` that runs on a computer next to your printers.
 
-## The pieces
+## The Pieces
 
 | Piece | What it is |
 | --- | --- |
@@ -19,13 +19,13 @@ A **workspace** groups printers, devices, and people. Most people start with one
                                            + R2         Object)
 ```
 
-## Devices connect out
+## Devices Connect Out
 
-A device opens one WebSocket connection to your server and keeps it open. The server never connects in to the device. You don't open any port on your network, and the device works behind a home router.
+A device opens 1 WebSocket connection to your server and keeps it open. The server never connects in to the device. You don't open any port on your network, and the device works behind a home router.
 
 The device sends a short message every 25 seconds to keep the connection alive. If the connection drops, the device reconnects on its own and waits longer between tries, up to 1 minute. The web app shows a device as **Online** while this connection is open.
 
-## How a job prints
+## How a Job Prints
 
 1. You send a document from the web app, the API, an AI assistant, an email, or a computer's print window.
 2. The server checks who you are and whether you may print to that printer.
@@ -38,7 +38,7 @@ The device reaches the printer over a route such as IPPS, IPP, raw port 9100, LP
 
 For printers that can't read PDF, the device converts pages to a format the printer understands.
 
-## Job status
+## Job Status
 
 | Status | Meaning |
 | --- | --- |
@@ -58,23 +58,23 @@ A job that makes no progress for the **Keep trying for** time in workspace setti
 
 You can retry a failed job while its document is still stored.
 
-## Printers: found and added
+## Printers: Found and Added
 
 A device looks for printers when it starts, every 10 minutes, and when you ask. Each printer it finds is **found**. Only **added** printers take jobs and appear in print windows.
 
-The **Add printers automatically** setting decides what happens to new printers. See [Printer discovery](/docs/devices/discovery).
+The **Add printers automatically** setting decides what happens to new printers. See [Printer Discovery](/docs/devices/discovery).
 
-## The print window
+## The Print Window
 
 On a Mac or Linux desktop, Print Better adds every workspace printer on your other devices to the computer's own print system. They show up in every app's print window.
 
-When you print, the job goes through your server to the device that owns the printer. See [From your computer's print window](/docs/printing/print-window).
+When you print, the job goes through your server to the device that owns the printer. See [From Your Computer's Print Window](/docs/printing/print-window).
 
-## Documents are kept for a short time
+## Documents Are Kept for a Short Time
 
 The server deletes a document from storage after the job finishes and the **Keep documents for** time passes (24 hours by default). The job stays in the list without its file. See [Security](/docs/reference/security#documents).
 
-## Next steps
+## Next Steps
 
 <Cards>
 

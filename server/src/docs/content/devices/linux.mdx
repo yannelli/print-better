@@ -1,4 +1,4 @@
-Install Print Better on a Linux computer as a systemd service and connect it to your server. The service starts by itself, finds nearby printers, and prints the jobs sent to them.
+The service starts by itself, finds nearby printers, and prints the jobs sent to them.
 
 ## Requirements
 
@@ -11,11 +11,11 @@ Install Print Better on a Linux computer as a systemd service and connect it to 
 
 <Steps>
 
-### Copy the install command
+### Copy the Install Command
 
 Open [Add a device](/devices/add) in the web app. Choose **Linux computer** and select **Continue**. Copy the command under **Install command**.
 
-### Run it on the computer
+### Run It on the Computer
 
 Open a terminal on the Linux computer. Paste the command and press Enter. It looks like this:
 
@@ -23,7 +23,7 @@ Open a terminal on the Linux computer. Paste the command and press Enter. It loo
 curl -fsSL https://your-print-better.example/install.sh | sh -s -- --token pbe_...
 ```
 
-### Wait for it to connect
+### Wait for It to Connect
 
 The script downloads the build for your CPU, checks its SHA-256 checksum, installs it, connects it to the workspace, and starts the service. The web page moves on by itself when the device connects.
 
@@ -33,9 +33,7 @@ The setup code in the command works once.
 
 To update Print Better later, run the same command again. It keeps the connection.
 
-## User service or system service
-
-The script picks one of two kinds of install.
+## User Service or System Service
 
 | | User service | System service |
 | --- | --- | --- |
@@ -56,11 +54,11 @@ loginctl enable-linger "$USER"
 The system service also installs:
 
 - A udev rule, `/etc/udev/rules.d/60-printbetter.rules`, so the service can open USB printers.
-- A small updater that runs as root, `printbetter-update.path` and `printbetter-update.service`. It lets the service install updates. See [Automatic updates](/docs/devices/updates#linux-system-service).
+- A small updater that runs as root, `printbetter-update.path` and `printbetter-update.service`. It lets the service install updates. See [Automatic Updates](/docs/devices/updates#linux-system-service).
 
 If a user service exists when you install the system service, the system service removes it and keeps its connection.
 
-## Install script options
+## Install Script Options
 
 Add options after `sh -s --`:
 
@@ -72,7 +70,7 @@ Add options after `sh -s --`:
 | `--no-tray` | Runs without a tray icon. |
 | `--version V` | Installs a specific version instead of the newest one. |
 
-## Control the service
+## Control the Service
 
 ```sh
 printbetter service status
@@ -81,7 +79,7 @@ printbetter service stop
 printbetter service start
 ```
 
-Use `sudo` to start, stop, or restart the system service. Commands such as `printbetter status` and `printbetter doctor` work as any user. See [Command line](/docs/reference/cli).
+Use `sudo` to start, stop, or restart the system service. Commands such as `printbetter status` and `printbetter doctor` work as any user. See [Command Line](/docs/reference/cli).
 
 ## Logs
 
@@ -92,9 +90,9 @@ Use `sudo` to start, stop, or restart the system service. Commands such as `prin
 
 `printbetter logs --follow` shows the same log for either kind.
 
-## Printers in the print window
+## Printers in the Print Window
 
-On a Linux desktop with CUPS, Print Better adds every added printer on your other devices to the computer's printers. Apps show them in their print window. This is on by default. See [From your computer's print window](/docs/printing/print-window).
+On a Linux desktop with CUPS, Print Better adds every added printer on your other devices to the computer's printers. Apps show them in their print window. This is on by default. See [From Your Computer's Print Window](/docs/printing/print-window).
 
 Adding these printers needs CUPS admin rights. CUPS gives them to root and to members of its admin group, which is often `lpadmin`. Computers without CUPS skip this feature.
 
@@ -102,11 +100,11 @@ Adding these printers needs CUPS admin rights. CUPS gives them to root and to me
 
 <Steps>
 
-### Remove the device
+### Remove the Device
 
-While the computer is online, remove it on its page in the web app. See [Manage devices](/docs/devices/manage#remove-a-device). You can also run `printbetter unpair`.
+While the computer is online, remove it on its page in the web app. See [Manage Devices](/docs/devices/manage#remove-a-device). You can also run `printbetter unpair`.
 
-### Remove the service
+### Remove the Service
 
 For a user service, run `printbetter service uninstall`. For the system service, run:
 
@@ -118,11 +116,11 @@ Settings stay in `/etc/printbetter` and `/var/lib/printbetter`. Delete the progr
 
 </Steps>
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/printers/add" title="Add a printer">
+<Card href="/docs/printers/add" title="Add a Printer">
 
 Choose which found printers people can print to.
 

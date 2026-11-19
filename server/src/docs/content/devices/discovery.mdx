@@ -1,8 +1,6 @@
-A device finds printers on the network, over USB, and in the computer's own print system. The **Add printers automatically** setting decides whether each new printer is added for you or waits for you.
+## Where a Device Looks
 
-## Where a device looks
-
-A device uses four methods. All four are on by default.
+All 4 methods are on by default.
 
 | Method | Setting on the device's page | What it finds |
 | --- | --- | --- |
@@ -11,11 +9,11 @@ A device uses four methods. All four are on by default.
 | USB | **USB printers** | Printers plugged into the device with a cable. |
 | System printers | **Printers already set up on this computer** | Printers in the computer's own print system, CUPS on a Mac or Linux computer. |
 
-When two methods find the same physical printer, the device merges them into one printer with several routes. When it prints, it tries the routes in order. If a route can't connect, it moves to the next one.
+When 2 methods find the same physical printer, the device merges them into 1 printer with several routes. When it prints, it tries the routes in order. If a route can't connect, it moves to the next one.
 
 Printers that Print Better added to the print window from your other devices are never reported back as new printers.
 
-## When a device looks
+## When a Device Looks
 
 A device looks for printers:
 
@@ -26,11 +24,11 @@ A device looks for printers:
   - **Find printers** in the menu bar icon or on the status page.
   - `printbetter discover` on the device.
 
-A device also checks each added printer every 60 seconds. It reports the printer's state, problems such as low toner, and supply levels. See [Status and supplies](/docs/printers/status).
+A device also checks each added printer every 60 seconds. It reports the printer's state, problems such as low toner, and supply levels. See [Status and Supplies](/docs/printers/status).
 
 If a printer stops showing up, it stays in the list with its settings and shows **Not responding**. Remove it yourself if it is gone for good.
 
-## New printers
+## New Printers
 
 Each printer a device finds for the first time is **found**. It can't take jobs until someone adds it. The **Add printers automatically** setting in workspace settings decides what happens next:
 
@@ -47,13 +45,13 @@ Each device can follow the workspace or choose for itself. On the device's page,
 - **Add every printer found**
 - **Ask me first**
 
-To add a found printer yourself, see [Add a printer](/docs/printers/add).
+To add a found printer yourself, see [Add a Printer](/docs/printers/add).
 
-## A printer two devices can see
+## A Printer 2 Devices Can See
 
 When a second device finds a printer that another device already added, the printer doesn't show up again under **Found but not added**. The server matches them by the printer's own ID.
 
-## Turn a method off
+## Turn a Method Off
 
 Turn off a method you don't need, for example SNMP on a network with many printers that aren't yours.
 
@@ -81,7 +79,7 @@ The keys are `discovery.mdns`, `discovery.snmp`, `discovery.usb`, and `discovery
 
 With every method off, the checkup reports **Discovery** as off instead of a problem.
 
-## Look without a server
+## Look Without a Server
 
 `printbetter discover` works on a device that isn't connected yet. It prints each printer's name, model, key, and routes. Use `--timeout` to look longer, up to 60 seconds:
 
@@ -89,17 +87,17 @@ With every method off, the checkup reports **Discovery** as off instead of a pro
 printbetter discover --timeout 10
 ```
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/printers/add" title="Add a printer">
+<Card href="/docs/printers/add" title="Add a Printer">
 
 Choose which found printers people can print to.
 
 </Card>
 
-<Card href="/docs/reference/troubleshooting#no-printers-found" title="No printers found">
+<Card href="/docs/reference/troubleshooting#no-printers-found" title="No Printers Found">
 
 What to check when a device finds nothing.
 

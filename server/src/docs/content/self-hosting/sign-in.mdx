@@ -1,6 +1,6 @@
 Passwords and passkeys always work on your server. Google and other single sign-on providers are optional.
 
-## Who can create an account
+## Who Can Create an Account
 
 New accounts are invite-only by default. A workspace owner or admin sends an invite link from [Members](/docs/workspaces/members), and the person creates an account from that link.
 
@@ -18,7 +18,7 @@ Single sign-on follows the same rule. Without an invite, a new Google or OpenID 
 
 A password needs at least 8 characters. A username has 2 to 32 letters, numbers, dots, dashes, or underscores. People sign in with their username or their email address.
 
-The server hashes passwords with scrypt and a server-wide secret, `AUTH_PEPPER`. After 10 failed attempts for one account within 15 minutes, the server refuses further attempts for that account until the 15 minutes pass.
+The server hashes passwords with scrypt and a server-wide secret, `AUTH_PEPPER`. After 10 failed attempts for 1 account within 15 minutes, the server refuses further attempts for that account until the 15 minutes pass.
 
 ## Passkeys
 
@@ -29,25 +29,23 @@ To add a passkey:
 1. Open **Your account**, then **Sign-in and security**.
 2. Under **Passkeys**, select **Add a passkey**.
 
-To sign in with it, select **Sign in with a passkey** on the sign-in page.
-
 <Callout type="warning">
 
-A passkey works only on the hostname where it was created. Choose your final domain before people register passkeys. See [Use your own domain](/docs/self-hosting/deploy#use-your-own-domain).
+A passkey works only on the hostname where it was created. Choose your final domain before people register passkeys. See [Use Your Own Domain](/docs/self-hosting/deploy#use-your-own-domain).
 
 </Callout>
 
 You can't remove your last way to sign in. Add a password, another passkey, or a connected account first.
 
-## Sign in with Google
+## Sign in With Google
 
 <Steps>
 
-### Create an OAuth client
+### Create an OAuth Client
 
 In Google Cloud Console, open **APIs & Services**, then **Credentials**. Create an OAuth client ID of type **Web application**.
 
-### Add the redirect address
+### Add the Redirect Address
 
 Add this address under **Authorized redirect URIs**:
 
@@ -57,19 +55,19 @@ https://your-print-better.example/api/auth/sso/google/callback
 
 **Server admin** shows the same address as **Redirect address**, ready to copy.
 
-### Turn it on
+### Turn It On
 
 Open **Server admin**, then **Sign-in options**. Under **Sign in with Google**, paste the **Client ID** and **Client secret**. Turn on **Show this option on the sign-in page**, then select **Save changes**.
 
 </Steps>
 
-## Sign in with your organization
+## Sign in With Your Organization
 
 This works with Microsoft Entra ID, Okta, Authentik, Keycloak, and other OpenID Connect providers.
 
 <Steps>
 
-### Register an app with your provider
+### Register an App With Your Provider
 
 Create a confidential web client. Use this redirect address:
 
@@ -79,7 +77,7 @@ https://your-print-better.example/api/auth/sso/oidc/callback
 
 Print Better asks for the scopes `openid email profile`.
 
-### Enter the details
+### Enter the Details
 
 Open **Server admin**, then **Sign-in options**. Under **Sign in with your organization**, fill in:
 
@@ -87,23 +85,23 @@ Open **Server admin**, then **Sign-in options**. Under **Sign in with your organ
 - **Issuer address**: The `https` address of your provider. Its discovery document must be at the issuer address plus `/.well-known/openid-configuration`.
 - **Client ID** and **Client secret**.
 
-### Turn it on
+### Turn It On
 
 Turn on **Show this option on the sign-in page**, then select **Save changes**. The server checks the issuer's discovery document when you save.
 
 </Steps>
 
-## How single sign-on finds an account
+## How Single Sign-On Finds an Account
 
 When someone signs in with Google or your organization, the server looks for an account in this order:
 
 1. An account already connected to that Google or organization account.
-2. An account whose verified email matches the provider's verified email. The two are connected right away.
+2. An account whose verified email matches the provider's verified email. They are connected right away.
 3. A new account, when the person has an invite or sign-up is open.
 
 If an account has that email but hasn't verified it, sign-in stops. The person signs in another way first and connects the provider from their account.
 
-## Connect an existing account
+## Connect an Existing Account
 
 Once Google or your organization sign-in is on, people can connect it to the account they have:
 
@@ -112,7 +110,7 @@ Once Google or your organization sign-in is on, people can connect it to the acc
 
 A connected account is also a backup way in.
 
-## Getting back in
+## Getting Back In
 
 | Way back in | How it works |
 | --- | --- |
@@ -122,7 +120,7 @@ A connected account is also a backup way in.
 
 Setting a new password from a reset link signs out every other session.
 
-## Next steps
+## Next Steps
 
 <Cards>
 
