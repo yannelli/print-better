@@ -4,7 +4,6 @@
 mod api;
 mod cups;
 mod default;
-mod native;
 mod report;
 mod sink;
 mod system;
@@ -77,13 +76,11 @@ async fn serve(d: Arc<Daemon>, cups: Arc<dyn Cups>, port: u16) {
     let mut managed = cups::load(&d.paths);
     let mut server: Option<ShareServer> = None;
     let mut served: Option<Vec<RemotePrinter>> = None;
-    let mut native = native::Native::default();
     loop {
         let settings = d.settings();
         let wanted = d.credentials().is_some() && settings.remote_printers;
         let snapshot = d.with_state(|st| st.saved.remote_printers.clone());
         let (mut error, mut lpadmin_failed) = (None, false);
-        let list_changed = served.as_ref() != snapshot.as_ref();
         if wanted && server.is_none() {
             match start(&d, sink.clone(), port).await {
                 Ok(started) => server = Some(started),
@@ -102,14 +99,11 @@ async fn serve(d: Arc<Daemon>, cups: Arc<dyn Cups>, port: u16) {
             running.set_printers(printers.iter().map(|p| shared(p, pages.as_deref())).collect());
             served = Some(printers.clone());
         }
-        if wanted && let Some(printers) = &snapshot {
-            native.refresh(&d.engine, printers, list_changed).await;
-        }
         // lpadmin -m everywhere asks the loopback server about the printer, so it must be listening.
         let desired: Option<Vec<Queue>> = match (wanted, listening, &snapshot) {
             (false, _, _) => Some(Vec::new()),
             (true, Some(port), Some(printers)) => {
-                let shown = printers.iter().filter(|p| !native.reaches(p) && !settings.remote_printers_hidden.contains(&p.id));
+                let shown = printers.iter().filter(|p| !settings.remote_printers_hidden.contains(&p.id));
                 Some(shown.map(|p| Queue::for_printer(p, port)).collect())
             }
             _ => None,
@@ -130,8 +124,7 @@ async fn serve(d: Arc<Daemon>, cups: Arc<dyn Cups>, port: u16) {
         let wait = if lpadmin_failed { RETRY } else { RECHECK };
         let mut report = SystemPrinters::default();
         if wanted {
-            let reached = snapshot.iter().flatten().filter(|p| native.reaches(p)).map(|p| p.id.clone()).collect();
-            report = survey(&d, cups.clone(), &settings, snapshot.unwrap_or_default(), reached, managed.clone(), lpadmin_failed).await;
+            report = survey(&d, cups.clone(), &settings, snapshot.unwrap_or_default(), managed.clone(), lpadmin_failed).await;
             error = error.or(report.error.take());
         }
         report.active = server.is_some();
@@ -188,14 +181,13 @@ async fn survey(
     cups: Arc<dyn Cups>,
     settings: &ClientSettings,
     snapshot: Vec<RemotePrinter>,
-    reached: std::collections::HashSet<String>,
     managed: Vec<Queue>,
     failed: bool,
 ) -> SystemPrinters {
     let (direct, applied) = d.with_state(|st| (st.saved.remote_direct.clone(), st.saved.default_printer.clone()));
     let want = settings.default_printer.clone();
     let hidden = settings.remote_printers_hidden.clone();
-    let s = report::Survey { snapshot, direct, hidden, reached, managed, failed, want: want.clone(), applied };
+    let s = report::Survey { snapshot, direct, hidden, managed, failed, want: want.clone(), applied };
     let found = match tokio::task::spawn_blocking(move || report::survey(cups.as_ref(), s)).await {
         Ok(found) => found,
         Err(e) => return SystemPrinters { error: Some(format!("Checking system printers failed: {e}")), ..SystemPrinters::default() },

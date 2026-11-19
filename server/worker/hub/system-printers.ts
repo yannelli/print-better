@@ -5,15 +5,15 @@ import { isObj } from '../http/validate'
 import { first } from '../lib/db'
 import type { Session } from './client-messages'
 
-const STATES: SystemPrinterState[] = ['added', 'direct', 'hidden', 'waiting', 'error']
-const PROBLEMS: DefaultPrinterProblem[] = ['hidden', 'needs_queue', 'waiting', 'unavailable', 'failed']
+const STATES: SystemPrinterState[] = ['added', 'hidden', 'waiting', 'error']
+const PROBLEMS: DefaultPrinterProblem[] = ['hidden', 'waiting', 'unavailable', 'failed']
 
 const text = (v: unknown, max: number): string | null => (typeof v === 'string' && v !== '' ? v.slice(0, max) : null)
 
 function sanitizePrinter(v: unknown): SystemPrinter | null {
   if (!isObj(v) || typeof v.id !== 'string' || v.id === '' || v.id.length > 64) return null
   if (!STATES.includes(v.state as SystemPrinterState)) return null
-  return { id: v.id, state: v.state as SystemPrinterState, queue: text(v.queue, 127) }
+  return { id: v.id, state: v.state as SystemPrinterState, queue: text(v.queue, 127), installed: text(v.installed, 127), direct: v.direct === true }
 }
 
 /** Device reports are only loosely trusted: anything malformed is dropped, text is capped. */

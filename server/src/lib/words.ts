@@ -134,20 +134,22 @@ export const printerSettingsPlace = (client: Pick<Client, 'os'>) =>
   client.os === 'macos' ? 'System Settings > Printers & Scanners' : "this computer's printer settings"
 
 /** How a workspace printer shows up on a desktop, from the device's report (undefined: not reported yet). */
-export function systemPrinterStatus(printer: Pick<SystemPrinter, 'state' | 'queue'> | undefined, where: string): StatusWords {
+export function systemPrinterStatus(printer: Omit<SystemPrinter, 'id'> | undefined, where: string): StatusWords {
+  const also = printer?.installed
+    ? `Also installed directly as ${printer.installed}`
+    : printer?.direct
+      ? `${capitalized(where)} also finds it on its network`
+      : null
+  const words = (label: string, tone: Tone, detail: string): StatusWords => ({ label, tone, detail: also ? `${detail}. ${also}` : detail })
   switch (printer?.state) {
     case 'added':
-      return { label: 'Added', tone: 'ok', detail: printer.queue ? `System printer ${printer.queue}` : 'A system printer' }
-    case 'direct':
-      return printer.queue
-        ? { label: 'Reached directly', tone: 'ok', detail: `Uses ${printer.queue}, already set up on ${where}` }
-        : { label: 'Reached directly', tone: 'ok', detail: `${capitalized(where)} reaches it on the network, so it isn't added twice` }
+      return words('Added', 'ok', printer.queue ? `System printer ${printer.queue}` : 'A system printer')
     case 'hidden':
-      return { label: 'Hidden', tone: 'neutral', detail: `Not in the print window on ${where}` }
+      return words('Hidden', 'neutral', `Print Better doesn't add it to ${where}`)
     case 'error':
-      return { label: "Couldn't add", tone: 'bad', detail: 'See the problem above' }
+      return words("Couldn't add", 'bad', 'See the problem above')
     default:
-      return { label: 'Adding', tone: 'neutral', detail: `Being added to ${where}` }
+      return words('Adding', 'neutral', `Being added to ${where}`)
   }
 }
 
@@ -157,8 +159,6 @@ export function defaultPrinterProblem(problem: DefaultPrinterProblem, name: stri
   switch (problem) {
     case 'hidden':
       return `${name} is hidden on ${where}, so it can't be the default.`
-    case 'needs_queue':
-      return `${capitalized(where)} reaches ${name} directly but hasn't set it up yet. Add it in ${printerSettingsPlace(client)}, and it becomes the default.`
     case 'waiting':
       return `${name} becomes the default once it's added to ${where}.`
     case 'unavailable':

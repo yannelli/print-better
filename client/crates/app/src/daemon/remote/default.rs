@@ -16,13 +16,12 @@ pub struct Outcome {
     pub released: bool,
 }
 
-/// The queue that makes printer `id` the default here, or why there is none.
+/// The queue that makes printer `id` the default here: its `pb_` queue, else (when hidden) its own installed one.
 pub fn target(printers: &[SystemPrinter], id: &str) -> Result<String, Problem> {
     let Some(printer) = printers.iter().find(|p| p.id == id) else { return Err(Problem::Unavailable) };
-    match (printer.state, &printer.queue) {
-        (State::Hidden, _) => Err(Problem::Hidden),
-        (State::Added | State::Direct, Some(queue)) => Ok(queue.clone()),
-        (State::Direct, None) => Err(Problem::NeedsQueue),
+    match (printer.state, &printer.queue, &printer.installed) {
+        (State::Added, Some(queue), _) | (State::Hidden, _, Some(queue)) => Ok(queue.clone()),
+        (State::Hidden, _, None) => Err(Problem::Hidden),
         _ => Err(Problem::Waiting),
     }
 }

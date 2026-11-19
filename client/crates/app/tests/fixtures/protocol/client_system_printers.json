@@ -7,17 +7,21 @@
       {
         "id": "pr_07",
         "state": "added",
-        "queue": "pb_pr_07"
+        "queue": "pb_pr_07",
+        "installed": "Office_Laser",
+        "direct": true
       },
       {
         "id": "pr_08",
-        "state": "direct",
-        "queue": null
+        "state": "hidden",
+        "queue": null,
+        "installed": null,
+        "direct": false
       }
     ],
     "defaultQueue": "pb_pr_07",
     "defaultPrinterId": "pr_07",
-    "defaultProblem": "needs_queue",
+    "defaultProblem": "waiting",
     "lastUsed": true
   }
 }

@@ -38,7 +38,7 @@ impl Queue {
         Queue {
             printer_id: p.id.clone(),
             name: queue_name(&p.id),
-            uri: format!("ipp://127.0.0.1:{port}{}", printer_path(&p.id)),
+            uri: format!("ipp://127.0.0.1:{port}{}{}", printer_path(&p.id), p.uuid.as_deref().map(|u| format!("?uuid={u}")).unwrap_or_default()),
             description: text(&p.name),
             location: text(&format!("{place} (via Print Better)")),
             ppd: ppd_fingerprint(p),
@@ -142,7 +142,7 @@ fn run(cups: &dyn Cups, managed: &mut Vec<Queue>, op: &Op) -> Result<(), String>
     match op {
         Op::Add(q) => {
             if cups.exists(&q.name) {
-                return Err(format!("a printer named {} already exists that Print Better did not create", q.name));
+                return adopt(cups, managed, q);
             }
             cups.lpadmin(&op.args()).map_err(|e| failed(q, e))?;
             managed.push(q.clone());
@@ -167,6 +167,24 @@ fn run(cups: &dyn Cups, managed: &mut Vec<Queue>, op: &Op) -> Result<(), String>
         }
     }
     Ok(())
+}
+
+/// A queue with our name that already points at this loopback server (a lost record, or one recreated by hand)
+/// is taken over and regenerated once; any other queue with that name belongs to someone else.
+fn adopt(cups: &dyn Cups, managed: &mut Vec<Queue>, q: &Queue) -> Result<(), String> {
+    let device = cups.devices().into_iter().find(|(name, _)| *name == q.name).map(|(_, uri)| uri);
+    if !device.is_some_and(|uri| same_server(&uri, &q.uri)) {
+        return Err(format!("a printer named {} already exists that Print Better did not create", q.name));
+    }
+    log::info!("remote printers: taking over the existing {}", q.name);
+    managed.push(Queue { ppd: String::new(), ..q.clone() });
+    run(cups, managed, &Op::Refresh(q.clone()))
+}
+
+/// Same loopback host and port as `ours`, on an IPP printer path.
+fn same_server(device: &str, ours: &str) -> bool {
+    let server = |uri: &str| uri.replacen("://localhost:", "://127.0.0.1:", 1).split_once("/ipp/print/").map(|(s, _)| s.to_string());
+    server(device).is_some_and(|s| Some(s) == server(ours))
 }
 
 /// Not fatal: the queue prints either way, only Supply Levels stays empty.

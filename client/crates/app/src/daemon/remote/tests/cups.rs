@@ -101,15 +101,51 @@ fn removing_a_queue_someone_already_deleted_just_forgets_it() {
 }
 
 #[test]
-fn printers_this_computer_already_reaches_are_recognized() {
-    let native = crate::daemon::remote::native::Native::with(&["7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34"]);
-    let mut same = printer("pr_1", "Laser", None, "Den Pi", true);
-    same.uuid = Some("7D3B9A1E-2C4F-4E8A-9B6D-1F0E5C2A8B34".into());
-    let mut other = printer("pr_2", "Label maker", None, "Den Pi", true);
-    other.uuid = Some("00000000-0000-4000-8000-000000000001".into());
-    let unknown = printer("pr_3", "Old laser", None, "Den Pi", true);
-    assert!(native.reaches(&same), "uuids compare case-insensitively");
-    assert!(!native.reaches(&other) && !native.reaches(&unknown), "no uuid means no match");
+fn a_queue_already_on_our_loopback_server_is_taken_over_and_regenerated_once() {
+    let cups = FakeCups::default();
+    let q = queue("a", "A");
+    let by_hand = q.uri.replacen("127.0.0.1", "localhost", 1) + "?uuid=7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34";
+    cups.devices.lock().unwrap().push((q.name.clone(), by_hand));
+    let mut managed = Vec::new();
+    let ops = plan(&managed, std::slice::from_ref(&q));
+    assert_eq!(apply(&cups, &mut managed, ops), None);
+    assert_eq!(managed, std::slice::from_ref(&q), "recorded with its fingerprint once regenerated");
+    assert_eq!(cups.calls(), [Op::Refresh(q.clone()).args()]);
+    assert_eq!(*cups.marked.lock().unwrap(), ["pb_a"]);
+    assert!(plan(&managed, &[q]).is_empty());
+}
+
+#[test]
+fn a_queue_with_our_name_elsewhere_stays_untouchable() {
+    let q = queue("a", "A");
+    for device in ["ipp://printer.local:631/ipp/print", "ipp://127.0.0.1:9/ipp/print/x", "usb://Brother/HL-L2350DW"] {
+        let cups = FakeCups::default();
+        cups.devices.lock().unwrap().push((q.name.clone(), device.to_string()));
+        let mut managed = Vec::new();
+        let error = apply(&cups, &mut managed, vec![Op::Add(q.clone())]).unwrap();
+        assert!(error.contains("already exists"), "{device}: {error}");
+        assert!(managed.is_empty() && cups.calls().is_empty(), "{device}");
+    }
+}
+
+#[test]
+fn a_failed_takeover_refreshes_on_the_next_pass() {
+    let cups = FakeCups::default();
+    let q = queue("a", "A");
+    cups.devices.lock().unwrap().push((q.name.clone(), q.uri.clone()));
+    *cups.refuse.lock().unwrap() = Some("lpadmin: Forbidden".into());
+    let mut managed = Vec::new();
+    assert!(apply(&cups, &mut managed, vec![Op::Add(q.clone())]).is_some());
+    assert_eq!(managed[0].ppd, "", "kept, with no fingerprint");
+    assert_eq!(plan(&managed, std::slice::from_ref(&q)), [Op::Refresh(q)]);
+}
+
+#[test]
+fn the_device_uri_carries_the_printer_uuid_when_known() {
+    let mut p = printer("pr_1", "Laser", None, "Den Pi", true);
+    p.uuid = Some("7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34".into());
+    let q = Queue::for_printer(&p, 8632);
+    assert_eq!(q.uri, format!("ipp://127.0.0.1:8632{}?uuid=7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34", printer_path("pr_1")));
 }
 
 #[test]

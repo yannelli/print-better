@@ -1,7 +1,7 @@
 use super::{FakeCups, daemon, printer, until};
 use crate::daemon::Daemon;
 use crate::daemon::remote::{cups, serve, shared};
-use crate::proto::{ClientMsg, ClientSettings, SystemPrinterState, SystemPrinters};
+use crate::proto::{ClientMsg, ClientSettings, DirectPrinter, SystemPrinterState, SystemPrinters};
 use crate::test_util::TempDir;
 use pb_print::{PrinterState, Supply, SupplyKind};
 use pb_print::ipp::IppClient;
@@ -219,6 +219,36 @@ async fn the_default_follows_the_setting_until_someone_changes_it_here() {
         until("the setting to let go", || d.settings().default_printer.is_none()).await;
         assert_eq!(fake.calls_starting("-d"), [["-d", "pb_pr_07"]]);
         assert_eq!(fake.default.lock().unwrap().as_deref(), Some("Office_Laser"));
+    })
+    .await;
+}
+
+#[tokio::test]
+async fn a_printer_found_here_too_keeps_its_queue_and_a_hand_made_one_is_taken_over() {
+    let dir = TempDir::new();
+    let d = daemon(&dir, "http://127.0.0.1:1");
+    let uuid = "7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34";
+    let mut seen = printer("pr_07", "Laser", None, "Den Pi", true);
+    seen.uuid = Some(uuid.into());
+    d.set_direct_printers(vec![DirectPrinter { id: "pr_07".into(), uuid: Some(uuid.into()) }]);
+    d.set_remote_printers(vec![seen]);
+    let fake = Arc::new(FakeCups::default());
+    let port = std::net::TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+    let by_hand = format!("ipp://127.0.0.1:{port}/ipp/print/old-slug?uuid={uuid}");
+    fake.devices.lock().unwrap().push(("pb_pr_07".into(), by_hand));
+    fake.devices.lock().unwrap().push(("Office_Laser".into(), format!("dnssd://Laser._ipp._tcp.local./?uuid={uuid}")));
+    running_on(port, &d, &fake, async {
+        until("the takeover", || status(&d) == (true, None, 1)).await;
+        let refresh = fake.calls().into_iter().find(|c| c[1] == "pb_pr_07" && c.contains(&"everywhere".to_string())).unwrap();
+        let uri = refresh[refresh.iter().position(|a| a == "-v").unwrap() + 1].clone();
+        assert!(uri.ends_with(&format!("?uuid={uuid}")), "{uri}");
+        assert!(fake.calls_starting("-x").is_empty(), "taken over, not replaced");
+        let attrs = IppClient::new("pb-test", dir.path()).get_printer_attributes(&uri).await.unwrap();
+        assert_eq!(attrs.name.as_deref(), Some("Laser"), "the loopback server ignores the query");
+        until("the report", || d.with_state(|st| st.remote.report.clone()).is_some_and(|r| !r.printers.is_empty())).await;
+        let report = d.with_state(|st| st.remote.report.clone()).unwrap();
+        let p = &report.printers[0];
+        assert_eq!((p.state, p.queue.as_deref(), p.installed.as_deref(), p.direct), (SystemPrinterState::Added, Some("pb_pr_07"), Some("Office_Laser"), true));
     })
     .await;
 }

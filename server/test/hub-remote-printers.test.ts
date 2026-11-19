@@ -98,15 +98,17 @@ describe('remote_printers', () => {
     await noSnapshot(s.device)
   })
 
-  it('leaves out printers the receiver can already reach itself, matched by key or uuid', async () => {
+  it('keeps printers the receiver finds itself and flags them in direct, matched by key or uuid', async () => {
     const ws = await freshWorkspace(owner)
     const uuid = '7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34'
     const s = await station(ws, `uuid:${uuid}`)
     await s.device.report([printerReport(`uuid:${uuid}`, { uuid }), printerReport('usb:other')])
     const d = await desk(ws)
     expect((await snapshot(d.device)).map((p) => [p.name, p.uuid])).toEqual([['Printer usb:other', null], [`Printer uuid:${uuid}`, uuid]])
-    await d.device.report([printerReport('net:printer.local:631', { uuid, local: false })])
-    expect(names(await snapshot(d.device))).toEqual(['Printer usb:other'])
+    await d.device.report([printerReport('net:printer.local:631', { uuid, local: false }), printerReport('usb:other')])
+    const msg = await d.device.next('remote_printers')
+    expect(names(msg.printers)).toEqual(['Printer usb:other', `Printer uuid:${uuid}`])
+    expect(msg.direct?.map((p) => p.uuid)).toEqual([null, uuid])
   })
 
   it('sends a new snapshot when a printer is renamed, edited, or removed', async () => {

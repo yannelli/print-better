@@ -45,13 +45,15 @@ fn the_native_queue_is_matched_by_uuid_and_never_one_of_ours() {
 
 #[test]
 fn a_target_is_a_queue_or_the_reason_there_is_none() {
-    let at = |state: State, queue: Option<&str>| [SystemPrinter { id: "pr_1".into(), state, queue: queue.map(String::from) }];
-    assert_eq!(target(&at(State::Added, Some("pb_pr_1")), "pr_1"), Ok("pb_pr_1".into()));
-    assert_eq!(target(&at(State::Direct, Some("Office_Laser")), "pr_1"), Ok("Office_Laser".into()));
-    assert_eq!(target(&at(State::Direct, None), "pr_1"), Err(Problem::NeedsQueue));
-    assert_eq!(target(&at(State::Hidden, None), "pr_1"), Err(Problem::Hidden));
-    assert_eq!(target(&at(State::Error, None), "pr_1"), Err(Problem::Waiting));
-    assert_eq!(target(&at(State::Added, Some("pb_pr_1")), "pr_2"), Err(Problem::Unavailable));
+    let at = |state: State, queue: Option<&str>, installed: Option<&str>| {
+        let (queue, installed) = (queue.map(String::from), installed.map(String::from));
+        [SystemPrinter { id: "pr_1".into(), state, queue, installed, direct: true }]
+    };
+    assert_eq!(target(&at(State::Added, Some("pb_pr_1"), Some("Office_Laser")), "pr_1"), Ok("pb_pr_1".into()), "ours first");
+    assert_eq!(target(&at(State::Hidden, None, Some("Office_Laser")), "pr_1"), Ok("Office_Laser".into()));
+    assert_eq!(target(&at(State::Hidden, None, None), "pr_1"), Err(Problem::Hidden));
+    assert_eq!(target(&at(State::Error, None, Some("Office_Laser")), "pr_1"), Err(Problem::Waiting));
+    assert_eq!(target(&at(State::Added, Some("pb_pr_1"), None), "pr_2"), Err(Problem::Unavailable));
 }
 
 #[test]
@@ -101,8 +103,8 @@ fn a_users_own_default_is_not_fought() {
 #[test]
 fn problems_leave_the_default_alone() {
     let cups = fake(Some("Office_Laser"), &[]);
-    let out = apply(&cups, Some("pr_1"), Err(Problem::NeedsQueue), applied("pr_1", "pb_pr_1", "pb_pr_1"));
-    assert_eq!((out.problem, out.applied, out.released), (Some(Problem::NeedsQueue), None, false));
+    let out = apply(&cups, Some("pr_1"), Err(Problem::Hidden), applied("pr_1", "pb_pr_1", "pb_pr_1"));
+    assert_eq!((out.problem, out.applied, out.released), (Some(Problem::Hidden), None, false));
     *cups.refuse.lock().unwrap() = Some("lpadmin: Forbidden".into());
     let out = apply(&cups, Some("pr_1"), Ok("pb_pr_1".into()), None);
     assert_eq!(out.problem, Some(Problem::Failed));
@@ -111,21 +113,19 @@ fn problems_leave_the_default_alone() {
 }
 
 fn survey_of(cups: &FakeCups, want: Option<&str>) -> crate::daemon::remote::report::Found {
-    let mut reached = printer("pr_2", "Reached", None, "Den Pi", true);
-    reached.uuid = Some(UUID.into());
+    let mut seen = printer("pr_2", "Seen here too", None, "Den Pi", true);
+    seen.uuid = Some(UUID.into());
     let snapshot = vec![
         printer("pr_1", "Added", None, "Den Pi", true),
-        reached,
+        seen,
         printer("pr_3", "Hidden", None, "Den Pi", true),
         printer("pr_4", "Waiting", None, "Den Pi", true),
     ];
-    let direct = vec![DirectPrinter { id: "pr_5".into(), uuid: None }];
-    let managed = vec![Queue::for_printer(&snapshot[0], 1)];
+    let managed = vec![Queue::for_printer(&snapshot[0], 1), Queue::for_printer(&snapshot[1], 1)];
     let s = Survey {
         snapshot,
-        direct,
+        direct: vec![DirectPrinter { id: "pr_2".into(), uuid: Some(UUID.into()) }],
         hidden: vec!["pr_3".into()],
-        reached: ["pr_2".to_string()].into(),
         managed,
         failed: false,
         want: want.map(String::from),
@@ -136,23 +136,23 @@ fn survey_of(cups: &FakeCups, want: Option<&str>) -> crate::daemon::remote::repo
 
 #[test]
 fn the_report_names_each_printers_place_and_the_default() {
-    let cups = fake(None, &["pb_pr_1"]);
+    let cups = fake(None, &["pb_pr_1", "pb_pr_2"]);
     cups.devices.lock().unwrap().push(("Office_Laser".into(), format!("dnssd://Laser._ipp._tcp.local./?uuid={UUID}")));
     *cups.last_used.lock().unwrap() = true;
     let found = survey_of(&cups, Some("pr_2"));
-    let states: Vec<_> = found.report.printers.iter().map(|p| (p.id.as_str(), p.state, p.queue.as_deref())).collect();
+    let states: Vec<_> = found.report.printers.iter().map(|p| (p.id.as_str(), p.state, p.queue.as_deref(), p.installed.as_deref(), p.direct)).collect();
     assert_eq!(
         states,
         [
-            ("pr_1", State::Added, Some(cups::queue_name("pr_1").as_str())),
-            ("pr_2", State::Direct, Some("Office_Laser")),
-            ("pr_3", State::Hidden, None),
-            ("pr_4", State::Waiting, None),
-            ("pr_5", State::Direct, None),
-        ]
+            ("pr_1", State::Added, Some(cups::queue_name("pr_1").as_str()), None, false),
+            ("pr_2", State::Added, Some("pb_pr_2"), Some("Office_Laser"), true),
+            ("pr_3", State::Hidden, None, None, false),
+            ("pr_4", State::Waiting, None, None, false),
+        ],
+        "a printer installed directly keeps its pb_ queue"
     );
     let r = &found.report;
-    assert_eq!((r.default_queue.as_deref(), r.default_printer_id.as_deref(), r.last_used), (Some("Office_Laser"), Some("pr_2"), true));
-    assert_eq!(survey_of(&cups, Some("pr_5")).report.default_problem, Some(Problem::NeedsQueue));
+    assert_eq!((r.default_queue.as_deref(), r.default_printer_id.as_deref(), r.last_used), (Some("pb_pr_2"), Some("pr_2"), true));
+    assert_eq!(survey_of(&cups, Some("pr_3")).report.default_problem, Some(Problem::Hidden));
     assert_eq!(survey_of(&cups, Some("pr_9")).report.default_problem, Some(Problem::Unavailable));
 }

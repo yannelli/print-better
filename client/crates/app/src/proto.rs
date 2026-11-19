@@ -95,7 +95,7 @@ pub struct RemotePrinter {
     pub supplies: Vec<Supply>,
 }
 
-/// An added printer on another device that this one reports itself, so it is not in the snapshot.
+/// An added printer on another device (also in the snapshot) that this one finds itself.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct DirectPrinter {
     pub id: String,
@@ -106,7 +106,6 @@ pub struct DirectPrinter {
 #[serde(rename_all = "lowercase")]
 pub enum SystemPrinterState {
     Added,
-    Direct,
     Hidden,
     Waiting,
     Error,
@@ -117,13 +116,15 @@ pub struct SystemPrinter {
     pub id: String,
     pub state: SystemPrinterState,
     pub queue: Option<String>,
+    /// A queue for the same printer set up here without Print Better.
+    pub installed: Option<String>,
+    pub direct: bool,
 }
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum DefaultPrinterProblem {
     Hidden,
-    NeedsQueue,
     Waiting,
     Unavailable,
     Failed,

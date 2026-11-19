@@ -109,18 +109,23 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
   defaultPrinter: null,
 }
 
-/** `added`: a system printer (`queue`); `direct`: reached without Print Better, so not added again (`queue` is the computer's own, if any). */
-export type SystemPrinterState = 'added' | 'direct' | 'hidden' | 'waiting' | 'error'
+/** `added`: a Print Better system printer (`queue`); `hidden`: left out by `remotePrintersHidden`. */
+export type SystemPrinterState = 'added' | 'hidden' | 'waiting' | 'error'
 
 export interface SystemPrinter {
   /** Workspace printer id. */
   id: string
   state: SystemPrinterState
+  /** The `pb_` queue, when added. */
   queue: string | null
+  /** A queue for the same printer set up on this computer without Print Better (matched by uuid). */
+  installed: string | null
+  /** This computer finds the printer on its own network too. */
+  direct: boolean
 }
 
 /** Why `ClientSettings.defaultPrinter` is not this computer's default yet. */
-export type DefaultPrinterProblem = 'hidden' | 'needs_queue' | 'waiting' | 'unavailable' | 'failed'
+export type DefaultPrinterProblem = 'hidden' | 'waiting' | 'unavailable' | 'failed'
 
 /** A desktop's remote printers and default printer as its print system has them (reported by the device). */
 export interface SystemPrinters {

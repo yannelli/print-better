@@ -181,7 +181,7 @@ export interface RemotePrinter {
   supplies: Supply[]
 }
 
-/** An added printer on another device that the receiver reports itself, so it is not in `printers`. */
+/** An added printer on another device (also in `printers`) that the receiver finds itself. */
 export interface DirectPrinter {
   id: string
   uuid: string | null

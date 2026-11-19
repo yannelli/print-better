@@ -11,8 +11,6 @@ pub struct Survey {
     pub snapshot: Vec<RemotePrinter>,
     pub direct: Vec<DirectPrinter>,
     pub hidden: Vec<String>,
-    /// Snapshot printers this computer reaches on Bonjour right now.
-    pub reached: HashSet<String>,
     pub managed: Vec<Queue>,
     /// lpadmin failed on this pass, so queues still missing are errors rather than on their way.
     pub failed: bool,
@@ -29,9 +27,7 @@ pub struct Found {
 
 /// Runs the lpstat and lpadmin calls behind the report; blocking.
 pub fn survey(cups: &dyn Cups, s: Survey) -> Found {
-    let reached_uuids = s.snapshot.iter().filter(|p| s.reached.contains(&p.id)).map(|p| &p.uuid);
-    let need_devices = reached_uuids.chain(s.direct.iter().map(|d| &d.uuid)).any(Option::is_some);
-    let devices = if need_devices { cups.devices() } else { Vec::new() };
+    let devices = if s.snapshot.iter().any(|p| p.uuid.is_some()) { cups.devices() } else { Vec::new() };
     let printers = printers(&s, &devices);
     let target = s.want.as_deref().map_or(Err(DefaultPrinterProblem::Unavailable), |id| default::target(&printers, id));
     let outcome = default::apply(cups, s.want.as_deref(), target, s.applied);
@@ -52,22 +48,23 @@ pub fn survey(cups: &dyn Cups, s: Survey) -> Found {
     Found { report, applied: outcome.applied, released: outcome.released }
 }
 
-/// Every printer this computer could get, in snapshot order, then the ones it reaches itself.
+/// Every printer this computer could get, in snapshot order.
 fn printers(s: &Survey, devices: &[(String, String)]) -> Vec<SystemPrinter> {
-    let entry = |id: &str, state: State, queue: Option<String>| SystemPrinter { id: id.into(), state, queue };
-    let hidden = |id: &str| s.hidden.iter().any(|h| h == id);
-    let direct = |id: &str, uuid: Option<&str>| {
-        if hidden(id) { entry(id, State::Hidden, None) } else { entry(id, State::Direct, system::native_queue(devices, uuid)) }
-    };
-    let remote = s.snapshot.iter().map(|p| {
+    let direct: HashSet<&str> = s.direct.iter().map(|d| d.id.as_str()).collect();
+    let printers = s.snapshot.iter().map(|p| {
         let queue = s.managed.iter().find(|q| q.printer_id == p.id).map(|q| q.name.clone());
-        if hidden(&p.id) || s.reached.contains(&p.id) {
-            direct(&p.id, p.uuid.as_deref())
+        let state = if s.hidden.contains(&p.id) {
+            State::Hidden
         } else if queue.is_some() {
-            entry(&p.id, State::Added, queue)
+            State::Added
+        } else if s.failed {
+            State::Error
         } else {
-            entry(&p.id, if s.failed { State::Error } else { State::Waiting }, None)
-        }
+            State::Waiting
+        };
+        let queue = queue.filter(|_| state == State::Added);
+        let installed = system::native_queue(devices, p.uuid.as_deref());
+        SystemPrinter { id: p.id.clone(), state, queue, installed, direct: direct.contains(p.id.as_str()) }
     });
-    remote.chain(s.direct.iter().map(|d| direct(&d.id, d.uuid.as_deref()))).collect()
+    printers.collect()
 }

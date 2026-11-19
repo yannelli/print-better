@@ -9,14 +9,16 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 - **remote printers:** the Mac print dialog offers what the printer on the other device has: paper trays (**Paper Feed**), paper types, the print qualities it supports, and two-sided printing when it can. Each choice reaches that printer as the matching job option.
 - **remote printers:** **Supply Levels** in Printers & Scanners shows the printer's toner and ink, and its **Supplies** button opens the printer's page in the web app.
 - **printers:** devices report each printer's trays (`capabilities.sources`), paper types (`mediaTypes`) and qualities (`qualities`); jobs accept `source` and `mediaType` options (REST, MCP and device jobs).
-- **remote printers:** a Mac or Linux desktop's page in the web app has a **Printers on this computer** section: show or hide each printer from your other devices on that computer, see how each one is set up there (added as a system printer, reached directly so not added twice, hidden, or waiting), and pick that computer's **Default printer**. A default changed on the computer itself wins, and on Macs set to **Last Printer Used** the page says how to make the choice stick. New device settings `remotePrintersHidden` and `defaultPrinter`, also in `printbetter config`. Devices need this version to report their printers.
+- **remote printers:** a Mac or Linux desktop's page in the web app has a **Printers on this computer** section: show or hide each printer from your other devices on that computer, see how each one is set up there (added as a system printer, hidden, or waiting, and whether it is also installed directly), and pick that computer's **Default printer**. A default changed on the computer itself wins, and on Macs set to **Last Printer Used** the page says how to make the choice stick. New device settings `remotePrintersHidden` and `defaultPrinter`, also in `printbetter config`. Devices need this version to report their printers.
 
 ### Changed
 
+- **remote printers:** a printer a Mac or desktop also finds on its own network keeps its Print Better queue. Neither the device (Bonjour) nor the server (the device's own inventory) leaves it out anymore; the web app shows when it is also installed directly, and hiding it there is the user's call.
 - **remote printers:** a device's `pb_` queues are regenerated when the printer's options change, and once after this update so existing queues pick up the new options and supply levels.
 
 ### Fixed
 
+- **remote printers:** a `pb_` queue that already exists and points at the device's own loopback server (a lost record, or one recreated by hand) is taken over and regenerated once instead of failing with "already exists".
 - **doctor:** a device with every discovery method turned off shows Discovery as off instead of failing with "No printers found".
 
 ## [0.1.2] - 2026-11-19

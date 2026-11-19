@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { type Client, DEFAULT_CLIENT_SETTINGS, DEFAULT_PRINTER_SETTINGS, type Printer, type PrinterState } from '@shared/types'
+import {
+  type Client,
+  DEFAULT_CLIENT_SETTINGS,
+  DEFAULT_PRINTER_SETTINGS,
+  type Printer,
+  type PrinterState,
+  type SystemPrinter,
+  type SystemPrinterState,
+} from '@shared/types'
 import {
   clientStatus,
   defaultPrinterProblem,
@@ -150,23 +158,27 @@ describe('jobOrigin', () => {
 })
 
 describe('systemPrinterStatus', () => {
+  const at = (state: SystemPrinterState, extra: Partial<SystemPrinter> = {}) => ({ state, queue: null, installed: null, direct: false, ...extra })
+
   it('says how a printer shows up on a desktop', () => {
-    expect(systemPrinterStatus({ state: 'added', queue: 'pb_pr_1' }, 'this Mac')).toEqual({ label: 'Added', tone: 'ok', detail: 'System printer pb_pr_1' })
-    expect(systemPrinterStatus({ state: 'direct', queue: 'Office_Laser' }, 'this Mac').detail).toBe('Uses Office_Laser, already set up on this Mac')
-    expect(systemPrinterStatus({ state: 'direct', queue: null }, 'this Mac').detail).toBe("This Mac reaches it on the network, so it isn't added twice")
-    expect(systemPrinterStatus({ state: 'hidden', queue: null }, 'this computer').label).toBe('Hidden')
-    expect(systemPrinterStatus({ state: 'error', queue: null }, 'this Mac').tone).toBe('bad')
+    expect(systemPrinterStatus(at('added', { queue: 'pb_pr_1' }), 'this Mac')).toEqual({ label: 'Added', tone: 'ok', detail: 'System printer pb_pr_1' })
+    expect(systemPrinterStatus(at('hidden'), 'this computer')).toMatchObject({ label: 'Hidden', detail: "Print Better doesn't add it to this computer" })
+    expect(systemPrinterStatus(at('error'), 'this Mac').tone).toBe('bad')
     expect(systemPrinterStatus(undefined, 'this Mac')).toMatchObject({ label: 'Adding', tone: 'neutral' })
+  })
+
+  it('mentions a copy installed directly, or that the computer finds it itself', () => {
+    expect(systemPrinterStatus(at('added', { queue: 'pb_pr_1', installed: 'Office_Laser', direct: true }), 'this Mac').detail).toBe(
+      'System printer pb_pr_1. Also installed directly as Office_Laser',
+    )
+    expect(systemPrinterStatus(at('hidden', { direct: true }), 'this Mac').detail).toBe("Print Better doesn't add it to this Mac. This Mac also finds it on its network")
   })
 })
 
 describe('defaultPrinterProblem', () => {
   it('explains each problem in the computer’s own terms', () => {
-    expect(defaultPrinterProblem('needs_queue', 'Laser', { os: 'macos' })).toBe(
-      "This Mac reaches Laser directly but hasn't set it up yet. Add it in System Settings > Printers & Scanners, and it becomes the default.",
-    )
-    expect(defaultPrinterProblem('needs_queue', 'Laser', { os: 'linux' })).toContain("Add it in this computer's printer settings")
     expect(defaultPrinterProblem('hidden', 'Laser', { os: 'macos' })).toBe("Laser is hidden on this Mac, so it can't be the default.")
+    expect(defaultPrinterProblem('waiting', 'Laser', { os: 'linux' })).toBe("Laser becomes the default once it's added to this computer.")
     expect(defaultPrinterProblem('failed', 'Laser', { os: 'linux' })).toBe("This computer couldn't change its default printer.")
   })
 })

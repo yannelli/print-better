@@ -89,7 +89,8 @@ function Choices({ client, report, settings, save, canManage }: ChoicesProps) {
       {report.error && <Note tone="bad">{report.error}</Note>}
       {printers.map((p) => {
         const shown = !hidden.has(p.id)
-        const status = systemPrinterStatus(shown ? report.printers.find((s) => s.id === p.id) : { state: 'hidden', queue: null }, where)
+        const reported = report.printers.find((s) => s.id === p.id)
+        const status = systemPrinterStatus(shown ? reported : { installed: null, direct: false, ...reported, state: 'hidden', queue: null }, where)
         return (
           <Row key={p.id} label={p.name} description={`${status.detail}. On ${p.clientName}.`} htmlFor={`${uid}-${p.id}`}>
             <span className="flex items-center gap-3">

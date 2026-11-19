@@ -32,8 +32,8 @@ const REPORT: SystemPrinters = {
   active: true,
   error: null,
   printers: [
-    { id: 'pr_1', state: 'added', queue: 'pb_pr_1' },
-    { id: 'pr_2', state: 'direct', queue: null },
+    { id: 'pr_1', state: 'added', queue: 'pb_pr_1', installed: 'Office_Laser', direct: true },
+    { id: 'pr_2', state: 'hidden', queue: null, installed: null, direct: false },
   ],
   defaultQueue: 'pb_pr_1',
   defaultPrinterId: 'pr_1',
@@ -55,15 +55,15 @@ describe('system_printers', () => {
     expect((await clientOf(ws, d.clientId)).systemPrinters).toEqual(REPORT)
 
     d.device.send({ type: 'system_printers', report: REPORT })
-    d.device.send({ type: 'system_printers', report: { ...REPORT, defaultProblem: 'needs_queue' } })
+    d.device.send({ type: 'system_printers', report: { ...REPORT, defaultProblem: 'waiting' } })
     const next = await ui.next('client', (e) => e.client.id === d.clientId)
-    expect(next.client.systemPrinters?.defaultProblem).toBe('needs_queue')
+    expect(next.client.systemPrinters?.defaultProblem).toBe('waiting')
   })
 
   it('drops malformed parts of a report and caps its text', async () => {
     const ws = await freshWorkspace(owner)
     const d = await desk(ws)
-    const printers = [{ id: 'pr_1', state: 'gone', queue: 'x' }, { id: '', state: 'added' }, { id: 'pr_3', state: 'hidden', queue: 7 }]
+    const printers = [{ id: 'pr_1', state: 'direct', queue: 'x' }, { id: '', state: 'added' }, { id: 'pr_3', state: 'hidden', queue: 7, installed: 'q'.repeat(200), direct: 'yes' }]
     d.device.send({ type: 'system_printers', report: { active: 'yes', error: 'e'.repeat(900), printers, defaultProblem: 'odd', lastUsed: 1 } })
     const stored = await eventually(async () => {
       const report = (await clientOf(ws, d.clientId)).systemPrinters
@@ -73,7 +73,7 @@ describe('system_printers', () => {
     expect(stored).toEqual({
       active: false,
       error: 'e'.repeat(500),
-      printers: [{ id: 'pr_3', state: 'hidden', queue: null }],
+      printers: [{ id: 'pr_3', state: 'hidden', queue: null, installed: 'q'.repeat(127), direct: false }],
       defaultQueue: null,
       defaultPrinterId: null,
       defaultProblem: null,
@@ -83,7 +83,7 @@ describe('system_printers', () => {
 })
 
 describe('remote_printers direct list', () => {
-  it('names the printers left out because the receiver reports them itself', async () => {
+  it('flags printers the receiver reports itself without leaving them out', async () => {
     const ws = await freshWorkspace(owner)
     const uuid = '7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34'
     const s = await connectPrinter(owner, `uuid:${uuid}`, ws)
@@ -93,7 +93,7 @@ describe('remote_printers direct list', () => {
     expect((await d.device.next('remote_printers')).direct).toBeUndefined()
     await d.device.report([printerReport('net:printer.local:631', { uuid, local: false })])
     const msg = await d.device.next('remote_printers')
-    expect(msg.printers).toEqual([])
+    expect(msg.printers.map((p) => p.id)).toEqual([s.printerId])
     expect(msg.direct).toEqual([{ id: s.printerId, uuid }])
   })
 })
