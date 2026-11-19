@@ -1,4 +1,4 @@
-This page installs Print Better on a Mac and connects it to your server. Once connected, the Mac finds nearby printers and prints jobs sent to them. It also adds your other devices' printers to its print window.
+Install Print Better on a Mac and connect it to your server. Once connected, the Mac finds nearby printers and prints jobs sent to them. It also adds your other devices' printers to its print window.
 
 ## Requirements
 
@@ -26,7 +26,9 @@ Back on the web page, select **Connect this Mac**. Print Better's status page op
 
 </Steps>
 
-The web page notices the new device by itself and moves on to choosing printers. The setup code on the page works once, until the time shown under the steps.
+The web page notices the new device by itself and moves on to choosing printers.
+
+The setup code on the page works once, until the time shown under the steps.
 
 If the page says the Mac installer isn't published yet, use Terminal instead. The server admin can publish it with [scripts/release.sh](/docs/self-hosting/deploy#publish-the-client-downloads).
 
@@ -38,7 +40,9 @@ On the install step, open **Use Terminal instead**. Copy the command, paste it i
 curl -fsSL https://your-print-better.example/install.sh | sh -s -- --token pbe_...
 ```
 
-The command installs Print Better for your user only, connects it to the workspace, and starts it. Run the same command again later to update. It keeps the connection.
+The command installs Print Better for your user only, connects it to the workspace, and starts it.
+
+To update later, run the same command again. It keeps the connection.
 
 macOS may ask whether Print Better can find devices on your local network. Select **Allow**, or Print Better can't find network printers. The signed installer runs Print Better as a system service, which doesn't need this permission.
 
@@ -47,11 +51,9 @@ macOS may ask whether Print Better can find devices on your local network. Selec
 When you open Print Better before it is connected, its status page opens at `http://127.0.0.1:47631`.
 
 1. Enter your **Print Better address**. Optionally enter a **Name for this computer**.
-2. Select **Connect with my browser**. The page shows a code.
+2. Select **Connect with my browser**. The page shows a code that works for 10 minutes. If you have a setup code that starts with `pbe_`, select **Use a pairing code** instead.
 3. Select **Open the approval page**. Check that your browser shows the same code.
-4. Under **Which workspace should it join?**, choose a workspace. Select **Connect this device**.
-
-Only workspaces where you are an owner or admin are listed. The code works for 10 minutes. If you have a setup code that starts with `pbe_`, select **Use a pairing code** instead.
+4. Under **Which workspace should it join?**, choose a workspace. Only workspaces where you are an owner or admin are listed. Select **Connect this device**.
 
 ## What gets installed
 
@@ -88,7 +90,9 @@ Print Better adds every added printer on your other devices to this Mac. They ap
 
 ### Remove the device
 
-While the Mac is online, remove it on its page in the web app. See [Manage devices](/docs/devices/manage#remove-a-device). Print Better signs out and removes the printers it added to the print window. You can also run `printbetter unpair` on the Mac.
+While the Mac is online, remove it on its page in the web app. See [Manage devices](/docs/devices/manage#remove-a-device).
+
+Print Better signs out and removes the printers it added to the print window. You can also run `printbetter unpair` on the Mac.
 
 ### Remove the service and the app
 

@@ -1,4 +1,4 @@
-This page lists every REST endpoint on your server, grouped by area. It also covers authentication, token scopes, errors, pagination, and the two-step upload for large files. For a guided start, see [With the API](/docs/printing/api).
+The tables below list every REST endpoint on your server, grouped by area. For a guided start, see [With the API](/docs/printing/api).
 
 ## Basics
 
@@ -15,11 +15,13 @@ curl https://your-print-better.example/api/workspaces \
   -H "Authorization: Bearer $PRINTBETTER_TOKEN"
 ```
 
-Create a token under **Your account**, then **Apps and tokens**. See [API tokens](/docs/workspaces/tokens). Tokens start with `pbt_`. A token can be limited to one workspace and can expire.
+Create a token under **Your account**, then **Apps and tokens**. See [API tokens](/docs/workspaces/tokens).
+
+Tokens start with `pbt_`. A token can be limited to one workspace and can expire.
 
 The web app uses a session cookie instead. Requests with that cookie that change something must send an `Origin` header that matches the server.
 
-OAuth tokens from AI assistants (`pbo_`) work only with the [MCP server](/docs/reference/mcp). The REST API answers them with `401`.
+OAuth tokens from AI assistants (`pbo_`) work only with the [MCP server](/docs/reference/mcp). The REST API returns `401` for them.
 
 ## Scopes
 
@@ -31,13 +33,22 @@ OAuth tokens from AI assistants (`pbo_`) work only with the [MCP server](/docs/r
 
 Personal API tokens hold all three scopes. A missing scope returns `403` with the code `insufficient_scope`.
 
-In the tables, **session** means the endpoint needs a signed-in browser, and tokens get `403 session_required`. **none** means it needs no sign-in. **any** means any token scope works.
+The **Scope** column in the tables also uses these values:
+
+- **session**: The endpoint needs a signed-in browser. Tokens get `403 session_required`.
+- **none**: The endpoint needs no sign-in.
+- **any**: Any token scope works.
 
 ## Roles
 
-Many endpoints also need a role in the workspace. Members can read, print, and manage their own jobs. Admins and owners can change printers, devices, members, and settings. The tables mark these with **Admins** or **Owners**. **Server admins** are the accounts that can open **Server admin**.
+Many endpoints also need a role in the workspace:
 
-With the [Printer access](/docs/extensions/printer-access) extension active, each printer's permissions replace the admin rule for printers and jobs. Printers and jobs you can't see are left out of lists and answer `404`.
+- Members can read, print, and manage their own jobs.
+- Admins and owners can change printers, devices, members, and settings.
+
+The tables mark these endpoints with **Admins** or **Owners**. **Server admins** are the accounts that can open **Server admin**.
+
+With the [Printer access](/docs/extensions/printer-access) extension active, each printer's permissions replace the admin rule for printers and jobs. Printers and jobs you can't see are left out of lists and return `404`.
 
 ## Errors
 
@@ -66,7 +77,7 @@ Errors use the HTTP status and a JSON body:
 { "items": [], "nextCursor": "MTc2..." }
 ```
 
-Pass `?limit=` for the page size, 50 by default and 200 at most. Pass `nextCursor` back as `?cursor=` to get the next page. When `nextCursor` is `null`, there are no more pages.
+Pass `?limit=` for the page size (50 by default, 200 at most). Pass `nextCursor` back as `?cursor=` to get the next page. When `nextCursor` is `null`, there are no more pages.
 
 ## Two-step upload
 
@@ -98,7 +109,13 @@ The `Content-Type` must match the declared type, or you get `415 unsupported_typ
 
 </Steps>
 
-Supported types are `application/pdf`, `image/jpeg`, `image/png`, and `text/plain`. The workspace's upload limit applies, 50 MB by default. An upload that never finishes fails after an hour. Job options are listed in [Job options](/docs/reference/job-options).
+Uploads have these limits:
+
+- Types: `application/pdf`, `image/jpeg`, `image/png`, and `text/plain`.
+- Size: The workspace's upload limit, 50 MB by default.
+- Time: An upload that never finishes fails after an hour.
+
+Job options are listed in [Job options](/docs/reference/job-options).
 
 ## Server and sign-in
 
@@ -227,7 +244,7 @@ Supported types are `application/pdf`, `image/jpeg`, `image/png`, and `text/plai
 
 ## Printer access
 
-These endpoints need the [Printer access](/docs/extensions/printer-access) extension turned on. While it is off, they answer `404 extension_inactive`, except `GET /access/subject`. All paths start with `/workspaces/:ws`.
+These endpoints need the [Printer access](/docs/extensions/printer-access) extension turned on. While it is off, they return `404 extension_inactive`, except `GET /access/subject`. All paths start with `/workspaces/:ws`.
 
 | Method | Path | Scope | Purpose |
 | --- | --- | --- | --- |

@@ -1,10 +1,16 @@
-This page explains how people sign in to your server and who can create an account. Passwords and passkeys always work. Google and other single sign-on providers are optional.
+Passwords and passkeys always work on your server. Google and other single sign-on providers are optional.
 
 ## Who can create an account
 
 New accounts are invite-only by default. A workspace owner or admin sends an invite link from [Members](/docs/workspaces/members), and the person creates an account from that link.
 
-To let anyone with your server's address sign up, open **Server admin**, then **General**. Under **Who can create an account**, choose **Anyone with the address** and select **Save changes**. People who sign up without an invite name their own new workspace after they sign up.
+To let anyone with your server's address sign up:
+
+1. Open **Server admin**, then **General**.
+2. Under **Who can create an account**, choose **Anyone with the address**.
+3. Select **Save changes**.
+
+People who sign up without an invite name their own new workspace after they sign up.
 
 Single sign-on follows the same rule. Without an invite, a new Google or OpenID Connect sign-in works only when sign-up is open.
 
@@ -18,7 +24,12 @@ The server hashes passwords with scrypt and a server-wide secret, `AUTH_PEPPER`.
 
 A passkey signs you in with a fingerprint, face, or device PIN. Anyone can create an account with a passkey and no password.
 
-To add one, open **Your account**, then **Sign-in and security**. Under **Passkeys**, select **Add a passkey**. On the sign-in page, select **Sign in with a passkey**.
+To add a passkey:
+
+1. Open **Your account**, then **Sign-in and security**.
+2. Under **Passkeys**, select **Add a passkey**.
+
+To sign in with it, select **Sign in with a passkey** on the sign-in page.
 
 <Callout type="warning">
 
@@ -72,8 +83,8 @@ Print Better asks for the scopes `openid email profile`.
 
 Open **Server admin**, then **Sign-in options**. Under **Sign in with your organization**, fill in:
 
-- **Button name**: people see "Continue with" followed by this name.
-- **Issuer address**: the `https` address of your provider. Its discovery document must be at the issuer address plus `/.well-known/openid-configuration`.
+- **Button name**: People see "Continue with" followed by this name.
+- **Issuer address**: The `https` address of your provider. Its discovery document must be at the issuer address plus `/.well-known/openid-configuration`.
 - **Client ID** and **Client secret**.
 
 ### Turn it on
@@ -87,14 +98,19 @@ Turn on **Show this option on the sign-in page**, then select **Save changes**. 
 When someone signs in with Google or your organization, the server looks for an account in this order:
 
 1. An account already connected to that Google or organization account.
-2. An account whose verified email matches the provider's verified email. The two are connected on the spot.
+2. An account whose verified email matches the provider's verified email. The two are connected right away.
 3. A new account, when the person has an invite or sign-up is open.
 
 If an account has that email but hasn't verified it, sign-in stops. The person signs in another way first and connects the provider from their account.
 
 ## Connect an existing account
 
-Once Google or your organization sign-in is on, people can connect it to the account they have. Open **Your account**, then **Sign-in and security**. Under **Connected accounts**, choose the provider. A connected account is also a backup way in.
+Once Google or your organization sign-in is on, people can connect it to the account they have:
+
+1. Open **Your account**, then **Sign-in and security**.
+2. Under **Connected accounts**, choose the provider.
+
+A connected account is also a backup way in.
 
 ## Getting back in
 

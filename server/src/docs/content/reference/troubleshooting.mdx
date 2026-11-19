@@ -1,4 +1,4 @@
-This page helps you fix common problems with devices, printers, and jobs. Find the section that matches what you see, then work through the checks in order.
+Find the section below that matches what you see with a device, printer, or job, then work through its checks in order.
 
 ## Start with a checkup
 
@@ -8,7 +8,9 @@ A checkup tests the connection, the clock, storage, discovery, and each printer.
 - On the device's status page at `http://127.0.0.1:47631`, open **Help and troubleshooting** and select **Run checks**.
 - On the device, run `printbetter doctor`. Add `--json` for a copy to share.
 
-`printbetter status` shows the connection, the printers, the queue, and the update state at a glance. See [Manage devices](/docs/devices/manage#check-a-devices-health) for what each check means.
+See [Manage devices](/docs/devices/manage#check-a-devices-health) for what each check means.
+
+`printbetter status` shows the connection, the printers, the queue, and the update state.
 
 ## A device shows offline
 
@@ -27,7 +29,7 @@ The web app shows a device as **Offline** when its connection to the server is c
 
 Also check these:
 
-- **Clock**: if the device's clock is off by more than 2 minutes, turn on automatic date and time.
+- **Clock**: If the device's clock is off by more than 2 minutes, turn on automatic date and time.
 - Devices keep using the address they paired with. If you moved to a new domain and turned off the old address, pair them again.
 - A Linux user service stops when you log out. Run `loginctl enable-linger "$USER"` to keep it running.
 - On a new Raspberry Pi, check that the three setup files kept their exact names. The setup code works once, for 7 days. If you can sign in to the Pi, read `/var/log/cloud-init-output.log` and `journalctl -u printbetter`.
@@ -44,7 +46,7 @@ More checks:
 - On a Mac with a Terminal install, allow Print Better in **System Settings**, under **Privacy & Security**, then **Local Network**.
 - For a USB printer on Linux, the system service needs its udev rule. Run `sudo printbetter service install --system`, then unplug and replug the printer.
 - Bonjour doesn't cross routers. A printer on another network segment won't announce itself to the device.
-- **Found but not added**: with **Ask me first**, found printers wait on the **Printers** page. Add them there.
+- **Found but not added**: With **Ask me first**, found printers wait on the **Printers** page. Add them there.
 
 See [Printer discovery](/docs/devices/discovery).
 
@@ -68,7 +70,9 @@ The most common problem is `lpadmin: Forbidden`. Adding printers needs CUPS admi
 - On a Mac, install with the signed installer. It runs as a system service with those rights. A Terminal install needs an admin account.
 - On Linux, add your user to the CUPS admin group, then log out and in. On many systems that group is `lpadmin`.
 
-If the section says **Update Print Better on** the computer, update it to 0.1.3 or later. With [Printer access](/docs/extensions/printer-access) active, the computer itself needs permission to print to the printer.
+If the section says **Update Print Better on** the computer, update it to 0.1.3 or later.
+
+With [Printer access](/docs/extensions/printer-access) active, the computer itself needs permission to print to the printer.
 
 See [From your computer's print window](/docs/printing/print-window).
 

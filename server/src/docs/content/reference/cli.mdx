@@ -1,4 +1,4 @@
-This page lists every `printbetter` command and option. The same program runs the background service, the menu bar icon, and the commands below.
+One program, `printbetter`, runs the background service, the menu bar icon, and every command below.
 
 Most commands talk to the running service at `http://127.0.0.1:47631`. `status` and `printers` need it. The other commands also work when the service is stopped.
 
@@ -87,7 +87,11 @@ printbetter print FILE [options]
 | `--color` | Prints in color. |
 | `--mono` | Prints in black and white. |
 
-`print` sends the file straight to a printer this device can reach. It doesn't go through your server. Without `--printer`, it uses the only added printer, or the only printer found. Supported files are PDF, JPEG, PNG, and plain text.
+`print` sends the file straight to a printer this device can reach. It doesn't go through your server.
+
+Without `--printer`, it uses the only added printer, or the only printer found.
+
+Supported files are PDF, JPEG, PNG, and plain text.
 
 While the service runs, `print` follows the job until it finishes. Press Ctrl+C to stop watching. The job stays queued.
 
@@ -143,7 +147,9 @@ When only the machine-wide service exists, `start`, `stop`, `restart`, and `stat
 
 ## Settings
 
-`config set` changes a setting on this device. While the service runs, the change applies at once and syncs to the server. When the service is stopped, it is saved and syncs on the next connection. If a setting changes in two places, the most recent change wins.
+`config set` changes a setting on this device. While the service runs, the change applies at once and syncs to the server. When the service is stopped, it is saved and syncs on the next connection.
+
+If a setting changes in two places, the most recent change wins.
 
 | Key | Values | Default | Meaning |
 | --- | --- | --- | --- |
@@ -184,7 +190,10 @@ When only the machine-wide service exists, `start`, `stop`, `restart`, and `stat
 
 ## Internal commands
 
-Two more commands exist for Print Better's own use. `tray-ui` runs the menu bar icon for the machine-wide macOS service. `update-helper` is the root updater that `printbetter-update.service` runs on Linux.
+Two more commands are for Print Better's own use:
+
+- `tray-ui` runs the menu bar icon for the machine-wide macOS service.
+- `update-helper` is the root updater that `printbetter-update.service` runs on Linux.
 
 ## Install script options
 

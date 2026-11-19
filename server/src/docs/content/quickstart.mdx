@@ -1,4 +1,4 @@
-This guide takes you from an empty Cloudflare account to a printed page. You deploy the server, create your account, connect a computer near your printer, and print a test page.
+Deploy the server, create your account, connect a computer near your printer, and print a test page. You start with an empty Cloudflare account and end with a printed page.
 
 ## Before you start
 
@@ -23,7 +23,9 @@ pnpm --dir server exec wrangler login
 scripts/deploy.sh
 ```
 
-The script creates the database, the storage bucket, and the Worker. At the end it prints a one-time setup link. Keep that link private. [Deploy to Cloudflare](/docs/self-hosting/deploy) explains each step and the secrets it creates.
+The script creates the database, the storage bucket, and the Worker. At the end it prints a one-time setup link. Keep that link private.
+
+[Deploy to Cloudflare](/docs/self-hosting/deploy) explains each step and the secrets it creates.
 
 ### Publish the client downloads
 
@@ -35,11 +37,11 @@ scripts/release.sh --publish remote
 
 ### Create your account
 
-Open the setup link from the deploy script. Select **Get started**.
-
-Enter **Your name** and a **Username**. Under **How do you want to sign in?**, choose **Password** or **Passkey**. Select **Continue**.
-
-Under **Name this place**, keep **Home** or type a name such as "Office". Select **Create account**. With a passkey, the button says **Create account and passkey**.
+1. Open the setup link from the deploy script. Select **Get started**.
+2. Enter **Your name** and a **Username**.
+3. Under **How do you want to sign in?**, choose **Password** or **Passkey**. Select **Continue**.
+4. Under **Name this place**, keep **Home** or type a name such as "Office".
+5. Select **Create account**. With a passkey, the button says **Create account and passkey**.
 
 You are now the owner of this workspace and a server admin. The app opens **Add a device** next.
 
@@ -77,7 +79,9 @@ Select **I’ve done this**, or **I’ve started the Pi**. The page shows **Wait
 
 The device looks for printers on its network, over USB, and in its own printer list. Some may show **Added automatically**.
 
-Under **Choose the printers to use**, check the printers people should print to. Select the **Add** button, such as **Add 2 printers**. If nothing shows up, turn the printer on and wait. New printers appear by themselves.
+Under **Choose the printers to use**, check the printers people should print to. Select the **Add** button, such as **Add 2 printers**.
+
+If nothing shows up, turn the printer on and wait. New printers appear by themselves.
 
 ### Print a test page
 
