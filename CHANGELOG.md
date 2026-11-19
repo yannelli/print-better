@@ -4,6 +4,8 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-11-19
+
 ### Added
 
 - **remote printers:** the Mac print dialog offers what the printer on the other device has: paper trays (**Paper Feed**), paper types, the print qualities it supports, and two-sided printing when it can. Each choice reaches that printer as the matching job option.
@@ -19,6 +21,7 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 ### Fixed
 
 - **remote printers:** a `pb_` queue that already exists and points at the device's own loopback server (a lost record, or one recreated by hand) is taken over and regenerated once instead of failing with "already exists".
+- **printers:** a printer that another device has already added no longer shows up again under **Found but not added** when a second device finds it (matched by printer uuid).
 - **doctor:** a device with every discovery method turned off shows Discovery as off instead of failing with "No printers found".
 
 ## [0.1.2] - 2026-11-19

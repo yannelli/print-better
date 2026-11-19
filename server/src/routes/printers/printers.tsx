@@ -87,7 +87,9 @@ export default function Printers() {
       <QueryState query={printers}>
         {(list) => {
           const added = sorted(list.filter((p) => p.added))
-          const found = sorted(list.filter((p) => !p.added))
+          // Another device seeing an added printer is the same printer, not a new one to add.
+          const addedUuids = new Set(added.flatMap((p) => (p.uuid ? [p.uuid.toLowerCase()] : [])))
+          const found = sorted(list.filter((p) => !p.added && !(p.uuid && addedUuids.has(p.uuid.toLowerCase()))))
           if (list.length === 0) return <NoPrinters ws={ws} hasDevices={(clients.data?.length ?? 0) > 0} canManage={canManage} />
           return (
             <div className="flex flex-col gap-10">

@@ -136,14 +136,14 @@ export const printerSettingsPlace = (client: Pick<Client, 'os'>) =>
 /** How a workspace printer shows up on a desktop, from the device's report (undefined: not reported yet). */
 export function systemPrinterStatus(printer: Omit<SystemPrinter, 'id'> | undefined, where: string): StatusWords {
   const also = printer?.installed
-    ? `Also installed directly as ${printer.installed}`
+    ? `Also installed directly as ${printer.installed.replaceAll('_', ' ')}`
     : printer?.direct
       ? `${capitalized(where)} also finds it on its network`
       : null
   const words = (label: string, tone: Tone, detail: string): StatusWords => ({ label, tone, detail: also ? `${detail}. ${also}` : detail })
   switch (printer?.state) {
     case 'added':
-      return words('Added', 'ok', printer.queue ? `System printer ${printer.queue}` : 'A system printer')
+      return words('Added', 'ok', `In the print window on ${where}`)
     case 'hidden':
       return words('Hidden', 'neutral', `Print Better doesn't add it to ${where}`)
     case 'error':
