@@ -1,0 +1,64 @@
+Print Better records every change made in a workspace. Use the activity list to see who changed what, and when.
+
+## See recent activity
+
+Owners and admins can see activity.
+
+Open [**Settings**](/settings) and scroll to **Recent activity**. It lists the 50 most recent changes, newest first.
+
+Each line shows who made the change, what changed, and when. The thing that changed is shown by its ID, in parentheses. Hover over the time to see the exact date.
+
+## What is recorded
+
+Print Better records changes to:
+
+- printers, such as adding, renaming, or forgetting one;
+- print jobs, such as creating, canceling, retrying, or removing one;
+- devices, install codes, and device commands;
+- members, invites, and roles;
+- workspace settings and extensions;
+- [Printer access](/docs/extensions/printer-access): groups, roles, and who has access;
+- API tokens limited to this workspace.
+
+Every change is recorded, whether it was made in the web app, with the API, by an AI assistant, or by a device.
+
+## Who made the change
+
+| Shown as | Who |
+| --- | --- |
+| A person's name | That person, in the web app, or with their API token or AI assistant. |
+| A device's name | A paired device, for example when it joins the workspace. |
+| An email address | A document someone emailed to a printer. |
+
+## See older activity
+
+**Recent activity** shows only the latest 50 changes. To read further back, use the API or an AI assistant.
+
+With the API, page through the full list:
+
+```sh
+curl "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/audit" \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN"
+```
+
+Each answer has `items` and a `nextCursor`. Add `?cursor=` and that value to get the next page. See [REST API](/docs/reference/rest-api).
+
+An AI assistant can read the same list with the `list_audit` tool. Ask it, for example, "Who changed the office printer this week?"
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/workspaces/members" title="Members and roles">
+
+Choose who can change things in the workspace.
+
+</Card>
+
+<Card href="/docs/reference/security" title="Security">
+
+How Print Better protects accounts, devices, and documents.
+
+</Card>
+
+</Cards>
