@@ -38,7 +38,7 @@ impl Queue {
         Queue {
             printer_id: p.id.clone(),
             name: queue_name(&p.id),
-            uri: format!("ipp://127.0.0.1:{port}{}{}", printer_path(&p.id), p.uuid.as_deref().map(|u| format!("?uuid={u}")).unwrap_or_default()),
+            uri: format!("ipp://127.0.0.1:{port}{}", printer_path(&p.id)),
             description: text(&p.name),
             location: text(&format!("{place} (via Print Better)")),
             ppd: ppd_fingerprint(p),

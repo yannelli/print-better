@@ -85,7 +85,7 @@ export interface RemotePrintersMsg { type: 'remote_printers'; printers: RemotePr
   - The daemon only ever touches queues recorded as managed in local state and named `pb_*`.
   - Daemon shutdown keeps queues.
 - Taking over: When a queue to add already exists under its `pb_<id>` name and its device URI points at this loopback server (`ipp://127.0.0.1` or `localhost`, same port, an `/ipp/print/` path), it is recorded as managed with no PPD fingerprint and regenerated once (`-m everywhere`). Any other queue with that name is never touched.
-- The device URI ends in `?uuid=<printer uuid>` when the server knows it. The loopback server routes on the path and ignores the query.
+- The device URI has no query. The CUPS ipp backend reads a query as job options, so `?uuid=` showed `Unknown option "uuid"` on every job. Queues from 0.1.6 and earlier lose it on the next sync. The loopback server still reports the printer's uuid as `printer-uuid`.
 - macOS: After each `-m everywhere`, the daemon adds `*APAirPrint: True` to the generated PPD (`lpadmin -p pb_<id> -P <file>`). Printers & Scanners reads Supply Levels only for queues marked AirPrint, and then asks the device URI (the loopback server) through PrintKit, which also requires `urf-supported`. A failure to mark the PPD is logged and isn't fatal; the queue prints either way.
 - Status: Local `/api/status` gains `remotePrinters: { active: boolean, error: string | null, printers: [{ id, name, queue, online }] }`. The status page, tray, and `doctor` surface errors (e.g. lpadmin permission denied).
 - CLI: `printbetter config set remotePrinters false` works through the existing settings path.

@@ -141,11 +141,11 @@ fn a_failed_takeover_refreshes_on_the_next_pass() {
 }
 
 #[test]
-fn the_device_uri_carries_the_printer_uuid_when_known() {
+fn the_device_uri_has_no_query_so_the_ipp_backend_takes_no_options_from_it() {
     let mut p = printer("pr_1", "Laser", None, "Den Pi", true);
     p.uuid = Some("7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34".into());
     let q = Queue::for_printer(&p, 8632);
-    assert_eq!(q.uri, format!("ipp://127.0.0.1:8632{}?uuid=7d3b9a1e-2c4f-4e8a-9b6d-1f0e5c2a8b34", printer_path("pr_1")));
+    assert_eq!(q.uri, format!("ipp://127.0.0.1:8632{}", printer_path("pr_1")));
 }
 
 #[test]

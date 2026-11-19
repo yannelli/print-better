@@ -241,10 +241,11 @@ async fn a_printer_found_here_too_keeps_its_queue_and_a_hand_made_one_is_taken_o
         until("the takeover", || status(&d) == (true, None, 1)).await;
         let refresh = fake.calls().into_iter().find(|c| c[1] == "pb_pr_07" && c.contains(&"everywhere".to_string())).unwrap();
         let uri = refresh[refresh.iter().position(|a| a == "-v").unwrap() + 1].clone();
-        assert!(uri.ends_with(&format!("?uuid={uuid}")), "{uri}");
+        assert!(!uri.contains('?'), "{uri}");
         assert!(fake.calls_starting("-x").is_empty(), "taken over, not replaced");
-        let attrs = IppClient::new("pb-test", dir.path()).get_printer_attributes(&uri).await.unwrap();
-        assert_eq!(attrs.name.as_deref(), Some("Laser"), "the loopback server ignores the query");
+        let older = format!("{uri}?uuid={uuid}");
+        let attrs = IppClient::new("pb-test", dir.path()).get_printer_attributes(&older).await.unwrap();
+        assert_eq!(attrs.name.as_deref(), Some("Laser"), "queues from older versions still route: the query is ignored");
         until("the report", || d.with_state(|st| st.remote.report.clone()).is_some_and(|r| !r.printers.is_empty())).await;
         let report = d.with_state(|st| st.remote.report.clone()).unwrap();
         let p = &report.printers[0];

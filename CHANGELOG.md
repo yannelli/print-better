@@ -16,6 +16,10 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 - **devices:** `GET /api/client/latest` answers 404 `no_build` to iPhones and iPads, which update through the App Store.
 
+### Fixed
+
+- **remote printers:** Jobs on a `pb_` queue no longer show `Unknown option "uuid"`. The queue's device URI drops its `?uuid=` query, which the CUPS ipp backend read as a job option. Existing queues are updated on the next sync.
+
 ## [0.1.6] - 2026-11-19
 
 ### Added
