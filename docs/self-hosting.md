@@ -96,6 +96,8 @@ Other tools can send a personal token from **Your account > Apps and tokens** as
 pnpm --dir server exec wrangler d1 export print-better --remote --output print-better.sql
 pnpm --dir server exec wrangler d1 time-travel info print-better   # point-in-time restore, last 30 days
 ```
+To load an export into an empty database, use `scripts/restore-d1.sh <export.sql> <database> --remote` (needs `sqlite3`). Exports list each table's rows right after the table, so they can't be loaded as they are.
+
 The database export plus your 2 secrets are everything worth backing up. R2 only holds:
 - Print documents, deleted automatically after the workspace's **Keep documents for** setting
 - Client downloads, which `scripts/release.sh` rebuilds

@@ -7,6 +7,7 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 ### Added
 
 - **web:** Adds **Show more** to the **Activity** tab, which loads older changes 50 at a time. It used to stop at the latest 50.
+- **scripts:** Adds `scripts/restore-d1.sh`, which loads a `wrangler d1 export` file into an empty database. Exports can't be loaded as they are, because each table's rows come before the tables they reference.
 
 ### Fixed
 

@@ -41,7 +41,7 @@ Once the upload finishes, Macs and Linux devices find the new version within abo
 | `APP_SECRET` | Decrypts the SSO client secrets and email keys stored in the database. | Keep your own copy. Cloudflare can't show it. |
 | `AUTH_PEPPER` | Every password hash depends on it. | Keep your own copy. Cloudflare can't show it. |
 
-To keep a copy of the secrets, set them yourself. See [Secrets](/docs/self-hosting/deploy#secrets).
+`scripts/deploy.sh` saves a copy of both secrets to `~/.config/print-better/secrets.env` when it creates them. See [Secrets](/docs/self-hosting/deploy#secrets).
 
 Export the database to a SQL file:
 
@@ -56,6 +56,17 @@ pnpm --dir server exec wrangler d1 time-travel info print-better
 ```
 
 To restore, follow Cloudflare's [D1 Time Travel guide](https://developers.cloudflare.com/d1/reference/time-travel/).
+
+## Restore From an Export
+
+An export lists each table's rows right after the table, so it can't be loaded as it is. `scripts/restore-d1.sh` rebuilds it with every table first and loads it into an empty database. It needs `sqlite3`.
+
+```sh
+pnpm --dir server exec wrangler d1 create print-better-restore
+scripts/restore-d1.sh print-better.sql print-better-restore --remote
+```
+
+To run your server on the restored database, set `database_name` and `database_id` under `d1_databases` in `server/wrangler.jsonc`, then run `scripts/deploy.sh`.
 
 ## What You Don't Need to Back Up
 
