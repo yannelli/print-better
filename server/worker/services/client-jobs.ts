@@ -1,6 +1,7 @@
 import { DOC_TYPES, type Job } from '../../shared/printing'
 import { JOB_VIEW, PRINTER_VIEW, toJob } from '../db/map'
 import type { ClientRow, JobViewRow, PrinterViewRow } from '../db/rows'
+import { jobViewer } from '../extensions/job-view'
 import { MB, type Json } from '../http/body'
 import { badRequest, forbidden, notFound, tooLarge } from '../http/errors'
 import { int, str } from '../http/validate'
@@ -74,12 +75,12 @@ async function ownJob(env: Env, client: ClientRow, id: string): Promise<JobViewR
   return job
 }
 
-/** `GET /api/client/jobs`: the jobs this device created, newest first. */
-export async function listClientJobs(env: Env, client: ClientRow, q: { limit?: string | null; cursor?: string | null }): Promise<Page<Job>> {
+/** `GET /api/client/jobs`: the jobs this device created, newest first, named as the privacy settings show them to it. */
+export async function listClientJobs(ctx: Ctx, client: ClientRow, q: { limit?: string | null; cursor?: string | null }): Promise<Page<Job>> {
   const n = pageLimit(q.limit)
   const c = decodeCursor(q.cursor)
   const rows = await all<JobViewRow>(
-    env.DB,
+    ctx.env.DB,
     `${JOB_VIEW} WHERE j.source_client_id = ? AND (? IS NULL OR j.created_at < ? OR (j.created_at = ? AND j.id < ?))
      ORDER BY j.created_at DESC, j.id DESC LIMIT ?`,
     client.id,
@@ -89,7 +90,8 @@ export async function listClientJobs(env: Env, client: ClientRow, q: { limit?: s
     c?.id ?? null,
     n + 1,
   )
-  return toPage(rows, n, (r) => ({ createdAt: r.created_at, id: r.id }), toJob)
+  const view = await jobViewer(ctx, client.workspace_id, { kind: 'device', clientId: client.id })
+  return toPage(rows, n, (r) => ({ createdAt: r.created_at, id: r.id }), (r) => view(toJob(r)))
 }
 
 export const getClientJob = async (env: Env, client: ClientRow, id: string): Promise<Job> => toJob(await ownJob(env, client, id))

@@ -78,9 +78,10 @@ export function clientRoutes(r: Router): void {
     const client = await requireClient(h)
     return clientPrinters(clientCtx(h, client), client)
   })
-  r.get('/api/client/jobs', async (h) =>
-    listClientJobs(h.env, await requireClient(h), { limit: h.url.searchParams.get('limit'), cursor: h.url.searchParams.get('cursor') }),
-  )
+  r.get('/api/client/jobs', async (h) => {
+    const client = await requireClient(h)
+    return listClientJobs(clientCtx(h, client), client, { limit: h.url.searchParams.get('limit'), cursor: h.url.searchParams.get('cursor') })
+  })
   r.get('/api/client/jobs/:id', async (h) => ({ job: await getClientJob(h.env, await requireClient(h), h.params.id) }))
   r.put('/api/client/jobs/:id/file', async (h) => {
     const client = await requireClient(h)

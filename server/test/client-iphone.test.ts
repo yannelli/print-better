@@ -1,9 +1,11 @@
 import { env } from 'cloudflare:workers'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { grant, ok, setEveryone, turnOnAccess } from './helpers/access'
+import { grant, ok, setEveryone, turnOnAccess, wsPath } from './helpers/access'
 import { connectPrinter, Device, eventually, type Station } from './helpers/device'
+import { setControls, turnOnEnterprise } from './helpers/enterprise'
 import { Agent, call, readReply } from './helpers/http'
 import { freshWorkspace, PDF } from './helpers/jobs'
+import { rulesPath, turnOnPolicies } from './helpers/usage'
 import { enrollDevice, jsonInit, setupOwner, type Owner } from './helpers/world'
 
 const PHONE = { hostname: 'iPhone', os: 'ios', arch: 'arm64', version: '1.0', name: 'Front Desk iPhone' }
@@ -142,5 +144,33 @@ describe('an iPhone or iPad', () => {
       const reply = await readReply(await call(path, { headers: { Authorization: 'Bearer pbc_nope' } }))
       expect(reply.status, path).toBe(401)
     }
+  })
+})
+
+describe('an iPhone or iPad with print rules or Enterprise controls on', () => {
+  it('lists a job held for release with its message', async () => {
+    const w = await world()
+    await turnOnEnterprise(owner, w.ws, { release: { enabled: true } })
+    await setControls(owner.agent, w.ws, w.laser.printerId, { secureRelease: true })
+    const id = await printFromPhone(w.phone.agent, w.laser.printerId, 'Boarding pass')
+    const held = { id, status: 'held', statusMessage: 'Waiting to be released at the printer', held: { kind: 'release' } }
+    expect(ok(await w.phone.agent.get('/api/client/jobs'), 'jobs').items).toMatchObject([held])
+    expect(ok(await w.phone.agent.get(`/api/client/jobs/${id}`), 'job').job).toMatchObject(held)
+  })
+
+  it('is refused with the rule’s message when a rule blocks the job', async () => {
+    const w = await world()
+    await turnOnPolicies(owner, w.ws)
+    ok(await owner.agent.post(rulesPath(w.ws), { name: 'Closed', actions: [{ type: 'block', message: 'Printing is closed today.' }] }), 'rule')
+    const refused = await w.phone.agent.post('/api/client/jobs', { printerId: w.laser.printerId, contentType: 'application/pdf', size: PDF.byteLength, title: 'Recipe' })
+    expect(refused).toMatchObject({ status: 403, body: { error: { code: 'policy_blocked', message: 'Printing is closed today.' } } })
+  })
+
+  it('sees the names of its own documents when only senders may', async () => {
+    const w = await world()
+    await turnOnEnterprise(owner, w.ws, { privacy: { enabled: true, ownerOnlyNames: true } })
+    const id = await printFromPhone(w.phone.agent, w.laser.printerId, 'Recipe')
+    expect(ok(await w.phone.agent.get('/api/client/jobs'), 'jobs').items[0]).toMatchObject({ id, title: 'Recipe' })
+    expect(ok(await owner.agent.get(wsPath(w.ws, `/jobs/${id}`)), 'owner')).toMatchObject({ title: 'Document' })
   })
 })

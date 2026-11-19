@@ -90,7 +90,7 @@ function Detail({ ws, client }: { ws: string; client: Client }) {
   const [, navigate] = useLocation()
   const [renaming, setRenaming] = useState(false)
   const status = deviceStatus(client)
-  const phone = isMobile(client)
+  const mobile = isMobile(client)
 
   return (
     <>
@@ -113,7 +113,7 @@ function Detail({ ws, client }: { ws: string; client: Client }) {
                   </Button>
                 }
                 title={`Remove ${client.name}?`}
-                description="It will be signed out of Print Better, and its printers will be removed from this workspace. You can add it again later."
+                description={`It will be signed out of Print Better${mobile ? '' : ', and its printers will be removed from this workspace'}. You can add it again later.`}
                 confirmLabel="Remove device"
                 destructive
                 onConfirm={async () => {
@@ -131,11 +131,11 @@ function Detail({ ws, client }: { ws: string; client: Client }) {
         </div>
       </PageHeader>
       <div className="flex flex-col gap-10">
-        {!phone && <Printers ws={ws} printers={printers} />}
-        {client.os && !phone && <ComputerPrinters client={client} canManage={canManage} />}
+        {!mobile && <Printers ws={ws} printers={printers} />}
+        {client.os && !mobile && <ComputerPrinters client={client} canManage={canManage} />}
         <Slot name="deviceSection" props={{ ws, client }} />
-        {!phone && <DeviceTools ws={ws} client={client} canManage={canManage} update={update} />}
-        {!phone && <DeviceSettings ws={ws} client={client} canManage={canManage} />}
+        {!mobile && <DeviceTools ws={ws} client={client} canManage={canManage} update={update} />}
+        {!mobile && <DeviceSettings ws={ws} client={client} canManage={canManage} />}
         <About client={client} update={update} />
       </div>
       {canManage && <RenameDevice ws={ws} client={client} open={renaming} onOpenChange={setRenaming} />}
