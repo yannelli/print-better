@@ -58,11 +58,13 @@ final class PrintSession {
         }
     }
 
-    /// Keeps the chosen printer while it's listed; otherwise the last one used, then the first one online.
+    /// Keeps the chosen printer while it's listed; otherwise the last one used, then the first one ready, then the first one online.
     private func pickPrinter() {
         if let printerId, printers.contains(where: { $0.id == printerId }) { return }
         let last = preferences.lastPrinterId
-        select(printers.first { $0.id == last }?.id ?? printers.first { $0.online }?.id ?? printers.first?.id)
+        let pick = printers.first { $0.id == last } ?? printers.first { $0.online && $0.state != .stopped }
+            ?? printers.first { $0.online } ?? printers.first
+        select(pick?.id)
     }
 
     // MARK: Settings as shown: what someone chose, else the printer's default, else a sensible start.

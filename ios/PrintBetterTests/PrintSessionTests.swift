@@ -33,6 +33,12 @@ struct PrintSessionTests {
         #expect(AppConfig.preferences.printers.count == 2)
     }
 
+    @Test func passesOverAPrinterThatNeedsAttention() async {
+        let printers = Fixtures.printers.replacingOccurrences(of: #""online":false,"state":"idle""#, with: #""online":true,"state":"stopped""#)
+        let session = await session(["GET /api/client/printers": (200, printers)])
+        #expect(session.printerId == "pr_2")
+    }
+
     @Test func showsThePrintersDefaultsUntilSomeoneChangesThem() async {
         AppConfig.preferences.lastPrinterId = "pr_1"
         let session = await session(["GET /api/client/printers": (200, Fixtures.printers)])
