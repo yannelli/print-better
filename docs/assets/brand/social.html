@@ -1,0 +1,51 @@
+<!doctype html>
+<html class="dark">
+<head>
+  <meta charset="utf-8" />
+  <title>Print Better social preview</title>
+  <link rel="stylesheet" href="brand.css" />
+  <style>
+    body { width: 1280px; height: 640px; }
+    .grid { -webkit-mask-image: radial-gradient(ellipse 60% 85% at 80% 45%, #000 25%, transparent 75%); mask-image: radial-gradient(ellipse 60% 85% at 80% 45%, #000 25%, transparent 75%); }
+    .copy { position: absolute; left: 80px; top: 76px; bottom: 72px; width: 660px; display: flex; flex-direction: column; }
+    .wordmark { font-size: 38px; }
+    .headline { font-size: 68px; margin-top: 64px; }
+    .sub { font-size: 26px; margin-top: 24px; max-width: 600px; }
+    .repo { margin-top: auto; display: flex; align-items: center; gap: 12px; font-family: 'Geist Mono', monospace; font-size: 20px; color: var(--faint); }
+    .repo svg { width: 24px; height: 24px; fill: var(--muted); }
+    .printer { left: 800px; top: 120px; width: 400px; height: 560px; }
+    .slot { height: 68px; }
+    .sheet { left: 56px; right: 56px; top: 34px; bottom: 0; }
+    .slit { left: 22px; right: 22px; top: 29px; height: 10px; }
+    .ticket { left: 88px; right: 80px; top: 104px; gap: 16px; }
+    .ticket .dots { font-size: 27px; }
+    .status { left: 694px; top: 486px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="glow" style="left: 700px; top: -200px; width: 720px; height: 720px"></div>
+  <div class="copy">
+    <div class="brand"><img src="../print-better-logo-dark.svg" width="56" height="56" alt="" /><span class="wordmark">Print Better</span></div>
+    <h1 class="headline">Self-hosted printing that just works.</h1>
+    <p class="sub">Every printer, from anywhere, in every print window.</p>
+    <div class="repo">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+      github.com/yannelli/print-better
+    </div>
+  </div>
+  <div class="printer">
+    <div class="slot"></div>
+    <div class="sheet"></div>
+    <div class="slit"></div>
+    <div class="ticket">
+      <span class="dots">REPORT.PDF</span>
+      <span class="dots soft">12 PAGES</span>
+      <div class="rule"></div>
+      <span class="dots accent">OFFICE LASER</span>
+      <span class="dots">PRINTED</span>
+    </div>
+  </div>
+  <div class="status"><i></i>Printed from your phone <b>· just now</b></div>
+</body>
+</html>

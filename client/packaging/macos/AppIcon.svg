@@ -1,8 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <rect x="100" y="100" width="824" height="824" rx="185" fill="#171717"/>
-  <g transform="translate(512 512) scale(1.55) translate(-256 -256)">
-    <path d="M160 112h137.6L368 182.4V384a16 16 0 0 1-16 16H160a16 16 0 0 1-16-16V128a16 16 0 0 1 16-16Z" fill="#fff"/>
-    <path d="M294.4 112v57.6a16 16 0 0 0 16 16H368" fill="none" stroke="#171717" stroke-width="24" stroke-linejoin="round"/>
-    <path d="M200 264h112M200 320h72" stroke="#171717" stroke-width="28.8" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2c32"/><stop offset="1" stop-color="#0a0a0c"/></linearGradient>
+    <linearGradient id="slot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#45454d"/><stop offset="1" stop-color="#2a2a30"/></linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9e9ed"/></linearGradient>
+    <linearGradient id="lip" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000000" stop-opacity="0.28"/><stop offset="1" stop-color="#000000" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect x="100" y="114" width="824" height="824" rx="185" fill="#000000" fill-opacity="0.10"/>
+  <rect x="100" y="108" width="824" height="824" rx="185" fill="#000000" fill-opacity="0.12"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#tile)"/>
+  <g transform="translate(100 100) scale(1.609375)">
+    <rect x="80" y="118" width="352" height="72" rx="36" fill="url(#slot)"/>
+    <path d="M136 154H376V366a32 32 0 0 1-32 32H168a32 32 0 0 1-32-32Z" fill="url(#paper)"/>
+    <rect x="136" y="154" width="240" height="30" fill="url(#lip)"/>
+    <path d="M110 154H402" stroke="#0b0b0d" stroke-width="12" stroke-linecap="round"/>
+    <path d="M192 240H320" stroke="#2563eb" stroke-width="30" stroke-linecap="round"/>
+    <path d="M192 302H284" stroke="#111114" stroke-width="30" stroke-linecap="round"/>
   </g>
 </svg>

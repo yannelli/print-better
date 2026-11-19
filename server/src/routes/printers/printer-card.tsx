@@ -6,7 +6,7 @@ import { StatusPill } from '@/components/status'
 import { Button } from '@/components/ui/button'
 import { Slot } from '@/extensions/slot'
 import { usePrinterRights } from '@/hooks/access'
-import { printerStatus } from '@/lib/words'
+import { printerStatus, VIEW_ONLY } from '@/lib/words'
 import { Supplies } from './supplies'
 
 export function printerPlace(printer: Printer) {
@@ -41,12 +41,14 @@ export function PrinterCard({ ws, printer }: { ws: string; printer: Printer }) {
         {status.detail && <p className="text-sm text-muted-foreground">{status.detail}</p>}
       </div>
       <Supplies supplies={printer.status.supplies} compact limit={4} />
-      {canPrint && (
+      {canPrint ? (
         <div className="relative z-10 mt-auto flex">
           <Button variant="tonal" onClick={() => openPrint({ printerId: printer.id })} aria-label={`Print on ${printer.name}`}>
             Print
           </Button>
         </div>
+      ) : (
+        <p className="mt-auto text-sm text-muted-foreground">{VIEW_ONLY}</p>
       )}
     </article>
   )

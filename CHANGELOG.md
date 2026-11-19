@@ -4,12 +4,22 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-11-19
+
 ### Added
 
 - **extensions:** optional modules that stay off until a server admin makes one available under **Admin > Extensions** and a workspace owner turns it on under **Workspace settings > Extensions**. Turning one off restores the default rules and keeps its data. New routes `/api/admin/extensions` and `/api/workspaces/:ws/extensions`, audited as `extension.update`, and an `access` event that tells open pages to refresh.
 - **printer access:** an extension that decides who can see, print to, and manage each printer, with built-in roles (Viewer, User, Manager) and custom ones, groups of members and devices, a per-printer Everyone setting, and grants on one printer or on all of them. It applies in the web app, the REST API, MCP (14 new tools), email to print, and the printers a computer's print window offers. Turning it on changes nothing by itself (docs/printer-access.md).
 - **printer access:** `GET /api/workspaces/:ws/access/me` reports what the caller may do on each printer, also while printer access is off.
 - **remote printers:** a job that a computer may not send fails in its print queue with "You can't print to this printer from this computer".
+
+### Changed
+
+- **brand:** a new mark (a page leaving a printer) for the macOS app icon, the web app icons, and the favicon, which follows the system dark mode. The README opens with a hero banner, and `docs/assets/social-preview.png` is ready for the repository's social preview. `scripts/make-brand.sh` renders both from HTML.
+
+### Fixed
+
+- **web:** a computer's default printer that the server knows only by its queue name shows a readable name instead of the raw queue name.
 
 ## [0.1.3] - 2026-11-19
 

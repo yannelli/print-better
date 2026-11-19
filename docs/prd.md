@@ -61,7 +61,7 @@ Printing is one of the least reliable parts of everyday computing:
 
 ## 6. Scope and requirements
 
-Status key: **Shipped** (in 0.1.x), **Next** (0.1.3), **Later** (phase 2).
+Status key: **Shipped** (in 0.1.x), **Next** (0.1.5), **Later** (phase 2).
 
 ### 6.1 Server
 
@@ -83,8 +83,8 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.3), **Later** (phase 2).
 | A-3 | Workspaces with owner, admin, and member roles; invite links; invite-only signup by default | Shipped |
 | A-4 | Email verification with resend; password reset by email or admin link | Shipped |
 | A-5 | Personal API tokens with `read`, `write`, `print` scopes; an audit log of every change | Shipped |
-| A-6 | Extensions: optional modules that stay off until a server admin makes one available and a workspace owner turns it on; turning one off restores the default rules and keeps its data | Next |
-| A-7 | Printer access extension: who can see, print to, and manage each printer, with built-in and custom roles, groups of members and devices, and device rules, applied the same way in the web app, API, MCP, email, and print windows | Next |
+| A-6 | Extensions: optional modules that stay off until a server admin makes one available and a workspace owner turns it on; turning one off restores the default rules and keeps its data | Shipped |
+| A-7 | Printer access extension: who can see, print to, and manage each printer, with built-in and custom roles, groups of members and devices, and device rules, applied the same way in the web app, API, MCP, email, and print windows | Shipped |
 
 ### 6.3 Devices and setup
 
@@ -96,7 +96,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.3), **Later** (phase 2).
 | D-4 | Signed, notarized, stapled macOS app and installer with a menu bar icon | Shipped |
 | D-5 | Local status page, `printbetter doctor`, and remote diagnostics (logs, restart, identify) from the web app | Shipped |
 | D-6 | Automatic updates, verified by size, SHA-256, and (on macOS) the signing team | Shipped |
-| D-7 | Unattended updates for the sandboxed Linux system service through a small root helper | Next |
+| D-7 | Unattended updates for the sandboxed Linux system service through a small root helper | Shipped |
 | D-8 | Microcontroller bridge firmware (ESP32 class) that connects a USB or network printer; the protocol already avoids assuming a full OS | Later |
 | D-9 | Signed Windows builds | Later |
 
@@ -127,8 +127,8 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.3), **Later** (phase 2).
 | R-1 | On macOS and Linux, every added printer on other devices appears as a system printer, usable from any app | Shipped |
 | R-2 | A printer the computer already reaches directly is never listed twice | Shipped |
 | R-3 | Jobs printed while away from home are held and delivered when the printer's device is back | Shipped |
-| R-4 | Supply levels, trays, and every option the real printer supports appear in the print dialog | Next |
-| R-5 | From the web app, choose which printers appear on each computer and set its default printer | Next |
+| R-4 | Supply levels, trays, and every option the real printer supports appear in the print dialog | Shipped |
+| R-5 | From the web app, choose which printers appear on each computer and set its default printer | Shipped |
 | R-6 | Remote printers on Windows | Later |
 
 ### 6.7 Sharing and email

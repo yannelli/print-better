@@ -5,7 +5,8 @@ import { useExtensionActive } from '@/hooks/extensions'
 import { useMembers } from '@/hooks/members'
 import { refreshAccess } from '@/lib/cache'
 import { qk } from '@/lib/query'
-import { accessApi, type RoleInput, subjectParam } from './api'
+import { subjectParam } from '@/lib/api/access'
+import { accessApi, type RoleInput } from './api'
 import type { SubjectSources } from './subjects'
 
 const keys = {

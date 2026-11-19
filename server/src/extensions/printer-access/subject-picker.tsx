@@ -1,5 +1,6 @@
 import { LaptopMinimal, type LucideIcon, UserRound, Users, UsersRound } from 'lucide-react'
 import { useMemo } from 'react'
+import type { AccessSubject } from '@shared/access'
 import {
   Combobox,
   ComboboxCollection,
@@ -14,14 +15,14 @@ import {
 import { cn } from '@/lib/utils'
 import { type SubjectGroup, type SubjectKind, type SubjectOption, type SubjectSources, subjectGroups } from './subjects'
 
-export const SUBJECT_ICONS: Record<SubjectKind, LucideIcon> = {
+export const SUBJECT_ICONS: Record<AccessSubject['type'], LucideIcon> = {
   everyone: UsersRound,
   user: UserRound,
   group: Users,
   client: LaptopMinimal,
 }
 
-export function SubjectIcon({ type, className }: { type: SubjectKind; className?: string }) {
+export function SubjectIcon({ type, className }: { type: AccessSubject['type']; className?: string }) {
   const Icon = SUBJECT_ICONS[type]
   return (
     <span aria-hidden className={cn('flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground', className)}>
@@ -30,7 +31,7 @@ export function SubjectIcon({ type, className }: { type: SubjectKind; className?
   )
 }
 
-/** Searchable choice of who to give access to (or check): everyone, people, groups, devices. */
+/** Searchable choice of who to give access to (or check): people, groups, devices. */
 export function SubjectPicker({
   id,
   sources,
@@ -64,9 +65,14 @@ export function SubjectPicker({
     >
       <ComboboxInput
         id={id}
+        data-focus-ring="none"
         placeholder={placeholder}
         disabled={disabled}
-        className={cn('h-11 w-full rounded-2xl bg-background px-1.5 [&_input]:text-base', className)}
+        className={cn(
+          'h-11 w-full rounded-2xl bg-background px-1.5 [&_input]:text-base',
+          'has-[input:focus-visible]:outline-[2.5px] has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-ring has-[input:focus-visible]:outline-solid',
+          className,
+        )}
       />
       <ComboboxContent>
         <ComboboxEmpty>No matches</ComboboxEmpty>

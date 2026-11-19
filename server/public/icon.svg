@@ -1,6 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="144" fill="#171717"/>
-  <path d="M160 112h137.6L368 182.4V384a16 16 0 0 1-16 16H160a16 16 0 0 1-16-16V128a16 16 0 0 1 16-16Z" fill="#fff"/>
-  <path d="M294.4 112v57.6a16 16 0 0 0 16 16H368" fill="none" stroke="#171717" stroke-width="24" stroke-linejoin="round"/>
-  <path d="M200 264h112M200 320h72" stroke="#171717" stroke-width="28.8" stroke-linecap="round"/>
+  <title>Print Better</title>
+  <rect width="512" height="512" rx="120" fill="#0c0c0e"/>
+  <rect x="80" y="118" width="352" height="72" rx="36" fill="#303036"/>
+  <path d="M136 154H376V366a32 32 0 0 1-32 32H168a32 32 0 0 1-32-32Z" fill="#fafafa"/>
+  <path d="M110 154H402" stroke="#0c0c0e" stroke-width="12" stroke-linecap="round"/>
+  <path d="M192 240H320" stroke="#2563eb" stroke-width="30" stroke-linecap="round"/>
+  <path d="M192 302H284" stroke="#0c0c0e" stroke-width="30" stroke-linecap="round"/>
 </svg>

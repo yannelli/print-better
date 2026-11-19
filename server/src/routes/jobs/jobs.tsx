@@ -51,7 +51,8 @@ export default function Jobs() {
   const ws = useWs()
   const { openPrint } = useAppActions()
   const { managed } = usePrinterRights(ws)
-  const canPrint = !managed || (usePrintablePrinters(ws).data?.length ?? 0) > 0
+  const printable = usePrintablePrinters(ws).data ?? []
+  const canPrint = !managed || printable.length > 0
   const [filters, setFilters] = useState<JobFilters>({})
   const jobs = useJobs(ws, filters)
   const filtered = !!(filters.printerId || filters.status)

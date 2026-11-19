@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { myAccess } from '@/lib/api/access'
+import { myAccess, subjectAccess } from '@/lib/api/access'
 import { printerRights } from '@/lib/access'
 import { qk } from '@/lib/query'
 import { useAddedPrinters } from './printers'
-import { useRole } from './workspace'
+import { useCanManage, useRole } from './workspace'
 
 export function useMyAccess(ws: string) {
   return useQuery({ queryKey: qk.myAccess(ws), queryFn: () => myAccess(ws) })
@@ -25,4 +25,23 @@ export function usePrintablePrinters(ws: string) {
     error: added.error,
     refetch: added.refetch,
   }
+}
+
+/** A device's permissions on every printer; asked only while printer access is on, and only by admins. */
+export function useDeviceAccess(ws: string, clientId: string) {
+  const { managed } = usePrinterRights(ws)
+  const canManage = useCanManage()
+  return useQuery({
+    queryKey: [...qk.access(ws), 'subject', `client:${clientId}`],
+    queryFn: () => subjectAccess(ws, { type: 'client', id: clientId }),
+    enabled: managed && canManage,
+  })
+}
+
+/** Whether a device may print to each printer. `null` while printer access is off (no limits) or not loaded. */
+export function useDevicePrintable(ws: string, clientId: string): ((printerId: string) => boolean) | null {
+  const { managed } = usePrinterRights(ws)
+  const printers = useDeviceAccess(ws, clientId).data?.printers
+  if (!managed || !printers) return null
+  return (printerId) => !!printers[printerId]?.includes('print')
 }

@@ -86,7 +86,7 @@ describe('accessReason', () => {
   })
 
   it('says whether a device can print', () => {
-    expect(devicePrintWords(['view', 'print'])).toEqual({ label: 'Can print', tone: 'ok' })
-    expect(devicePrintWords(['view']).label).toBe('Can’t print')
+    expect(devicePrintWords(true, 'this Mac')).toEqual({ label: 'Can print', tone: 'ok' })
+    expect(devicePrintWords(false, 'this computer')).toEqual({ label: 'Not allowed on this computer', tone: 'neutral' })
   })
 })

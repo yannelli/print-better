@@ -1,9 +1,10 @@
 import type { AccessSubject, Group } from '@shared/access'
 import type { Client, Member } from '@shared/types'
+import { subjectParam } from '@/lib/api/access'
 import { groupSize } from '@/lib/words'
-import { subjectParam } from './api'
 
-export type SubjectKind = AccessSubject['type']
+/** Kinds a picker offers. Everyone is set through Everyone settings, never picked. */
+export type SubjectKind = Exclude<AccessSubject['type'], 'everyone'>
 
 export interface SubjectOption {
   key: string
@@ -29,7 +30,6 @@ const byLabel = (a: SubjectOption, b: SubjectOption) => a.label.localeCompare(b.
 /** Picker sections for the kinds asked for, leaving out subjects in `exclude` (keys from `subjectParam`). */
 export function subjectGroups(sources: SubjectSources, kinds: readonly SubjectKind[], exclude: ReadonlySet<string> = new Set()): SubjectGroup[] {
   const sections: [SubjectKind, string, SubjectOption[]][] = [
-    ['everyone', 'Everyone', [option({ type: 'everyone' }, 'Everyone', 'Every member and device in this workspace')]],
     ['user', 'People', sources.members.map((m) => option({ type: 'user', id: m.userId }, m.name, `@${m.username}`)).sort(byLabel)],
     ['group', 'Groups', sources.groups.map((g) => option({ type: 'group', id: g.id }, g.name, groupSize(g.members))).sort(byLabel)],
     ['client', 'Devices', sources.clients.map((c) => option({ type: 'client', id: c.id }, c.name)).sort(byLabel)],
