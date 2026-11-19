@@ -66,10 +66,17 @@ export async function setEveryoneRole(ctx: Ctx, workspaceId: string, printerId: 
 /** A subject holds one role per scope, so granting again replaces the role and keeps the grant id. */
 async function saveGrant(ctx: Ctx, workspaceId: string, printerId: string | null, body: Json): Promise<PrinterGrant> {
   const subject = parseSubject(body.subject)
-  if (subject.type === 'everyone' && printerId) throw badRequest("Set the printer's Everyone role instead of granting Everyone access to one printer")
+  // A grant to Everyone would unlock restricted printers; the Everyone settings cover that instead.
+  if (subject.type === 'everyone') {
+    throw badRequest(
+      printerId
+        ? "Set the printer's Everyone role instead of granting Everyone access to one printer"
+        : 'Change the workspace default role instead of granting Everyone access to every printer',
+    )
+  }
   await principalOf(ctx.env, workspaceId, subject)
   const role = await parseRole(ctx.env, workspaceId, body.role, 'role', false)
-  const subjectId = subject.type === 'everyone' ? null : subject.id
+  const subjectId = subject.id
   const idIf = (type: AccessSubject['type']) => (subject.type === type ? subjectId : null)
   const existing = await first<{ id: string; role: string }>(
     ctx.env.DB,

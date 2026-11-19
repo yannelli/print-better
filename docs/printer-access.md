@@ -42,7 +42,7 @@ Admins can create **custom roles** from any combination of the six permissions, 
 
 ### Grants
 
-A grant gives a role to a subject, either on **one printer** or on **every printer** in the workspace (a workspace-wide grant, for example "IT group: Manager on every printer").
+A grant gives a role to a member, a group, or a device, either on **one printer** or on **every printer** in the workspace (a workspace-wide grant, for example "IT group: Manager on every printer"). Grants never go to Everyone: what Everyone gets is set per printer and by the workspace default, so a restricted printer stays restricted.
 
 Each printer also has an **Everyone** setting: **Workspace default** (the default is **User**), any role, or **No access**. Setting Everyone to No access is what makes a printer **restricted**: only owners, admins, and explicit grants can use it.
 
@@ -96,7 +96,7 @@ All under `/api/workspaces/:ws`. Extension routes answer `404 extension_inactive
 | `GET /access/subject?subject=<type>:<id>` | admins | `{ "printers": { "<printerId>": [...] } }`: the subject's permissions on every printer it can see. Works with the extension off, using today's rules (members `view`, `print`, `jobs.read` everywhere; devices `view`, `print` on added printers of other devices) |
 | `POST /access/roles` | admins | `{ "name", "description"?, "permissions": [...] }` returns `PrinterRole` |
 | `PATCH /access/roles/:id`, `DELETE /access/roles/:id` | admins | Edit, or delete when unused (`409 role_in_use`) |
-| `POST /access/grants` | admins | Workspace-wide grant: `{ "subject": { "type", "id"? }, "role" }` returns `PrinterGrant`. Granting the same subject again replaces its role |
+| `POST /access/grants` | admins | Workspace-wide grant: `{ "subject": { "type", "id" }, "role" }` returns `PrinterGrant`. Granting the same subject again replaces its role. Everyone is not a subject here: change the workspace default role |
 | `DELETE /access/grants/:id` | admins, or `access` on the grant's printer | Remove any grant |
 | `GET /groups`, `POST /groups` | members read, admins write | `Group[]`; create `{ "name", "description"? }` |
 | `PATCH /groups/:id`, `DELETE /groups/:id` | admins | Rename, describe, delete (its grants go with it) |

@@ -20,6 +20,8 @@ const SUBJECT = object(
   ['type'],
   'Who the access is for',
 )
+/** Grants never go to Everyone: a printer's Everyone role and the workspace default cover that. */
+const GRANTEE = object({ type: choice('a member (user), a group, or a device (client)', ['user', 'group', 'client']), id: text('User, group or device id') }, ['type', 'id'], 'Who gets the role')
 const printerIdOf = (args: Record<string, unknown>) => optStr(args, 'printerId', { max: 64 }) ?? null
 const roleIdOf = (args: Record<string, unknown>) => str(args, 'roleId', { max: 64 })
 const grantLine = (g: PrinterGrant) => `${g.subjectName}: ${g.role}${g.printerId ? '' : ' on every printer'}`
@@ -116,10 +118,10 @@ const accessTools: Tool[] = [
     name: 'grant_printer_access',
     title: 'Grant printer access',
     description:
-      'Gives a member, group or device a role on one printer (needs access on it), or on every printer when printerId is omitted (admins; Everyone allowed there). Granting again replaces the role.',
+      'Gives a member, group or device a role on one printer (needs access on it), or on every printer when printerId is omitted (admins). To change what Everyone gets, use set_printer_everyone_role. Granting again replaces the role.',
     scope: 'write',
     annotations: UPDATE,
-    inputSchema: inWorkspace({ printerId: text('Printer id; omit for every printer'), subject: SUBJECT, role: ROLE }, ['subject', 'role']),
+    inputSchema: inWorkspace({ printerId: text('Printer id; omit for every printer'), subject: GRANTEE, role: ROLE }, ['subject', 'role']),
     run: async (ctx, args) => {
       const ws = await workspaceOf(ctx, args)
       const printerId = printerIdOf(args)
