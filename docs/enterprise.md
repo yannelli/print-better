@@ -22,7 +22,7 @@ Page counting, usage, cycles, and prices are shared with Print rules and limits.
 A job that needs approval waits with the status `held` (`held.kind` is `approval`). Its message is "Waiting for approval", and `held.reasons` says why.
 
 - **What sends a job for approval:** a printer set to **Every job needs approval**, a budget set to **Require approval**, and (with Print rules and limits) a rule or limit that requires approval.
-- **Who approves:** owners and admins, and with Printer access anyone with `jobs.manage` on the printer. Only owners and admins can approve their own jobs. Approvers see **Print jobs > Approvals**, get a live notice in the web app, and get an email when outbound email is set up.
+- **Who approves:** owners and admins, and with Printer access anyone with `jobs.manage` on the printer. Only owners and admins can approve their own jobs, or a job from a computer's print window, which has no member. Approvers see **Print jobs > Approvals**, get a live notice in the web app, and get an email when outbound email is set up.
 - **Approve** prints the job, or holds it for release next when the printer or a rule asks for that. **Deny** cancels it with the approver's reason, shown to the sender as "Not approved: reason".
 - Unanswered requests expire after **Cancel unanswered requests after** (1 to 168 hours, default 24) and are canceled with "Not approved in time".
 - AI assistants and the API approve and deny through the same rules.
@@ -56,7 +56,7 @@ Usage by **member, group, device, printer, cost center, or source** for any rang
 
 - **Export** any report as CSV: UTF-8, a header row (`name`, `key`, `jobs`, `pages`, `sheets`, `colorPages`, `cost`), quoted as RFC 4180, cost as a decimal in the workspace currency.
 - **Scheduled reports:** weekly or monthly, emailed to chosen members with the totals and top rows in the text and every row in an attached CSV, when outbound email is set up.
-- **Audit export:** the workspace audit log as CSV for a range of dates, with `time` (ISO 8601, UTC), `actorType`, `actorId`, `actorName`, `action`, `target`, and `data` (JSON).
+- **Audit export:** the workspace audit log as CSV for a range of dates, with `time` (ISO 8601, UTC), `actorType`, `actorId`, `actorName`, `action`, `target`, and `data` (JSON). Text that starts with `=`, `+`, `-` or `@` gets a leading `'` so spreadsheets don't run it, in every CSV.
 
 ## Alerts
 
@@ -70,7 +70,7 @@ Usage by **member, group, device, printer, cost center, or source** for any rang
 Only owners change these.
 
 - **Delete documents as soon as a job finishes**, overriding the workspace's keep-documents time. Finished jobs can't be retried then.
-- **Show document names only to the person who printed them.** Everyone else, including in events, emails, the API, and MCP, sees the title "Document" and no file name. Their downloads are named `document.pdf`, `document.txt` and so on, and the computer that prints the job gets the title "Document" too. Owners and admins see names only if **Owners and admins can see document names** is on. The computer that sent a job sees its names.
+- **Show document names only to the person who printed them.** Everyone else, including in events, emails, the API, and MCP, sees the title "Document" and no file name. Their downloads are named `document.pdf`, `document.txt` and so on, and the computer that prints the job gets the title "Document" too. Owners and admins see names only if **Owners and admins can see document names** is on, in the audit log and its export too. The computer that sent a job sees its names.
 
 ## Emails
 

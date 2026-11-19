@@ -1,6 +1,9 @@
 import { env } from 'cloudflare:workers'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { runCron } from '../worker/cron'
+import { endHeld } from '../worker/extensions/enterprise/holds'
+import { systemCtx } from '../worker/services/context'
+import { loadJobView } from '../worker/services/job-create'
 import { ok, wsPath } from './helpers/access'
 import { auditOf, code, heldUntil, job, quietPrinter, setControls, setEnterprise, turnOnEnterprise } from './helpers/enterprise'
 import { freshWorkspace, jobRow } from './helpers/jobs'
@@ -81,6 +84,61 @@ describe('expiry', () => {
     expect(ok(await bob.agent.get(wsPath(ws, `/jobs/${unreleased}`)), 'job')).not.toHaveProperty('held')
     expect(await auditOf(ws, 'approval.expire')).toEqual([expect.objectContaining({ target: waiting, actor_type: 'system' })])
     expect(await auditOf(ws, 'release.expire')).toEqual([expect.objectContaining({ target: unreleased })])
+  })
+})
+
+describe('a hold that runs out or moves on', () => {
+  let late: string
+  let both: string
+  beforeAll(async () => {
+    late = await freshWorkspace(owner, 'Late')
+    await turnOnEnterprise(owner, late, { approvals: { enabled: true }, release: { enabled: true } })
+    both = await quietPrinter(owner, late)
+    await setControls(owner.agent, late, both, { approval: true, secureRelease: true })
+  })
+  const send = async () => ok(await job(owner.agent, late, both), 'job').job.id as string
+  const post = (id: string, action: string) => owner.agent.post(wsPath(late, `/jobs/${id}/${action}`))
+
+  it('can’t be approved or released once it has run out', async () => {
+    const waiting = await send()
+    await heldUntil(waiting, Date.now() - 1)
+    expect(code(await post(waiting, 'approve'))).toEqual([409, 'job_not_held'])
+    const unreleased = await send()
+    ok(await post(unreleased, 'approve'), 'approve')
+    await heldUntil(unreleased, Date.now() - 1)
+    expect(code(await post(unreleased, 'release'))).toEqual([409, 'job_not_held'])
+  })
+
+  it('ends a job only while it is still in that hold and has run out', async () => {
+    const ctx = systemCtx(env, '', () => undefined)
+    const expireApproval = { message: 'Not approved in time', action: 'approval.expire', kind: 'approval', expired: true } as const
+    const current = await send()
+    expect(await endHeld(ctx, late, [await loadJobView(env, late, current)], expireApproval)).toEqual([])
+    const approved = await send()
+    const seen = await loadJobView(env, late, approved)
+    ok(await post(approved, 'approve'), 'approve')
+    await heldUntil(approved, Date.now() - 1)
+    expect(await endHeld(ctx, late, [seen], expireApproval)).toEqual([])
+    expect(await jobRow(current)).toMatchObject({ status: 'held' })
+    expect(await jobRow(approved)).toMatchObject({ status: 'held', held: expect.stringContaining('"release"') })
+  })
+
+  it('expires a job behind 500 older ones still waiting', async () => {
+    await env.DB.prepare(
+      `WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < 500)
+       INSERT INTO jobs (id, workspace_id, printer_id, source, title, content_type, status, held, created_at, updated_at)
+       SELECT 'waiting-' || i, ?, ?, 'test', 'Waiting', 'text/plain', 'held', ?, i, i FROM n`,
+    )
+      .bind(late, both, JSON.stringify({ kind: 'approval', until: Date.now() + 3600_000 }))
+      .run()
+    try {
+      const id = await send()
+      await heldUntil(id, Date.now() - 1)
+      await runCron(env)
+      expect(await jobRow(id)).toMatchObject({ status: 'canceled', status_message: 'Not approved in time' })
+    } finally {
+      await env.DB.prepare("DELETE FROM jobs WHERE id LIKE 'waiting-%'").run()
+    }
   })
 })
 

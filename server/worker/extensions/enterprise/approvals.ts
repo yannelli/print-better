@@ -15,10 +15,10 @@ import { endHeld, heldJobs, moveOn, notHeld, requireHeld } from './holds'
 import { holdUntil } from './settings'
 import { onlyKeys } from './values'
 
-/** Owners and admins approve any job, their own too; with Printer access, `jobs.manage` on the printer approves other people's. */
+/** Owners and admins approve any job, their own too; with Printer access, `jobs.manage` on the printer approves other members'. A print window job has no member, so it could be the approver's own. */
 export function mayApprove(caller: Pick<Caller, 'role' | 'access'> & { userId: string }, job: Pick<JobViewRow, 'user_id' | 'printer_id'>): boolean {
   if (isAdmin(caller.role)) return true
-  return caller.access.managed && job.user_id !== caller.userId && caller.access.can(job.printer_id, 'jobs.manage')
+  return caller.access.managed && job.user_id !== null && job.user_id !== caller.userId && caller.access.can(job.printer_id, 'jobs.manage')
 }
 
 const sees = (access: Access, userId: string, row: JobViewRow) => canSeeJob(access, userId, row.user_id, row.printer_id)
@@ -70,7 +70,7 @@ export async function denyJob(ctx: Ctx, workspaceId: string, id: string, body: J
   const reason = str(body, 'reason', { max: 500 })
   const { row } = await approvable(ctx, workspaceId, id, caller)
   const message = `Not approved: ${reason}`
-  const [ended] = await endHeld(ctx, workspaceId, [row], { message, action: 'approval.deny', note: approvalNote(caller.user.name, message) })
+  const [ended] = await endHeld(ctx, workspaceId, [row], { message, action: 'approval.deny', kind: 'approval', note: approvalNote(caller.user.name, message) })
   if (!ended) throw notHeld('approval')
   return (await callerView(ctx, workspaceId, caller))(toJob(ended))
 }

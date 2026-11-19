@@ -42,6 +42,6 @@ export function jobRights(job: Pick<Job, 'userId' | 'printerId'>, userId: string
   }
 }
 
-/** Enterprise controls: owners and admins approve any held job; with Printer access, `jobs.manage` approves other people's. */
+/** Enterprise controls: owners and admins approve any held job; with Printer access, `jobs.manage` approves other members'. */
 export const mayApprove = (job: Pick<Job, 'userId' | 'printerId'>, userId: string | null | undefined, rights: PrinterRights): boolean =>
-  rights.all || (rights.managed && job.userId !== userId && rights.can(job.printerId, 'jobs.manage'))
+  rights.all || (rights.managed && job.userId !== null && job.userId !== userId && rights.can(job.printerId, 'jobs.manage'))

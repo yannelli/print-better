@@ -1,7 +1,9 @@
+import { env } from 'cloudflare:workers'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { grant, ok, turnOnAccess, wsPath } from './helpers/access'
 import { connectPrinter, eventually, type Station } from './helpers/device'
 import { auditOf, code, giveEmail, job, outbox, quietPrinter, setControls, setEnterprise, turnOnEnterprise, type SentMail } from './helpers/enterprise'
+import { call } from './helpers/http'
 import { consistently, EventSocket, freshWorkspace, uploadJob } from './helpers/jobs'
 import { addMember, setupOwner, type Owner, type Person } from './helpers/world'
 
@@ -98,14 +100,19 @@ describe('a printer that needs approval', () => {
     expect(approved).toMatchObject({ status: 'held', statusMessage: 'Waiting to be released at the printer', held: { kind: 'release' } })
   })
 
-  it('never offers a held job to its device, and offers it once approved', async () => {
+  it('never offers a held job to its device, nor its file, and offers it once approved', async () => {
     const station: Station = await connectPrinter(owner, 'usb:ent:live', ws)
+    const download = (id: string) => call(`/api/client/jobs/${id}/file`, { headers: { Authorization: `Bearer ${station.token}` } })
     try {
       await setControls(owner.agent, ws, station.printerId, { approval: true })
       const id = ok(await job(bob.agent, ws, station.printerId), 'job').job.id
       await consistently(async () => expect(await station.device.next('job', 30).catch(() => null)).toBeNull())
+      expect((await download(id)).status).toBe(404)
       ok(await owner.agent.post(j(id, '/approve')), 'approve')
       expect((await station.device.next('job')).job.id).toBe(id)
+      const file = await download(id)
+      expect(file.status).toBe(200)
+      await file.arrayBuffer()
     } finally {
       station.device.close()
     }
@@ -128,6 +135,12 @@ describe('approvers with Printer access', () => {
     expect(code(await carol.agent.post(wsPath(managed, `/jobs/${carols}/approve`)))).toEqual([403, 'forbidden'])
     expect(ok(await carol.agent.post(wsPath(managed, `/jobs/${dans}/approve`)), 'approve').status).toBe('queued')
     expect(code(await dan.agent.post(wsPath(managed, `/jobs/${carols}/approve`)))).toEqual([403, 'forbidden'])
+
+    const fromWindow = ok(await job(carol.agent, managed, id), 'job').job.id
+    await env.DB.prepare("UPDATE jobs SET user_id = NULL, source = 'device' WHERE id = ?").bind(fromWindow).run()
+    expect(ok(await carol.agent.get(wsPath(managed, '/approvals')), 'list')).toEqual([])
+    expect(code(await carol.agent.post(wsPath(managed, `/jobs/${fromWindow}/approve`)))).toEqual([403, 'forbidden'])
+    expect(ok(await owner.agent.post(wsPath(managed, `/jobs/${fromWindow}/approve`)), 'owner approves').status).toBe('queued')
   })
 })
 

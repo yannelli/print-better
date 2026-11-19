@@ -37,20 +37,22 @@ const withNote = (row: JobViewRow, note: JobNote): string => {
 
 export type Next = { status: 'queued' } | { status: 'held'; hold: JobHold }
 
-/** Moves a held job on: to the queue, or to its next hold. Only the hold it was in can be left. */
+/** Moves a held job on: to the queue, or to its next hold. Only the hold it was in can be left, and only before it expires. */
 export async function moveOn(ctx: Ctx, row: JobViewRow, from: JobHold['kind'], next: Next, note?: JobNote): Promise<Job> {
   const hold = next.status === 'held' ? next.hold : null
+  const now = Date.now()
   const changed = await run(
     ctx.env.DB,
     `UPDATE jobs SET status = ?, status_message = ?, held = ?, policy = ?, updated_at = ?
-     WHERE id = ? AND status = 'held' AND json_extract(held, '$.kind') = ?`,
+     WHERE id = ? AND status = 'held' AND json_extract(held, '$.kind') = ? AND json_extract(held, '$.until') > ?`,
     next.status,
     hold ? HOLD_MESSAGES[hold.kind] : null,
     hold && JSON.stringify(hold),
     note ? withNote(row, note) : row.policy,
-    Date.now(),
+    now,
     row.id,
     from,
+    now,
   )
   if (changed === 0) throw notHeld(from)
   notifyHub(ctx, row.workspace_id, async (hub) => hub.dispatch(row.workspace_id, row.id, await deviceTitle(ctx, row.workspace_id, row.id)))
@@ -61,6 +63,10 @@ export interface Ending {
   message: string
   /** Audited for each job, e.g. approval.expire. */
   action: string
+  /** Ends only jobs still in this hold; any hold when absent. */
+  kind?: JobHold['kind']
+  /** Ends only jobs whose hold has run out. */
+  expired?: boolean
   note?: JobNote
   deleteDocuments?: boolean
 }
@@ -72,12 +78,17 @@ export async function endHeld(ctx: Ctx, workspaceId: string, rows: readonly JobV
   for (const row of rows) {
     const changed = await run(
       ctx.env.DB,
-      `UPDATE jobs SET status = 'canceled', status_message = ?, policy = ?, completed_at = ?, updated_at = ? WHERE id = ? AND status = 'held'`,
+      `UPDATE jobs SET status = 'canceled', status_message = ?, policy = ?, completed_at = ?, updated_at = ?
+       WHERE id = ? AND status = 'held' AND (? IS NULL OR json_extract(held, '$.kind') = ?) AND (? = 0 OR json_extract(held, '$.until') <= ?)`,
       end.message,
       end.note ? withNote(row, end.note) : row.policy,
       now,
       now,
       row.id,
+      end.kind ?? null,
+      end.kind ?? null,
+      end.expired ? 1 : 0,
+      now,
     )
     if (changed > 0) ended.push(row.id)
   }

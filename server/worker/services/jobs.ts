@@ -173,7 +173,7 @@ export async function deleteJob(ctx: Ctx, workspaceId: string, id: string): Prom
 
 /** Device download: only jobs for printers that belong to this device. */
 export async function clientJobDocument(env: Env, clientId: string, jobId: string): Promise<{ job: JobViewRow; object: R2ObjectBody }> {
-  const job = await first<JobViewRow>(env.DB, `${JOB_VIEW} WHERE j.id = ? AND p.client_id = ?`, jobId, clientId)
+  const job = await first<JobViewRow>(env.DB, `${JOB_VIEW} WHERE j.id = ? AND p.client_id = ? AND j.status <> 'held'`, jobId, clientId)
   if (!job) throw notFound('Job not found')
   const object = job.file_key ? await env.FILES.get(job.file_key) : null
   if (!object) throw notFound('The document is no longer stored', 'file_purged')

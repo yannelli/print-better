@@ -6,7 +6,7 @@ import type { UsageImpact } from '../../shared/usage'
 import type { JobViewRow, PrinterViewRow } from '../db/rows'
 import type { Ctx } from '../services/context'
 import type { Access } from '../services/permissions'
-import { enterpriseCron, enterpriseFinish, enterpriseOff, enterpriseView } from './enterprise/hooks'
+import { enterpriseAuditView, enterpriseCron, enterpriseFinish, enterpriseOff, enterpriseView } from './enterprise/hooks'
 import { ENTERPRISE_STEPS } from './enterprise/steps'
 import { limitsStep } from './print-policies/limits-step'
 import { rulesStep } from './print-policies/rules-step'
@@ -130,6 +130,17 @@ export interface JobViewHook {
 }
 
 export const JOB_VIEW_HOOKS: JobViewHook[] = [enterpriseView]
+
+export type AuditView = (data: Record<string, unknown>) => Record<string, unknown>
+
+/** Changes the data of audit entries, in the log and its export; Enterprise controls hides document names. */
+export interface AuditViewHook {
+  extension: ExtensionId
+  /** Null when it changes nothing in this workspace. */
+  load(env: Env, workspaceId: string): Promise<AuditView | null>
+}
+
+export const AUDIT_VIEW_HOOKS: AuditViewHook[] = [enterpriseAuditView]
 
 /** Runs after an extension stops applying in these workspaces, by either switch. */
 export interface ExtensionOffHook {

@@ -14,9 +14,12 @@ export function decimal(micros: number, currency: string): string {
 export const formatMoney = (micros: number, currency: string): string =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: minorDigits(currency), maximumFractionDigits: 6 }).format(micros / 1_000_000)
 
+/** Text a spreadsheet could run as a formula gets a leading quote; plain numbers, such as a decimal cost, stay as they are. */
+const inert = (text: string): string => (/^[=+\-@\t\r]/.test(text) && !/^-?\d+(\.\d+)?$/.test(text) ? `'${text}` : text)
+
 /** RFC 4180: quoted when it holds a comma, quote, or line break; quotes doubled. */
 const field = (value: string | number | null): string => {
-  const text = value === null ? '' : String(value)
+  const text = value === null ? '' : typeof value === 'number' ? String(value) : inert(value)
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
 }
 

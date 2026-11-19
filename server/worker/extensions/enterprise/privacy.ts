@@ -3,7 +3,7 @@ import type { Job } from '../../../shared/printing'
 import type { JobViewRow } from '../../db/rows'
 import { run } from '../../lib/db'
 import type { Ctx } from '../../services/context'
-import type { JobView, JobViewer } from '../hooks'
+import type { AuditView, JobView, JobViewer } from '../hooks'
 import { settingsOf } from './store'
 
 export const HIDDEN_TITLE = 'Document'
@@ -21,6 +21,18 @@ export function privacyView(settings: EnterpriseSettings): JobView | null {
   const { privacy } = settings
   if (!privacy.enabled || !privacy.ownerOnlyNames) return null
   return (job, viewer) => (seesName(privacy, job, viewer) ? job : { ...job, title: HIDDEN_TITLE, fileName: null })
+}
+
+/** Only admins read the audit log, so it names documents only where admins see names. */
+export function privacyAudit(settings: EnterpriseSettings): AuditView | null {
+  const { privacy } = settings
+  if (!privacy.enabled || !privacy.ownerOnlyNames || privacy.adminsSeeNames) return null
+  return (data) => {
+    const shown = { ...data }
+    if ('title' in shown) shown.title = HIDDEN_TITLE
+    if ('fileName' in shown) shown.fileName = null
+    return shown
+  }
 }
 
 /** "Delete documents as soon as a job finishes", after usage is settled. */

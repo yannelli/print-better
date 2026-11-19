@@ -52,6 +52,18 @@ describe('document names', () => {
     expect(ok(await owner.agent.get(wsPath(ws, `/jobs/${id}`)), 'admin').title).toBe('Budget draft')
     await setEnterprise(owner.agent, ws, { privacy: { adminsSeeNames: false } })
   })
+
+  it('hide in the audit log, also through MCP', async () => {
+    const id = ok(await job(bob.agent, ws, printer, { title: 'Exit interview' }), 'job').job.id
+    ok(await owner.agent.post(wsPath(ws, `/jobs/${id}/cancel`)), 'cancel')
+    expect((await owner.agent.del(wsPath(ws, `/jobs/${id}`))).status).toBe(204)
+    const deleted = (items: { action: string; target: string; data: unknown }[]) => items.find((e) => e.action === 'job.delete' && e.target === id)?.data
+    expect(deleted(ok(await owner.agent.get(wsPath(ws, '/audit')), 'audit').items)).toEqual({ title: 'Document' })
+    expect(deleted((await callTool(await createPat(owner), 'list_audit', { workspaceId: ws })).data.items)).toEqual({ title: 'Document' })
+    await setEnterprise(owner.agent, ws, { privacy: { adminsSeeNames: true } })
+    expect(deleted(ok(await owner.agent.get(wsPath(ws, '/audit')), 'audit').items)).toEqual({ title: 'Exit interview' })
+    await setEnterprise(owner.agent, ws, { privacy: { adminsSeeNames: false } })
+  })
 })
 
 describe('retention', () => {

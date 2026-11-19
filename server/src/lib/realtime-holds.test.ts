@@ -76,6 +76,7 @@ describe('printer rights for approvals', () => {
     expect(mayApprove({ userId: 'u-other', printerId: 'p2' }, ME, rights)).toBe(true)
     expect(mayApprove({ userId: 'u-other', printerId: 'p1' }, ME, rights)).toBe(false)
     expect(mayApprove({ userId: ME, printerId: 'p2' }, ME, rights)).toBe(false)
+    expect(mayApprove({ userId: null, printerId: 'p2' }, ME, rights)).toBe(false)
     expect(mayApprove({ userId: ME, printerId: 'p1' }, ME, printerRights(undefined, 'owner'))).toBe(true)
   })
 })

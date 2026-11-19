@@ -1,7 +1,7 @@
-import type { CronHook, ExtensionOffHook, JobFinishHook, JobViewHook } from '../hooks'
+import type { AuditViewHook, CronHook, ExtensionOffHook, JobFinishHook, JobViewHook } from '../hooks'
 import { alertSettled } from './alerts'
 import { cancelAllHeld, sweepHeld } from './held-sweep'
-import { deleteFinished, privacyView } from './privacy'
+import { deleteFinished, privacyAudit, privacyView } from './privacy'
 import { sendDueReports } from './send-reports'
 import { loadSettings } from './store'
 
@@ -19,6 +19,11 @@ export const enterpriseFinish: JobFinishHook = {
 export const enterpriseView: JobViewHook = {
   extension: 'enterprise',
   load: async (env, workspaceId) => privacyView(await loadSettings(env, workspaceId)),
+}
+
+export const enterpriseAuditView: AuditViewHook = {
+  extension: 'enterprise',
+  load: async (env, workspaceId) => privacyAudit(await loadSettings(env, workspaceId)),
 }
 
 export const enterpriseOff: ExtensionOffHook = { extension: 'enterprise', turnedOff: (ctx, workspaceIds) => cancelAllHeld(ctx, workspaceIds) }

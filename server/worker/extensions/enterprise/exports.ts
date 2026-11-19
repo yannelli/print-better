@@ -7,6 +7,7 @@ import { localTime, type LocalDate } from '../usage/cycles'
 import { usageSettings } from '../usage/settings'
 import { csv, csvResponse } from './csv'
 import { enter } from './guard'
+import { privacyAudit } from './privacy'
 import { parseDimension, reportCsv, reportFilename, usageReport } from './reports'
 import { daySpans, formatDate, parseDate } from './values'
 
@@ -46,7 +47,7 @@ export async function exportAudit(ctx: Ctx, workspaceId: string, q: { from: stri
   const { timeZone } = await usageSettings(ctx, workspaceId)
   const { from, to } = range(q, timeZone)
   const spans = daySpans(timeZone, from, to)
-  const hideTitles = settings.privacy.enabled && settings.privacy.ownerOnlyNames && !settings.privacy.adminsSeeNames
+  const view = privacyAudit(settings)
   const rows: AuditRow[] = []
   for (let after = 0; rows.length < MAX_ROWS; ) {
     const page = await all<AuditRow>(
@@ -66,12 +67,7 @@ export async function exportAudit(ctx: Ctx, workspaceId: string, q: { from: stri
     if (page.length < PAGE) break
     after = page[page.length - 1].id
   }
-  const data = (raw: string | null) => {
-    if (!raw || !hideTitles) return raw
-    const parsed = JSON.parse(raw) as Record<string, unknown>
-    if (!('title' in parsed)) return raw
-    return JSON.stringify({ ...parsed, title: 'Document' })
-  }
+  const data = (raw: string | null) => (raw && view ? JSON.stringify(view(JSON.parse(raw) as Record<string, unknown>)) : raw)
   const text = csv(
     AUDIT_COLUMNS,
     rows.map((r) => [new Date(r.created_at).toISOString(), r.actor_type, r.actor_id, r.actor_name, r.action, r.target, data(r.data)]),

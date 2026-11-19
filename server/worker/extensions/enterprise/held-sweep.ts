@@ -1,10 +1,11 @@
+import type { EnterpriseSettings } from '../../../shared/enterprise'
 import type { JobHold } from '../../../shared/printing'
 import { JOB_VIEW } from '../../db/map'
 import type { JobViewRow } from '../../db/rows'
-import { all, parseJson } from '../../lib/db'
+import { all } from '../../lib/db'
 import { systemCtx, type Ctx } from '../../services/context'
 import { extensionActive } from '../state'
-import { endHeld, heldJobs, OFF_MESSAGE, type Ending } from './holds'
+import { endHeld, heldJobs, holdOf, OFF_MESSAGE, type Ending } from './holds'
 import { EXTENSION, loadSettings } from './store'
 
 /** Turning it off, by either switch: nothing held may print without the checks that held it. */
@@ -14,32 +15,45 @@ export async function cancelAllHeld(ctx: Ctx, workspaceIds: readonly string[]): 
 
 /** Turning off approvals or secure release alone. */
 export const PART_OFF: Record<JobHold['kind'], Ending> = {
-  approval: { message: 'Approvals were turned off', action: 'job.cancel' },
-  release: { message: 'Secure release was turned off', action: 'job.cancel' },
+  approval: { message: 'Approvals were turned off', action: 'job.cancel', kind: 'approval' },
+  release: { message: 'Secure release was turned off', action: 'job.cancel', kind: 'release' },
 }
 
 const EXPIRED: Record<JobHold['kind'], Ending> = {
-  approval: { message: 'Not approved in time', action: 'approval.expire' },
-  release: { message: 'Not released in time', action: 'release.expire', deleteDocuments: true },
+  approval: { message: 'Not approved in time', action: 'approval.expire', kind: 'approval', expired: true },
+  release: { message: 'Not released in time', action: 'release.expire', kind: 'release', expired: true, deleteDocuments: true },
 }
 
-/** Every 15 minutes: expires held jobs, and cancels any held while their part or the extension went off. */
+const KINDS = ['approval', 'release'] as const
+const partOn = (settings: EnterpriseSettings, kind: JobHold['kind']) => (kind === 'approval' ? settings.approvals.enabled : settings.release.enabled)
+
+/** Every 15 minutes: cancels jobs held while their part or the extension went off, then expires held jobs. */
 export async function sweepHeld(env: Env): Promise<void> {
-  const rows = await all<JobViewRow>(env.DB, `${JOB_VIEW} WHERE j.status = 'held' ORDER BY j.created_at LIMIT 500`)
   const ctx = systemCtx(env, '', (p) => void p.catch(() => undefined))
-  const now = Date.now()
-  for (const workspaceId of new Set(rows.map((r) => r.workspace_id))) {
-    const held = rows.filter((r) => r.workspace_id === workspaceId)
-    if (!(await extensionActive(env, workspaceId, EXTENSION))) {
-      await endHeld(ctx, workspaceId, held, { message: OFF_MESSAGE, action: 'job.cancel' })
+  await endSwitchedOff(ctx)
+  await endExpired(ctx, Date.now())
+}
+
+async function endSwitchedOff(ctx: Ctx): Promise<void> {
+  const workspaces = await all<{ workspace_id: string }>(ctx.env.DB, "SELECT DISTINCT workspace_id FROM jobs WHERE status = 'held'")
+  for (const { workspace_id: workspaceId } of workspaces) {
+    if (!(await extensionActive(ctx.env, workspaceId, EXTENSION))) {
+      await endHeld(ctx, workspaceId, await heldJobs(ctx.env, workspaceId), { message: OFF_MESSAGE, action: 'job.cancel' })
       continue
     }
-    const settings = await loadSettings(env, workspaceId)
-    for (const kind of ['approval', 'release'] as const) {
-      const ofKind = held.filter((r) => parseJson<JobHold | null>(r.held, null)?.kind === kind)
-      const on = kind === 'approval' ? settings.approvals.enabled : settings.release.enabled
-      if (!on) await endHeld(ctx, workspaceId, ofKind, PART_OFF[kind])
-      else await endHeld(ctx, workspaceId, ofKind.filter((r) => (parseJson<JobHold | null>(r.held, null)?.until ?? 0) <= now), EXPIRED[kind])
-    }
+    const settings = await loadSettings(ctx.env, workspaceId)
+    for (const kind of KINDS) if (!partOn(settings, kind)) await endHeld(ctx, workspaceId, await heldJobs(ctx.env, workspaceId, kind), PART_OFF[kind])
+  }
+}
+
+/** The 500 that ran out first; every one of them ends, so the next run reaches the rest. */
+async function endExpired(ctx: Ctx, now: number): Promise<void> {
+  const rows = await all<JobViewRow>(
+    ctx.env.DB,
+    `${JOB_VIEW} WHERE j.status = 'held' AND json_extract(j.held, '$.until') <= ? ORDER BY json_extract(j.held, '$.until') LIMIT 500`,
+    now,
+  )
+  for (const workspaceId of new Set(rows.map((r) => r.workspace_id))) {
+    for (const kind of KINDS) await endHeld(ctx, workspaceId, rows.filter((r) => r.workspace_id === workspaceId && holdOf(r)?.kind === kind), EXPIRED[kind])
   }
 }
