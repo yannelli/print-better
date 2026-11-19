@@ -107,6 +107,7 @@ The script builds every platform on your Mac, signs and notarizes the macOS app 
 | Linux | `curl -fsSL https://<your-server>/install.sh \| sh -s -- --token pbe_…` |
 | Windows | `$env:PB_TOKEN='pbe_…'; irm https://<your-server>/install.ps1 \| iex` |
 | Raspberry Pi | The web app writes the first-boot files for the SD card in your browser, so your Wi-Fi password never reaches the server. The Pi installs and connects on its first start. |
+| iPhone and iPad | The Print Better app scans the QR code under **Devices > Add a device**. Building and releasing it: [docs/ios.md](docs/ios.md). |
 
 Each command already holds a single-use pairing code. Run the same command later to update the client; it keeps the pairing.
 

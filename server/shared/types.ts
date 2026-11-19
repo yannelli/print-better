@@ -5,7 +5,11 @@ export * from './printing'
 
 export type Role = 'owner' | 'admin' | 'member'
 export type AutoAdd = 'smart' | 'all' | 'none'
-export type Os = 'macos' | 'windows' | 'linux'
+/** `ios` and `ipados`: the iPhone and iPad app, which prints but never connects printers or keeps a socket open. */
+export type Os = 'macos' | 'windows' | 'linux' | 'ios' | 'ipados'
+
+/** iPhones and iPads: they print from the app and update from the App Store. */
+export const isMobileOs = (os: string | null | undefined): os is 'ios' | 'ipados' => os === 'ios' || os === 'ipados'
 
 export interface User {
   id: string

@@ -9,6 +9,7 @@ import { useClients, useCreateEnrollment } from '@/hooks/devices'
 import { useCanManage, useWs } from '@/hooks/workspace'
 import { ChooseKind } from './add/choose-kind'
 import { InstallLinux, InstallWindows } from './add/install-command'
+import { InstallMobile } from './add/install-mobile'
 import { InstallMac } from './add/install-mac'
 import { PickPrinters } from './add/pick-printers'
 import { PiFiles } from './add/pi-files'
@@ -20,6 +21,8 @@ import type { PiConfig } from './cloud-init'
 import { CHOICE_LABELS, type DeviceChoice } from './detect-os'
 
 const STEPS = ['Choose', 'Install', 'Connect', 'Printers', 'Test page']
+/** An iPhone only prints, so it has no printers to pick or test. */
+const MOBILE_STEPS = ['Choose', 'Install', 'Connect']
 const PI_TOKEN_HOURS = 168
 
 type PiState = { config: PiConfig; ready: boolean } | null
@@ -28,6 +31,7 @@ function Install({ choice, enrollment, pi, setPi }: { choice: DeviceChoice; enro
   if (choice === 'mac') return <InstallMac enrollment={enrollment} />
   if (choice === 'windows') return <InstallWindows enrollment={enrollment} />
   if (choice === 'linux') return <InstallLinux enrollment={enrollment} />
+  if (choice === 'mobile') return <InstallMobile enrollment={enrollment} />
   if (pi?.ready) return <PiFiles config={pi.config} enrollment={enrollment} onEdit={() => setPi({ ...pi, ready: false })} />
   return (
     <div className="flex flex-col gap-6">
@@ -91,7 +95,7 @@ function Wizard({ ws }: { ws: string }) {
             </Button>
             {!waitingOnPiForm && (
               <Button variant="outline" onClick={() => setStep(2)}>
-                {choice === 'pi' ? 'I’ve started the Pi' : 'I’ve done this'}
+                {choice === 'pi' ? 'I’ve started the Pi' : choice === 'mobile' ? 'I’ve scanned it' : 'I’ve done this'}
               </Button>
             )}
           </div>
@@ -101,7 +105,7 @@ function Wizard({ ws }: { ws: string }) {
     if (step === 2) {
       return (
         <div className="flex flex-col gap-8">
-          <WaitForDevice ws={ws} client={newClient} isPi={choice === 'pi'} onContinue={() => setStep(3)} />
+          <WaitForDevice ws={ws} client={newClient} kind={choice ?? 'mac'} onContinue={() => setStep(3)} />
           {!newClient && (
             <div className="border-t pt-6">
               <Button variant="ghost" onClick={() => setStep(1)}>
@@ -122,7 +126,7 @@ function Wizard({ ws }: { ws: string }) {
 
   return (
     <div className="flex max-w-3xl flex-col gap-10">
-      <StepIndicator steps={STEPS} current={step} />
+      <StepIndicator steps={choice === 'mobile' ? MOBILE_STEPS : STEPS} current={step} />
       {content()}
     </div>
   )

@@ -4,6 +4,16 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ## [Unreleased]
 
+### Added
+
+- **iPhone:** Print Better for iPhone and iPad (iOS 26 or later). It pairs with the server address and a sign-in in Safari, or with the QR code under **Devices > Add a device**; lists printers with their status, location and supplies; prints files, photos and document scans with the printer's own options; follows and cancels jobs, including jobs held for approval or release; shows a refusal from print rules in the server's words; prints from other apps through the share sheet, where Safari pages print as WebKit lays them out; and adds a **Print with Print Better** action to Shortcuts. Building, signing and releasing: `docs/ios.md`.
+- **devices:** `GET /api/client/me`, `GET /api/client/printers` and `GET /api/client/jobs` give devices without a WebSocket the name, printers and jobs a computer learns over it. The printer list follows printer access.
+- **web:** **Add a device** has an iPhone or iPad choice with a pairing QR code. iPads are listed as iPads, with their own icon. Device pages show an iPhone's or iPad's last use instead of Offline, and leave out the printer and sharing sections it has no use for.
+
+### Changed
+
+- **devices:** `GET /api/client/latest` answers 404 `no_build` to iPhones and iPads, which update through the App Store.
+
 ## [0.1.6] - 2026-11-19
 
 ### Added

@@ -1,11 +1,13 @@
 import { HUB_HEADERS, upgradeRequest } from '../hub/sockets'
 import { PROTOCOL_VERSION } from '../../shared/protocol'
+import { isMobileOs } from '../../shared/types'
 import { clientCtx, ctxOf, publicCtx, requireClient } from '../http/authenticate'
 import { readJson } from '../http/body'
-import { badRequest } from '../http/errors'
+import { badRequest, notFound } from '../http/errors'
 import type { Router } from '../http/router'
 import { latestBuild } from '../install/serve'
-import { cancelClientJob, createClientJob, getClientJob, uploadClientJob } from '../services/client-jobs'
+import { cancelClientJob, createClientJob, getClientJob, listClientJobs, uploadClientJob } from '../services/client-jobs'
+import { clientIdentity, clientPrinters } from '../services/client-self'
 import { deleteClient, getClient, listClients, patchClient, runCommand } from '../services/clients'
 import { approveDeviceCode, denyDeviceCode, describeDeviceCode, pollDeviceCode, startDeviceCode } from '../services/device-codes'
 import { createEnrollment, deleteEnrollment, enroll, listEnrollments } from '../services/enrollments'
@@ -70,6 +72,16 @@ export function clientRoutes(r: Router): void {
     const client = await requireClient(h)
     return Response.json(await createClientJob(clientCtx(h, client), client, await readJson(h.req)), { status: 201 })
   })
+  // Devices without a socket (the iPhone app) read what desktops learn over it.
+  r.get('/api/client/me', async (h) => clientIdentity(h.env, await requireClient(h)))
+  r.get('/api/client/printers', async (h) => {
+    const client = await requireClient(h)
+    return clientPrinters(clientCtx(h, client), client)
+  })
+  r.get('/api/client/jobs', async (h) => {
+    const client = await requireClient(h)
+    return listClientJobs(clientCtx(h, client), client, { limit: h.url.searchParams.get('limit'), cursor: h.url.searchParams.get('cursor') })
+  })
   r.get('/api/client/jobs/:id', async (h) => ({ job: await getClientJob(h.env, await requireClient(h), h.params.id) }))
   r.put('/api/client/jobs/:id/file', async (h) => {
     const client = await requireClient(h)
@@ -81,7 +93,9 @@ export function clientRoutes(r: Router): void {
   })
 
   r.get('/api/client/latest', async (h) => {
-    await requireClient(h)
+    const client = await requireClient(h)
+    // iPhones and iPads update through the App Store, so they are never offered a client build.
+    if (isMobileOs(client.os)) throw notFound('No build is published for this platform', 'no_build')
     return latestBuild(h.env, h.url)
   })
 }

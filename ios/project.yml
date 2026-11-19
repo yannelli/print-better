@@ -1,0 +1,135 @@
+# XcodeGen spec for Print Better for iPhone. Generate the project with scripts/build-ios.sh (docs/ios.md).
+name: PrintBetter
+options:
+  bundleIdPrefix: dev.yannelli.printbetter
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+settings:
+  base:
+    # XcodeGen fills this from the environment, like the macOS release scripts.
+    DEVELOPMENT_TEAM: ${APPLE_TEAM_ID}
+    CODE_SIGN_STYLE: Automatic
+    # scripts/build-ios.sh and scripts/release-ios.sh set both from client/Cargo.toml and the clock.
+    MARKETING_VERSION: "0.1.4"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    TARGETED_DEVICE_FAMILY: "1,2"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    PB_APP_GROUP: group.dev.yannelli.printbetter
+
+packages:
+  PrintBetterKit:
+    path: PrintBetterKit
+
+targets:
+  PrintBetter:
+    type: application
+    platform: iOS
+    sources:
+      - path: PrintBetter
+        excludes:
+          - AppIcon.svg
+      - path: Shared
+    dependencies:
+      - package: PrintBetterKit
+      - target: PrintBetterShare
+    settings:
+      base:
+        PRODUCT_NAME: PrintBetter
+        PRODUCT_BUNDLE_IDENTIFIER: dev.yannelli.printbetter.ios
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    info:
+      path: Generated/PrintBetter-Info.plist
+      properties:
+        CFBundleDisplayName: Print Better
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        ITSAppUsesNonExemptEncryption: false
+        PBAppGroup: $(PB_APP_GROUP)
+        NSCameraUsageDescription: Print Better uses the camera to scan pairing QR codes and documents.
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        CFBundleURLTypes:
+          - CFBundleURLName: dev.yannelli.printbetter.pair
+            CFBundleURLSchemes: [printbetter]
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    entitlements:
+      path: Generated/PrintBetter.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(PB_APP_GROUP)
+    scheme:
+      testTargets:
+        - PrintBetterTests
+
+  PrintBetterShare:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: PrintBetterShare
+      - path: Shared
+    dependencies:
+      - package: PrintBetterKit
+    settings:
+      base:
+        PRODUCT_NAME: PrintBetterShare
+        PRODUCT_BUNDLE_IDENTIFIER: dev.yannelli.printbetter.ios.share
+        APPLICATION_EXTENSION_API_ONLY: YES
+    info:
+      path: Generated/PrintBetterShare-Info.plist
+      properties:
+        CFBundleDisplayName: Print Better
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
+        PBAppGroup: $(PB_APP_GROUP)
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionJavaScriptPreprocessingFile: Preprocess
+            NSExtensionActivationRule: >-
+              SUBQUERY(extensionItems, $item, SUBQUERY($item.attachments, $attachment,
+              ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "com.adobe.pdf"
+              OR ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.image"
+              OR ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.plain-text"
+              OR ANY $attachment.registeredTypeIdentifiers UTI-CONFORMS-TO "public.url"
+              ).@count >= 1).@count >= 1
+    entitlements:
+      path: Generated/PrintBetterShare.entitlements
+      properties:
+        com.apple.security.application-groups:
+          - $(PB_APP_GROUP)
+
+  PrintBetterTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: PrintBetterTests
+    dependencies:
+      - target: PrintBetter
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: dev.yannelli.printbetter.ios.tests

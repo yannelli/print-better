@@ -9,3 +9,7 @@ target/
 .opencode/
 .claude/settings.local.json
 /build/
+ios/*.xcodeproj/
+ios/Generated/
+ios/PrintBetterKit/.build/
+ios/PrintBetterKit/.swiftpm/

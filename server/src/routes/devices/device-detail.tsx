@@ -14,10 +14,11 @@ import { usePrinters } from '@/hooks/printers'
 import { useCanManage, useWs } from '@/hooks/workspace'
 import { date, timeAgo } from '@/lib/format'
 import { availableUpdate } from '@/lib/updates'
-import { clientStatus, deviceKind, OS_NAMES, printerStatus } from '@/lib/words'
+import { deviceKind, OS_NAMES, printerStatus } from '@/lib/words'
 import { ComputerPrinters } from './computer-printers'
 import { DeviceSettings } from './device-settings'
 import { DeviceTools } from './device-tools'
+import { deviceStatus, isMobile } from './mobile'
 import { RenameDevice } from './rename-device'
 import { UpdateBadge } from './update-badge'
 
@@ -25,7 +26,7 @@ function About({ client, update }: { client: Client; update: string | null }) {
   return (
     <Section title="About this device" flush>
       {client.hostname && (
-        <Row label="Computer name">
+        <Row label={isMobile(client) ? 'Device name' : 'Computer name'}>
           <Mono>{client.hostname}</Mono>
         </Row>
       )}
@@ -46,7 +47,11 @@ function About({ client, update }: { client: Client; update: string | null }) {
           {update && <UpdateBadge version={update} />}
         </Row>
       )}
-      <Row label="Last seen">{client.online ? 'Connected now' : timeAgo(client.lastSeenAt)}</Row>
+      {isMobile(client) ? (
+        <Row label="Last used">{timeAgo(client.lastSeenAt)}</Row>
+      ) : (
+        <Row label="Last seen">{client.online ? 'Connected now' : timeAgo(client.lastSeenAt)}</Row>
+      )}
       <Row label="Added">{date(client.createdAt)}</Row>
     </Section>
   )
@@ -84,7 +89,8 @@ function Detail({ ws, client }: { ws: string; client: Client }) {
   const update = availableUpdate(client, useDownloads().data)
   const [, navigate] = useLocation()
   const [renaming, setRenaming] = useState(false)
-  const status = clientStatus(client)
+  const status = deviceStatus(client)
+  const mobile = isMobile(client)
 
   return (
     <>
@@ -107,7 +113,7 @@ function Detail({ ws, client }: { ws: string; client: Client }) {
                   </Button>
                 }
                 title={`Remove ${client.name}?`}
-                description="It will be signed out of Print Better, and its printers will be removed from this workspace. You can add it again later."
+                description={`It will be signed out of Print Better${mobile ? '' : ', and its printers will be removed from this workspace'}. You can add it again later.`}
                 confirmLabel="Remove device"
                 destructive
                 onConfirm={async () => {
@@ -125,11 +131,11 @@ function Detail({ ws, client }: { ws: string; client: Client }) {
         </div>
       </PageHeader>
       <div className="flex flex-col gap-10">
-        <Printers ws={ws} printers={printers} />
-        {client.os && <ComputerPrinters client={client} canManage={canManage} />}
+        {!mobile && <Printers ws={ws} printers={printers} />}
+        {client.os && !mobile && <ComputerPrinters client={client} canManage={canManage} />}
         <Slot name="deviceSection" props={{ ws, client }} />
-        <DeviceTools ws={ws} client={client} canManage={canManage} update={update} />
-        <DeviceSettings ws={ws} client={client} canManage={canManage} />
+        {!mobile && <DeviceTools ws={ws} client={client} canManage={canManage} update={update} />}
+        {!mobile && <DeviceSettings ws={ws} client={client} canManage={canManage} />}
         <About client={client} update={update} />
       </div>
       {canManage && <RenameDevice ws={ws} client={client} open={renaming} onOpenChange={setRenaming} />}

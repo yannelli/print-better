@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Print Better</title>
+  <rect x="3" y="3" width="506" height="506" rx="117" fill="#1c1c20" stroke="#ffffff" stroke-opacity="0.14" stroke-width="6"/>
+  <rect x="80" y="118" width="352" height="72" rx="36" fill="#3a3a41"/>
+  <path d="M136 154H376V366a32 32 0 0 1-32 32H168a32 32 0 0 1-32-32Z" fill="#fafafa"/>
+  <path d="M110 154H402" stroke="#1c1c20" stroke-width="12" stroke-linecap="round"/>
+  <path d="M192 240H320" stroke="#2563eb" stroke-width="30" stroke-linecap="round"/>
+  <path d="M192 302H284" stroke="#0c0c0e" stroke-width="30" stroke-linecap="round"/>
+</svg>
