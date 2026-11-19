@@ -1,6 +1,6 @@
 //! Expected page counts, and the warnings for jobs the printer calls completed.
 
-use crate::engine::expect::{Expected, two_sided};
+use crate::engine::expect::{BOTH_SIDES, Expected, ONE_SIDE, two_sided};
 use crate::engine::reasons;
 use crate::ipp::{IppJobState, JobStateKind, PrinterAttrs};
 use crate::model::{Capabilities, JobOptions, Sides};
@@ -92,4 +92,18 @@ fn completed_jobs_warn_in_plain_words() {
 fn aborted_jobs_name_document_errors() {
     let job = ended(JobStateKind::Aborted, None, None, &["document-format-error"]);
     assert_eq!(reasons::aborted(&job), "The printer couldn't read the document.");
+}
+
+/// The printer's own counts from the reported case: one-sided asked, 10 pages on 5 sheets.
+#[test]
+fn a_sheet_count_that_shows_other_sides_is_called_out() {
+    let one = Expected::new(10, &options(None, None), false).unwrap();
+    assert_eq!(one.wrong_sides(&done(Some(10), Some(5), &[])), Some(BOTH_SIDES));
+    assert_eq!(one.wrong_sides(&done(Some(10), Some(10), &[])), None);
+    assert_eq!(one.wrong_sides(&done(Some(4), Some(3), &[])), None, "a late sheet count isn't two-sided");
+    let two = Expected::new(13, &options(None, None), true).unwrap();
+    assert_eq!(two.wrong_sides(&done(Some(13), Some(6), &[])), None, "13 pages counted as 6 sheets is still two-sided");
+    assert_eq!(two.wrong_sides(&done(Some(13), Some(13), &[])), Some(ONE_SIDE));
+    assert_eq!(one.wrong_sides(&done(Some(1), Some(1), &[])), None, "one page says nothing about sides");
+    assert_eq!(one.wrong_sides(&done(Some(10), None, &[])), None, "no sheet count, no call");
 }

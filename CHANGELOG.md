@@ -4,6 +4,16 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ## [Unreleased]
 
+## [0.1.9] - 2026-11-19
+
+### Fixed
+
+- **printing:** HP printers now print the sides a job asks for. An HP LaserJet Pro M404 logs `sides` on a PDF and then prints with its own duplex default, so every PDF to an HP printer now carries a PJL header that sets duplex. Copies and page ranges still go to the printer, so the PDF is no longer rasterized for them as in 0.1.8. Other printers that take PJL get the header only when the job differs from their default.
+
+### Added
+
+- **printing:** A finished job whose sheet count shows other sides than it asked for gets a warning, such as "The printer printed on both sides, though one side was asked for."
+
 ## [0.1.8] - 2026-11-19
 
 ### Fixed

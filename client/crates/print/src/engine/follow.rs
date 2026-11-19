@@ -109,7 +109,8 @@ pub(crate) async fn follow(
 
 /// The outcome of a job the printer calls completed; the count it reports with that state is final.
 fn completed(state: &IppJobState, route: RouteKind, expected: Option<Expected>) -> PrintOutcome {
-    let warning = reasons::completed(state, expected.and_then(|e| e.shortfall(state)));
+    let note = expected.and_then(|e| e.shortfall(state).or_else(|| e.wrong_sides(state).map(str::to_string)));
+    let warning = reasons::completed(state, note);
     PrintOutcome { route, pages: state.pages(), warning }
 }
 

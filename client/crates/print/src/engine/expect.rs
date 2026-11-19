@@ -4,6 +4,9 @@
 use crate::ipp::{IppJobState, PrinterAttrs, job::parse_ranges};
 use crate::model::{JobOptions, Sides};
 
+pub(crate) const BOTH_SIDES: &str = "The printer printed on both sides, though one side was asked for.";
+pub(crate) const ONE_SIDE: &str = "The printer printed on one side, though both sides were asked for.";
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct Expected {
     /// Printed sides: selected pages times copies.
@@ -39,6 +42,22 @@ impl Expected {
             (None, None) => return None,
         };
         (done < wanted).then(|| format!("The printer stopped after {done} of {wanted} {unit}."))
+    }
+
+    /// When the printer's sheet count shows other sides than the job asked for. Half the sheets, give or
+    /// take one, is two-sided: printers can count the last sheet of a two-sided job late.
+    pub fn wrong_sides(&self, job: &IppJobState) -> Option<&'static str> {
+        let (Some(done), Some(sheets)) = (job.impressions.filter(|&n| n > 1), job.sheets.filter(|&n| n > 0)) else {
+            return None;
+        };
+        let one_sided = self.sheets == self.impressions;
+        if one_sided && sheets * 2 <= done + 1 {
+            Some(BOTH_SIDES)
+        } else if !one_sided && sheets >= done {
+            Some(ONE_SIDE)
+        } else {
+            None
+        }
     }
 }
 

@@ -137,10 +137,12 @@ impl Target {
 }
 
 /// Office printers that speak PCL or PostScript also understand PJL.
-/// HP printers that default to two-sided can ignore `sides` on a PDF, but obey a PJL header. True when
-/// this job asks for other sides than the default and the printer takes PJL in an auto-detected document.
+/// Whether to state the job's sides in a PJL header around an auto-detected document. HP printers print
+/// a PDF with their own duplex default whatever `sides` says, so they always get one; others when it differs.
 pub(crate) fn pjl_sides(attrs: &PrinterAttrs, o: &JobOptions) -> bool {
-    attrs.auto_sense && speaks_pjl(&attrs.capabilities) && o.sides.is_some_and(|s| attrs.sides_default != Some(s))
+    let Some(sides) = o.sides else { return false };
+    let hp = attrs.make_model.as_deref().is_some_and(|m| m.starts_with("HP ") || m.starts_with("Hewlett"));
+    attrs.auto_sense && speaks_pjl(&attrs.capabilities) && (hp || attrs.sides_default != Some(sides))
 }
 
 fn speaks_pjl(caps: &Capabilities) -> bool {

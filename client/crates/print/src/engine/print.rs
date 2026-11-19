@@ -97,13 +97,8 @@ impl Attempt<'_> {
         if let Some(why) = reasons::blocking(&attrs.status) {
             return Err(Error::NotReady(why));
         }
-        let mut target = Target::ipp(&attrs, cups);
+        let target = Target::ipp(&attrs, cups);
         let pjl_sides = !cups && convert::pjl_sides(&attrs, self.options);
-        if pjl_sides {
-            // Copies and pages are made here, so a PJL-wrapped file is the whole job.
-            target.copies_max = 1;
-            target.page_ranges = false;
-        }
         let prepared = self.prepare(&target, converted).await?;
         // A CUPS queue counts pages from its own filters, which often don't match the paper.
         let expected = if cups { None } else { count_expected(prepared, &attrs).await };
