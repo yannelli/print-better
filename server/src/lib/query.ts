@@ -40,7 +40,7 @@ export const qk = {
   limits: (ws: string) => ['ws', ws, 'usage', 'limits'] as const,
   cycleUsage: (ws: string, cycle: 'current' | 'previous') => ['ws', ws, 'usage', 'cycle', cycle] as const,
   allowances: (ws: string, limitId: string) => ['ws', ws, 'usage', 'allowances', limitId] as const,
-  rules: (ws: string) => ['ws', ws, 'rules'] as const,
+  rules: (ws: string) => ['ws', ws, 'usage', 'rules'] as const,
 }
 
 declare module '@tanstack/react-query' {
