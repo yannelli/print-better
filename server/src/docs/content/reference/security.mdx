@@ -1,0 +1,120 @@
+This page describes how Print Better protects accounts, devices, documents, and your network. It covers what is stored and where, how devices prove who they are, how long documents are kept, and what network sharing exposes.
+
+## What is stored where
+
+| Place | What it holds |
+| --- | --- |
+| D1 database | Accounts, password hashes, passkey public keys, sessions, workspaces, members, devices, printers, jobs, settings, and the activity log. Tokens and codes are stored only as SHA-256 hashes. |
+| R2 bucket | Print documents, under `jobs/` plus the workspace and job IDs, until they are deleted. Client downloads, under `downloads/`. |
+| Worker secrets | `SETUP_TOKEN`, `APP_SECRET`, and `AUTH_PEPPER`. |
+| Durable Objects | The live connections to devices and open pages. They hold no lasting data. |
+| Each device | Its device key in `credentials.json`, readable only by the account that runs Print Better. Its settings, its job queue, and its log. |
+
+SSO client secrets, the Resend API key, and the Resend webhook secret are encrypted with AES-GCM before they are stored. The key comes from `APP_SECRET`.
+
+## Passwords and passkeys
+
+- Passwords are hashed with scrypt (N=2^15, r=8, p=3). The input is an HMAC-SHA256 of the password keyed with `AUTH_PEPPER`.
+- After 10 failed attempts for one account in 15 minutes, the server refuses that account's sign-ins until the 15 minutes pass. Each network address also has a limit.
+- Passkeys are bound to the server's hostname. The server keeps only their public keys.
+- Recovery codes are single use and stored as hashes.
+- Single sign-on uses the authorization code flow with PKCE and a nonce.
+
+See [Sign-in](/docs/self-hosting/sign-in).
+
+## Sessions
+
+A browser session lasts 30 days and renews while you use it. Its cookie is `HttpOnly`, `Secure`, and `SameSite=Lax`. Requests that change something must come from the server's own origin. Under **Your account**, then **Sign-in and security**, **Where you’re signed in** lists every session and can sign the others out.
+
+## Tokens
+
+Every key, code, and token is random, shown once, and stored as a SHA-256 hash.
+
+| Prefix | What it is |
+| --- | --- |
+| `pbs_` | Browser session cookie. |
+| `pbt_` | Personal API token. |
+| `pbo_`, `pbr_` | OAuth access and refresh tokens for AI assistants. |
+| `pbc_` | Device key. |
+| `pbe_` | Setup code for adding a device. |
+| `pbd_` | Device code for approving a device in the browser. |
+| `pbi_` | Invite link. |
+| `pbp_` | Password reset link. |
+| `pbv_` | Email verification link. |
+
+## Token scopes
+
+| Scope | Allows |
+| --- | --- |
+| `read` | Seeing printers, devices, jobs, members, and settings. |
+| `print` | Printing, test pages, and canceling, retrying, and deleting jobs. |
+| `write` | Every other change. |
+
+- Personal API tokens hold all three scopes. They can be limited to one workspace and given an end date.
+- AI assistants hold the scopes listed on the consent page when you chose **Allow**.
+- OAuth tokens work only with the MCP server. The REST API refuses them.
+- An OAuth refresh token changes on every use. Reusing an old one disconnects the app.
+- A token acts as the person who made it. Their role and printer permissions still apply.
+- Tokens can't change passwords, passkeys, sessions, recovery codes, or create other tokens. Those need a browser session.
+
+## How devices authenticate
+
+A device gets its key in one of two ways:
+
+- **Setup code.** **Add a device** creates a `pbe_` code that works once, for 24 hours. Raspberry Pi codes work for 7 days. The install command trades it for a device key.
+- **Device code.** The device shows an 8-letter code for 10 minutes. A workspace owner or admin checks the code in the browser and approves it.
+
+A device key can only:
+
+- Connect to its own workspace.
+- Download documents for jobs on its own printers.
+- Send jobs from its print window to added printers in its workspace.
+
+Removing a device revokes its key at once. A revoked device stops and waits for someone to run `printbetter unpair` and pair it again.
+
+Devices only make outgoing connections, over HTTPS and a secure WebSocket. You don't open any port for Print Better. The status page on each device listens only on `127.0.0.1:47631`. It refuses requests from other websites and from other host names.
+
+## Documents
+
+1. A document goes to R2 when someone prints.
+2. The device downloads it over HTTPS with its own key and checks its SHA-256 checksum.
+3. The device deletes its local copy when the job finishes.
+4. The server deletes the stored document once the job has finished and the workspace's **Keep documents for** time has passed. The default is 24 hours.
+
+The job record stays in the list without its file. Deleting a finished job deletes its document right away. Once a document is deleted, the job can't be retried or downloaded.
+
+When you print a web address, the server fetches it and stores the result like any other document.
+
+## Email to print
+
+Email to print is off until a server admin sets up receiving, a workspace turns it on, and a printer gets an address. The server refuses mail that fails DMARC, and mail from senders who aren't allowed. Members must send from a verified email. See [Email](/docs/self-hosting/email#which-mail-is-refused).
+
+## Network sharing
+
+**Share printers on the local network** is off by default. When it is on for a device and for a printer, the device runs an IPP print server on port 8631 and announces the printer with Bonjour.
+
+<Callout type="warning" title="Anyone on the network can print">
+
+A shared printer takes jobs from anyone on the same network, with no sign-in. [Printer access](/docs/extensions/printer-access) rules don't apply to it. Share only on networks you trust.
+
+</Callout>
+
+Jobs that arrive this way show in the device's job history. See [Share on your network](/docs/printers/lan-sharing).
+
+The printers a Mac or Linux computer adds to its print window use a separate print server on `127.0.0.1:8632`. It accepts connections only from that computer and is never announced.
+
+## Raspberry Pi setup files
+
+The web app writes the Pi's setup files in your browser. Your Wi-Fi password and the Pi's password never reach the server. The setup turns on SSH and gives the Pi user `sudo` without a password. Set a strong password or use an SSH key.
+
+## Updates
+
+Devices download updates only from the server they are paired with, with their own key. Each download must match the size and SHA-256 checksum the server lists. On a Mac, it must also carry a valid signature from the same Developer ID team as the installed app. See [Automatic updates](/docs/devices/updates#how-updates-are-checked).
+
+## Activity log
+
+Every change is recorded with who made it: a person, a token, a device, an email sender, or the server itself. Workspace owners and admins can read it. See [Activity](/docs/workspaces/activity).
+
+## Report a security problem
+
+Report problems privately, as described in `SECURITY.md` in the Print Better repository. Don't open a public issue.
