@@ -1,0 +1,201 @@
+This page lists every `printbetter` command and option. The same program runs the background service, the menu bar icon, and the commands below.
+
+Most commands talk to the running service at `http://127.0.0.1:47631`. `status` and `printers` need it. The other commands also work when the service is stopped.
+
+## Usage
+
+```text
+printbetter <command> [options]
+```
+
+Run `printbetter help` for a short summary. With no command, `printbetter` prints the summary in a terminal. Opened from Finder, it starts Print Better and opens the status page.
+
+## Commands
+
+| Command | What it does |
+| --- | --- |
+| `run` | Starts Print Better, with its menu bar icon on a desktop. The service runs this command. |
+| `pair` | Connects this device to your server. |
+| `unpair` | Disconnects this device from the server. |
+| `status` | Shows the connection, device name, printers, queue, and update state. |
+| `printers` | Lists the printers this device knows. |
+| `discover` | Looks for printers now. Works without a server. |
+| `print` | Prints a file on a printer this device can reach. |
+| `tray` | Shows or hides the menu bar icon. |
+| `pause`, `resume` | Holds or releases printing on this device. |
+| `config` | Reads or changes this device's settings. |
+| `service` | Installs, removes, starts, stops, or checks the background service. |
+| `logs` | Shows recent log lines. |
+| `doctor` | Runs the same checks as **Run checkup** in the web app. |
+| `update` | Installs the newest Print Better from your server. |
+| `version` | Prints the version. Same as `--version` or `-V`. |
+| `help` | Prints the summary. Same as `--help` or `-h`. |
+
+## Options
+
+### run
+
+| Option | What it does |
+| --- | --- |
+| `--no-tray` | Runs without the menu bar icon. |
+
+If another copy is already running, `run` exits with code 1, so the service manager tries again later.
+
+### pair
+
+| Option | What it does |
+| --- | --- |
+| `--server URL` | Required. Your server's address, such as `https://your-print-better.example`. |
+| `--token TOKEN` | A `pbe_` setup code from **Add a device**. Without it, Print Better shows a code and opens your browser to approve the device. |
+| `--name NAME` | The device name shown in Print Better. Defaults to the computer's name. |
+
+`pair` succeeds without changes when the device is already paired with the same server. To move to another server, run `unpair` first.
+
+### unpair
+
+| Option | What it does |
+| --- | --- |
+| `--yes` | Doesn't ask for confirmation. Required when there is no terminal to ask in. |
+
+### status, printers, doctor
+
+| Option | What it does |
+| --- | --- |
+| `--json` | Prints the result as JSON. |
+
+`doctor` exits with code 1 when any check fails.
+
+### discover
+
+| Option | What it does |
+| --- | --- |
+| `--json` | Prints the printers as JSON. |
+| `--timeout SECS` | How long to look, from 1 to 60 seconds. The default is 4. |
+
+### print
+
+```sh
+printbetter print FILE [options]
+```
+
+| Option | What it does |
+| --- | --- |
+| `--printer KEY` or `--printer NAME` | The printer to use. Accepts its key, its full name, or a part of the name that matches one printer. |
+| `--copies N` | Number of copies, from 1 to 999. |
+| `--media NAME` | Paper size, such as `iso_a4_210x297mm` or `na_letter_8.5x11in`. |
+| `--sides one`, `long`, or `short` | One-sided, or two-sided flipped on the long or short edge. |
+| `--color` | Prints in color. |
+| `--mono` | Prints in black and white. |
+
+`print` sends the file straight to a printer this device can reach. It doesn't go through your server. Without `--printer`, it uses the only added printer, or the only printer found. Supported files are PDF, JPEG, PNG, and plain text.
+
+While the service runs, `print` follows the job until it finishes. Press Ctrl+C to stop watching. The job stays queued.
+
+### tray
+
+```sh
+printbetter tray on
+printbetter tray off
+```
+
+### config
+
+```sh
+printbetter config get [KEY]
+printbetter config set KEY VALUE
+```
+
+`config get` with no key lists every setting. See [Settings](#settings).
+
+### service
+
+```sh
+printbetter service install [--system] [--no-tray]
+printbetter service uninstall [--system]
+printbetter service start | stop | restart | status [--system]
+```
+
+| Option | What it does |
+| --- | --- |
+| `--system` | Acts on the machine-wide service instead of the one for your user. Needs `sudo` to install or uninstall. On a Mac, `install` also adds a menu bar icon for every user. |
+| `--no-tray` | With `install`, leaves out the menu bar icon. |
+
+When only the machine-wide service exists, `start`, `stop`, `restart`, and `status` use it without `--system`. A per-user `install` on a computer that already has the machine-wide service changes nothing.
+
+| System | Per-user service | Machine-wide service |
+| --- | --- | --- |
+| macOS | LaunchAgent `~/Library/LaunchAgents/dev.yannelli.printbetter.plist` | LaunchDaemon `/Library/LaunchDaemons/dev.yannelli.printbetter.plist`, plus a menu bar agent for all users |
+| Linux | systemd user unit `printbetter.service` | `/etc/systemd/system/printbetter.service`, the `printbetter` user, a udev rule for USB printers, and the root updater |
+
+### logs
+
+| Option | What it does |
+| --- | --- |
+| `--follow`, `-f` | Keeps printing new lines as they arrive. |
+| `--lines N`, `-n N` | How many lines to show, from 1 to 2000. The default is 200. |
+
+### update
+
+| Option | What it does |
+| --- | --- |
+| `--check` | Only reports whether a newer version exists. |
+| `--yes`, `-y` | Installs without asking. Required when there is no terminal to ask in. |
+
+## Settings
+
+`config set` changes a setting on this device. While the service runs, the change applies at once and syncs to the server. When the service is stopped, it is saved and syncs on the next connection. If a setting changes in two places, the most recent change wins.
+
+| Key | Values | Default | Meaning |
+| --- | --- | --- | --- |
+| `paused` | `on`, `off` | `off` | Holds new jobs on this device. |
+| `tray` | `on`, `off` | `on` | Shows the menu bar icon. |
+| `lanSharing` | `on`, `off` | `off` | Shares added printers on the local network. See [Share on your network](/docs/printers/lan-sharing). |
+| `autoAdd` | `inherit`, `smart`, `all`, `none` | `inherit` | What to do with new printers. `inherit` follows the workspace. |
+| `discovery.mdns` | `on`, `off` | `on` | Looks for printers with Bonjour. |
+| `discovery.snmp` | `on`, `off` | `on` | Looks for older network printers with SNMP. |
+| `discovery.usb` | `on`, `off` | `on` | Looks for USB printers. |
+| `discovery.os` | `on`, `off` | `on` | Uses printers already set up on this computer. |
+| `logLevel` | `info`, `debug` | `info` | How much detail goes into the log. |
+| `remotePrinters` | `on`, `off` | `on` | Adds the workspace's printers on other devices to this computer's print window. |
+| `remotePrintersHidden` | Printer IDs, separated by commas, or `none` | `none` | Workspace printers this computer leaves out of its print window. |
+| `defaultPrinter` | A printer ID, or `none` | `none` | The workspace printer to make this computer's default. `none` leaves the default alone. |
+| `autoUpdate` | `on`, `off` | `on` | Installs new versions by itself. |
+
+`on` and `off` also accept `true`, `false`, `yes`, `no`, `1`, and `0`.
+
+## Exit codes
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Success. |
+| `1` | Error. |
+| `2` | Wrong command or option. |
+| `3` | This device isn't paired. |
+| `4` | Print Better isn't running, for commands that need the service. |
+
+## Environment variables
+
+| Variable | What it does |
+| --- | --- |
+| `PRINTBETTER_HOME` | Keeps settings, state, and logs in this one folder. |
+| `PRINTBETTER_LOG` | Fixes the log level: `error`, `warn`, `info`, `debug`, or `trace`. |
+| `PRINTBETTER_PORT` | Moves the status page and local API from port 47631. |
+| `PRINTBETTER_REMOTE_PORT` | Moves the local print server for print-window printers from port 8632. |
+
+## Internal commands
+
+Two more commands exist for Print Better's own use. `tray-ui` runs the menu bar icon for the machine-wide macOS service. `update-helper` is the root updater that `printbetter-update.service` runs on Linux.
+
+## Install script options
+
+The install command runs `install.sh` from your server. Add these options after `sh -s --`.
+
+| Option | What it does |
+| --- | --- |
+| `--token TOKEN` | Pairs with a `pbe_` setup code. |
+| `--name NAME` | The device name shown in Print Better. |
+| `--system` | Installs the machine-wide service. Implies `--no-tray`. |
+| `--no-tray` | Runs without the menu bar icon. |
+| `--version V` | Installs this version instead of the newest one. |
+
+On Linux, the script picks `--system` by itself when it runs as root or without a desktop session.
