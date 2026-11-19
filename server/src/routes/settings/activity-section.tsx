@@ -72,7 +72,7 @@ function describe(action: string) {
 export function ActivitySection({ ws }: { ws: string }) {
   const audit = useAudit(ws)
   return (
-    <Section id="activity" title="Recent activity" description="Changes made in this workspace, newest first." flush>
+    <Section id="activity" description="Changes made in this workspace, newest first." flush>
       <QueryState query={audit}>
         {(page) =>
           page.items.length === 0 ? (

@@ -34,7 +34,7 @@ export function GeneralSection({ workspace, canManage }: { workspace: Workspace;
   ]
 
   return (
-    <Section id="general" title="General" flush>
+    <Section id="general" flush>
       <Row label="Workspace name" htmlFor="ws-name" description="Shown in the menu and on invites.">
         <div className="flex w-full flex-col gap-1.5 sm:w-64">
           <Input
