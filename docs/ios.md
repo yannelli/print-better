@@ -57,9 +57,9 @@ Signing is automatic. `scripts/release-ios.sh` passes `-allowProvisioningUpdates
 ## Releasing to TestFlight
 NOTE: You need the App Manager or Admin role in App Store Connect, and `APPLE_TEAM_ID` exported.
 
-1. In App Store Connect, open **Apps**, click **+**, then **New App**. Choose iOS, name it Print Better, pick the bundle ID `dev.yannelli.printbetter.ios`, and enter any SKU.
-2. Run `scripts/release-ios.sh`. It writes `build/ios/release/PrintBetter.ipa`.
+1. Run `scripts/release-ios.sh`. The first run registers the two bundle IDs and the App Group, then it writes `build/ios/release/PrintBetter.ipa`.
+2. In App Store Connect, open **Apps**, click **+**, then **New App**. Choose iOS, name it Print Better, pick the bundle ID `dev.yannelli.printbetter.ios`, and enter any SKU. The bundle ID is only in the list once step 1 has registered it.
 3. Upload the IPA with the Transporter app, or double-click `build/ios/release/PrintBetter.xcarchive` to open it in the Xcode Organizer and click **Distribute App**.
 4. In App Store Connect, open the app's **TestFlight** tab, wait for the build to finish processing, and add testers. The app declares that it uses no non-exempt encryption, so there is no export compliance question.
 
-Testers get the build in the TestFlight app.
+Testers get the build in the TestFlight app. Internal testers get it as soon as it's processed; the first build for external testers goes through Beta App Review.
