@@ -2,19 +2,17 @@ Printer access lets you choose who can see each printer, who can print to it, an
 
 Without printer access, every member sees every printer, prints to every added printer, and sees every job. Owners and admins can change everything.
 
-## Turn on printer access
+## Turn on Printer Access
 
-Printer access is an [extension](/docs/extensions). A server admin makes it available under **Server admin** > **Extensions**, then a workspace owner turns it on in **Settings** > [**Extensions**](/settings/extensions). See [Turn on an extension](/docs/extensions#turn-on-an-extension).
+Printer access is an [extension](/docs/extensions). A server admin makes it available under **Server admin** > **Extensions**, then a workspace owner turns it on in **Settings** > [**Extensions**](/settings/extensions). See [Turn on an Extension](/docs/extensions#turn-on-an-extension).
 
-<Callout type="note" title="Turning it on changes nothing by itself">
+<Callout type="note" title="Turning It on Changes Nothing by Itself">
 
 Every printer stays open to everyone with the **User** role, which matches the usual rules. Access changes only when you restrict a printer or change what everyone gets.
 
 </Callout>
 
 ## Permissions
-
-Six permissions decide what someone can do with a printer.
 
 <PermissionTable />
 
@@ -28,7 +26,7 @@ A role is a named set of permissions. You give people a role, not single permiss
 
 Owners and admins can also [make custom roles](#make-a-custom-role).
 
-## Who can get access
+## Who Can Get Access
 
 | Who | What it covers |
 | --- | --- |
@@ -39,7 +37,7 @@ Owners and admins can also [make custom roles](#make-a-custom-role).
 
 Workspace owners and admins always have every permission on every printer. This can't be changed, so nobody can lock the workspace out.
 
-## How access adds up
+## How Access Adds Up
 
 Someone's permissions on a printer are everything they get from:
 
@@ -51,21 +49,21 @@ Access only adds up, and no rule takes access away. To keep someone out of a pri
 
 Someone with no permissions on a printer doesn't see it at all. It's left out of their lists, and the API responds as if it doesn't exist.
 
-## Restrict a printer
+## Restrict a Printer
 
 A restricted printer is one that **Everyone** can't use. Only owners, admins, and people you choose can.
 
 <Steps>
 
-### Open the printer's Access tab
+### Open the Printer's Access Tab
 
 Open the printer from [**Printers**](/printers) and select the **Access** tab. You need **Choose who has access** on the printer to see it.
 
-### Set what everyone gets
+### Set What Everyone Gets
 
 Under **Everyone**, set **Everyone gets** to **No access**. The page says **This printer is restricted.** Printer lists mark it **Restricted**.
 
-### Give access to the people who need it
+### Give Access to the People Who Need It
 
 Under **People, groups, and devices**, find **Give access**. Search for a person, group, or device, pick a role, and select **Add**.
 
@@ -75,13 +73,13 @@ To change someone's role, pick a new one next to their name. To take it away, se
 
 **Everyone gets** offers **Workspace default** followed by the default role, each role, and **No access**.
 
-### Restrict every printer
+### Restrict Every Printer
 
 Open **Settings** > [**Printer access**](/settings/printer-access) and set **Everyone gets** to **No access**. The change applies right away.
 
 Every printer that doesn't choose its own **Everyone** setting is now restricted. Give access on each printer, or on [every printer](#give-access-to-every-printer).
 
-## Create a group
+## Create a Group
 
 Groups give several people and devices the same access at once. Someone can be in more than one group.
 
@@ -91,15 +89,15 @@ Groups give several people and devices the same access at once. Someone can be i
 
 Open [**Members**](/members) and select the **Groups** tab.
 
-### Create the group
+### Create the Group
 
 Select **New group**. Enter a **Name**, such as "Front office", and an optional **Description**. Select **Create group**.
 
-### Add people and devices
+### Add People and Devices
 
 In the group's card, search under **Add a person or device**. Pick one and select **Add**.
 
-### Give the group access
+### Give the Group Access
 
 Open a printer's **Access** tab. Under **Give access**, pick the group and a role, then select **Add**.
 
@@ -107,7 +105,7 @@ Open a printer's **Access** tab. Under **Give access**, pick the group and a rol
 
 Select **Rename** on a group's card to change its name or description. Select **Delete**, then **Delete group**, to remove it. Access given to the group goes with it. Its people and devices keep the access they get in other ways.
 
-## Give access to every printer
+## Give Access to Every Printer
 
 Open **Settings** > [**Printer access**](/settings/printer-access) and find **Access to every printer**. Under **Give access**, pick a person, group, or device and a role, then select **Add**.
 
@@ -115,9 +113,9 @@ This covers every printer in the workspace, including printers added later. Each
 
 To change what **Everyone** gets on every printer, use **Everyone gets** at the top of the same tab instead.
 
-## Give a device access
+## Give a Device Access
 
-A device's access decides two things:
+A device's access decides 2 things:
 
 - Which printers appear in that computer's [print window](/docs/printing/print-window)
 - Which printers it may send jobs to
@@ -132,25 +130,25 @@ Each printer shows **Can print**, with the reason, or **Not allowed on this Mac*
 
 The print window updates on its own. A job the computer sends without access stops in its print queue with **You can't print to this printer from this computer**.
 
-## Make a custom role
+## Make a Custom Role
 
 Owners and admins can make roles for needs the built-in ones don't cover.
 
 <Steps>
 
-### Start a new role
+### Start a New Role
 
 Open **Settings** > [**Printer access**](/settings/printer-access). Under **Printer roles**, select **New role**.
 
-### Name it
+### Name It
 
 Enter a **Name**, such as "Front desk". The **Description** is optional. People see it when they pick a role.
 
-### Choose its permissions
+### Choose Its Permissions
 
 Under **What can people with this role do?**, tick the permissions. Permissions another one includes are ticked and locked.
 
-### Create it
+### Create It
 
 Select **Create role**.
 
@@ -162,17 +160,17 @@ To delete a role, select **Delete**, then **Delete role**. You can delete a role
 
 Built-in roles can't be changed or deleted. Each role needs its own name, which can't be a built-in role's name. Each group needs its own name too.
 
-## Check someone's access
+## Check Someone's Access
 
 Open a printer's **Access** tab and find **Check someone’s access**. Under **Who**, search for a person, group, or device.
 
-The result says what they can do, for example "Alex can see it and print". A checklist shows each of the six permissions. **Why** lists every reason, such as:
+The result says what they can do, for example "Alex can see it and print". A checklist shows each of the 6 permissions. **Why** lists every reason, such as:
 
 - **Everyone has the User role on this printer**
 - **In the Front office group, which has the Manager role on every printer**
 - **Workspace admin, which allows everything on every printer**
 
-## Who can change access
+## Who Can Change Access
 
 | Change | Who |
 | --- | --- |
@@ -180,7 +178,7 @@ The result says what they can do, for example "Alex can see it and print". A che
 | Groups, roles, access to every printer, and what **Everyone** gets by default | Owners and admins |
 | Turning printer access on or off for the workspace | Owners |
 
-## What changes when it is on
+## What Changes When It Is On
 
 | Where | With printer access on |
 | --- | --- |
@@ -193,31 +191,31 @@ The result says what they can do, for example "Alex can see it and print". A che
 | Remove from the list | Needs **Manage everyone’s jobs**, also for your own jobs. |
 | Printer settings, adding, stopping, forgetting, and sharing | Needs **Change settings**. |
 
-The API and AI assistants follow the same rules. A printer someone can't see returns `404`. A missing permission returns `403` with the code `printer_access_denied`. See [REST API](/docs/reference/rest-api) and [MCP tools](/docs/reference/mcp).
+The API and AI assistants follow the same rules. A printer someone can't see returns `404`. A missing permission returns `403` with the code `printer_access_denied`. See [REST API](/docs/reference/rest-api) and [MCP Tools](/docs/reference/mcp).
 
-<Callout type="warning" title="Local network sharing">
+<Callout type="warning" title="Local Network Sharing">
 
 A printer [shared on the local network](/docs/printers/lan-sharing) accepts jobs from anyone on that network, without signing in. Printer access can't stop that. Turn off **Share on the local network** for printers you restrict.
 
 </Callout>
 
-## Turn printer access off
+## Turn Printer Access Off
 
 A workspace owner turns it off in **Settings** > [**Extensions**](/settings/extensions), then selects **Turn off**. A server admin can also turn it off for the whole server.
 
 Everyone gets the usual access to every printer right away. Your groups, roles, and access choices are kept. Turn it back on and they apply again.
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/printing/print-window" title="From your computer's print window">
+<Card href="/docs/printing/print-window" title="From Your Computer's Print Window">
 
 See how device access shapes each computer's printer list.
 
 </Card>
 
-<Card href="/docs/workspaces/members" title="Members and roles">
+<Card href="/docs/workspaces/members" title="Members and Roles">
 
 Invite people and choose their workspace role.
 

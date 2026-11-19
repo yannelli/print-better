@@ -1,18 +1,18 @@
-Print from scripts, cron jobs, and other apps with the REST API. The examples use `curl`, and the [REST API reference](/docs/reference/rest-api) lists every route.
+Print from scripts, cron jobs, and other apps with the REST API. The examples use `curl`, and the [REST API Reference](/docs/reference/rest-api) lists every route.
 
-## Create a token
+## Create a Token
 
 <Steps>
 
-### Open Apps and tokens
+### Open Apps and Tokens
 
 Open [**Your account**](/account/tokens) and select the **Apps and tokens** tab.
 
-### Create the token
+### Create the Token
 
 Under **Personal API tokens**, select **Create a token**. Give it a **Name**, choose where it **Works in**, and choose when it **Stops working after**. Select **Create token**.
 
-### Copy it
+### Copy It
 
 Copy the token now. Print Better shows it only once.
 
@@ -24,9 +24,9 @@ Store it in an environment variable for the examples on this page:
 export PRINTBETTER_TOKEN=pbt_your_token_here
 ```
 
-A token acts as you, with your role in each workspace. Treat it like a password. See [API tokens](/docs/workspaces/tokens) for more.
+A token acts as you, with your role in each workspace. Treat it like a password. See [API Tokens](/docs/workspaces/tokens) for more.
 
-## Find your workspace and printers
+## Find Your Workspace and Printers
 
 Every print route includes a workspace ID. It's also the part after `/w/` in the web app's address.
 
@@ -50,7 +50,7 @@ curl "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/printers?ad
 
 Each printer has an `id`, a `name`, its `status`, and its `capabilities`. Leave the printer out of a job to use the workspace's [default printer](/docs/workspaces/settings#general).
 
-## Print some text
+## Print Some Text
 
 ```sh
 curl -X POST "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/jobs" \
@@ -72,9 +72,9 @@ To choose the printer, the title, and settings, add them to the body:
 }
 ```
 
-[Job options](/docs/reference/job-options) lists every setting. Settings you leave out follow the printer's defaults.
+[Job Options](/docs/reference/job-options) lists every setting. Settings you leave out follow the printer's defaults.
 
-## Print a document from a URL
+## Print a Document From a URL
 
 Send a `url` instead of `text`. The server downloads the document and prints it.
 
@@ -87,13 +87,11 @@ curl -X POST "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/job
 
 The URL must start with `http://` or `https://`. The document must be a PDF, JPEG, PNG, or plain text file, and fit the workspace's upload limit. The job's title is the file name from the URL, or the site's address when the URL has none.
 
-## Upload a file
-
-Files go up in two steps. First you describe the file, then you send it.
+## Upload a File
 
 <Steps>
 
-### Create the job
+### Create the Job
 
 Send the file's name, type, and exact size in bytes. The response has the job and an `uploadUrl`.
 
@@ -110,7 +108,7 @@ UPLOAD_URL=$(curl -s -X POST "https://your-print-better.example/api/workspaces/$
 
 The job starts as `uploading`. You can add `printerId`, `title`, and `options` next to `upload`, as with text.
 
-### Send the file
+### Send the File
 
 ```sh
 curl -X PUT "$UPLOAD_URL" \
@@ -133,7 +131,7 @@ The accepted types are `application/pdf`, `image/jpeg`, `image/png`, and `text/p
 
 For small files, you can skip the upload and send the file inline as `base64`, with `contentType` and `fileName`, in one request. The whole request body can be up to 6 MB.
 
-## Check a job
+## Check a Job
 
 Every response above includes the job's `id`. Save it:
 
@@ -162,7 +160,7 @@ Read `status` and `statusMessage`:
 
 To cancel a job, send `POST` to the job's address plus `/cancel`. To print a failed or canceled job again, send `POST` to its address plus `/retry`.
 
-## When something goes wrong
+## When Something Goes Wrong
 
 Errors come back with an HTTP status and a body like this:
 
@@ -180,9 +178,9 @@ Errors come back with an HTTP status and a body like this:
 | `too_large` | The document is over the workspace's upload limit. |
 | `fetch_failed` | The server couldn't download the URL. |
 
-The [REST API reference](/docs/reference/rest-api) lists every error code.
+The [REST API Reference](/docs/reference/rest-api) lists every error code.
 
-## Next steps
+## Next Steps
 
 <Cards>
 
@@ -192,15 +190,15 @@ Every route, with authentication, errors, and pagination.
 
 </Card>
 
-<Card href="/docs/reference/job-options" title="Job options">
+<Card href="/docs/reference/job-options" title="Job Options">
 
 Copies, sides, color, paper, trays, quality, and page ranges.
 
 </Card>
 
-<Card href="/docs/workspaces/tokens" title="API tokens">
+<Card href="/docs/workspaces/tokens" title="API Tokens">
 
-Limit a token to one workspace and choose when it expires.
+Limit a token to 1 workspace and choose when it expires.
 
 </Card>
 

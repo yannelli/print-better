@@ -2,7 +2,7 @@ Connect Claude, Claude Code, ChatGPT, or another MCP client to Print Better. The
 
 Print Better has a built-in MCP server. The **Connect AI** page in the web app has your connection address and the steps for each assistant. Open [**Connect AI**](/connect) from the sidebar.
 
-## Your connection address
+## Your Connection Address
 
 Every assistant asks for the same address. It is your server's address followed by `/mcp`:
 
@@ -22,7 +22,7 @@ These steps work on claude.ai and in the Claude desktop app.
 
 In Claude, open **Settings**, then **Connectors**.
 
-### Add a custom connector
+### Add a Custom Connector
 
 Choose **Add custom connector**. Name it Print Better and paste your connection address.
 
@@ -30,7 +30,7 @@ Choose **Add custom connector**. Name it Print Better and paste your connection 
 
 Choose **Connect**. A Print Better page opens in your browser. Sign in if it asks.
 
-### Allow access
+### Allow Access
 
 Check the details on the Print Better page. Choose a workspace under **Which workspace can it use?**, then choose **Allow**.
 
@@ -40,7 +40,7 @@ Claude's mobile apps use connectors you add on claude.ai or in the desktop app. 
 
 ## Connect Claude Code
 
-Run one command in a terminal where Claude Code is installed:
+Run this in a terminal where Claude Code is installed:
 
 ```sh
 claude mcp add --transport http print-better https://your-print-better.example/mcp
@@ -54,27 +54,27 @@ ChatGPT needs a plan that allows custom connectors.
 
 <Steps>
 
-### Turn on Developer mode
+### Turn on Developer Mode
 
 Open **Settings**, then **Apps and connectors**, then **Advanced**. Turn on **Developer mode**.
 
-### Create the connector
+### Create the Connector
 
 Back in **Apps and connectors**, choose **Create**. Name it Print Better and paste your connection address. Pick OAuth for authentication.
 
-### Allow access
+### Allow Access
 
 Choose **Create**. Sign in on the Print Better page and choose **Allow**.
 
 </Steps>
 
-## Connect other MCP clients
+## Connect Other MCP Clients
 
 Most MCP clients only need the connection address. They find Print Better's sign-in on their own and open the same **Allow** page. Print Better supports the 2026-07-28 MCP protocol and the 2025 versions.
 
 For a tool that can't sign in, use a personal API token instead:
 
-1. Create a token in [**Your account**](/account/tokens), on the **Apps and tokens** tab. See [API tokens](/docs/workspaces/tokens).
+1. Create a token in [**Your account**](/account/tokens), on the **Apps and tokens** tab. See [API Tokens](/docs/workspaces/tokens).
 2. Have the tool send it with every request:
 
 ```http
@@ -83,7 +83,7 @@ Authorization: Bearer pbt_your_token_here
 
 The same token works for the [REST API](/docs/printing/api).
 
-## The Allow page
+## The Allow Page
 
 When an assistant connects, Print Better asks you to approve it. The page shows the app's name and what it will be able to do:
 
@@ -91,11 +91,11 @@ When an assistant connects, Print Better asks you to approve it. The page shows 
 - **Print documents on your printers**
 - **Change settings, devices and people**
 
-Under **Which workspace can it use?**, pick one workspace, or **All my workspaces**. Choose **Allow** to connect, or **Don't allow** to stop.
+Under **Which workspace can it use?**, pick 1 workspace, or **All my workspaces**.
 
 The request expires after 10 minutes. If it does, start connecting again from the assistant.
 
-## What an assistant can do
+## What an Assistant Can Do
 
 An assistant can do everything you can do in the web app, with the same permissions. If you're a member, it can't change what only admins can.
 
@@ -116,25 +116,25 @@ Things you can ask:
 - "Why isn't my printer working?"
 - "Invite my daughter so she can print from her laptop."
 
-[MCP tools](/docs/reference/mcp) lists every tool and the access it needs.
+[MCP Tools](/docs/reference/mcp) lists every tool and the access it needs.
 
-## Disconnect an assistant
+## Disconnect an Assistant
 
 Open [**Your account**](/account/tokens) and select the **Apps and tokens** tab. Under **Connected apps**, select **Disconnect** next to the assistant, then confirm.
 
 The assistant stops working right away. You can connect it again later.
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/reference/mcp" title="MCP tools">
+<Card href="/docs/reference/mcp" title="MCP Tools">
 
 Every tool an assistant can use, and the access it needs.
 
 </Card>
 
-<Card href="/docs/workspaces/tokens" title="API tokens">
+<Card href="/docs/workspaces/tokens" title="API Tokens">
 
 Create tokens for tools that can't sign in.
 
