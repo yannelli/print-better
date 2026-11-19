@@ -4,6 +4,8 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-11-19
+
 ### Added
 
 - **iPhone:** Print Better for iPhone and iPad (iOS 26 or later). It pairs with the server address and a sign-in in Safari, or with the QR code under **Devices > Add a device**; lists printers with their status, location and supplies; prints files, photos and document scans with the printer's own options; follows and cancels jobs, including jobs held for approval or release; shows a refusal from print rules in the server's words; prints from other apps through the share sheet, where Safari pages print as WebKit lays them out; and adds a **Print with Print Better** action to Shortcuts. Building, signing and releasing: `docs/ios.md`.
