@@ -40,7 +40,7 @@ To update Print Better later, run the same command again. It keeps the connectio
 | Chosen when | You run it as a normal user in a desktop session | You run it as root, or there is no desktop session |
 | Program | `~/.local/bin/printbetter` | `/usr/local/bin/printbetter` |
 | systemd unit | `~/.config/systemd/user/printbetter.service` | `/etc/systemd/system/printbetter.service` |
-| Runs as | You | The system user `printbetter`, in the `lp` group |
+| Runs as | You | The system user `printbetter`, in the `lp` and `lpadmin` groups (`lpadmin` where the system has it) |
 | Starts | When you log in | When the computer starts |
 | Settings and pairing | `~/.config/printbetter/` | `/etc/printbetter/` |
 | State and log | `~/.local/state/printbetter/` | `/var/lib/printbetter/` |

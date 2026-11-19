@@ -6,6 +6,7 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ### Added
 
+- **web:** Adds **Show more** to the **Activity** tab, which loads older changes 50 at a time. It used to stop at the latest 50.
 - **print rules and limits:** Adds the Print rules and limits extension, which checks every job before it's queued: from the web app, the API, MCP, email to print, test pages, and a computer's print window. Rules match who sent a job, where from, the printer, pages, copies, color, sides, file type, size, and time, then refuse it, print it two-sided or in black and white, limit copies, send it to another printer, or add a note. Turning it on changes nothing by itself (docs/print-policies.md).
 - **print rules and limits:** Adds limits on pages, sheets, jobs, or cost for each member, 1 member, a group (shared or each), each device, 1 device, a printer, or the workspace, every day, week, month, quarter, or year in the workspace time zone. A job that would go over is refused with what's left and when the count starts over, or prints with a warning. Admins can give extra for the current cycle.
 - **print rules and limits:** Adds the **Usage** page (Overview for everyone, Limits and Rules for owners and admins), a card on Home with the limit closest to running out, the routes under `/api/workspaces/:ws/policies`, `/usage/me` and `/usage`, and 12 MCP tools.
@@ -15,6 +16,8 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 - **remote printers:** Shows a rule's or limit's refusal in the computer's print queue, like a printer access refusal.
 
 ### Fixed
+
+- **linux:** Adds the machine-wide service user to the `lpadmin` group where the system has one (Debian, Ubuntu, Raspberry Pi OS), so it can create its print queues for other devices' printers. Existing installs join it at their next update.
 
 - **deploy:** Saves the `APP_SECRET` and `AUTH_PEPPER` that `scripts/deploy.sh` creates to `~/.config/print-better/secrets.env` (readable only by you), since Cloudflare never shows a secret again.
 - **extensions:** Names the **Server admin > Extensions** screen correctly in the messages for an extension that is off or unavailable.

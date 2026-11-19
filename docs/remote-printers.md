@@ -99,7 +99,7 @@ The loopback server describes each printer from its `RemotePrinter`, so `lpadmin
 | Paper Size (`PageSize`) | `media` / `media-col.media-size` | `media` | always (`capabilities.media`, else Letter and A4) |
 | Paper Feed (`InputSlot`) | `media-col.media-source` | `source` (`auto` means none) | `capabilities.sources` lists more than one |
 | Paper Type (`MediaType`) | `media-col.media-type` | `mediaType` | `capabilities.mediaTypes` has more than one standard keyword (vendor ones such as `com.hp.ecosmart-lite` have no label in CUPS and are left out) |
-| Quality (`cupsPrintQuality`) | `print-quality` | `quality` | `capabilities.qualities`, or all three when unknown |
+| Quality (`cupsPrintQuality`) | `print-quality` | `quality` | `capabilities.qualities`, or all 3 when unknown |
 | Two-Sided (`Duplex`) | `sides` | `sides` | `capabilities.duplex` |
 | Color (`ColorModel`) | `print-color-mode` | `colorMode` | grayscale only unless `capabilities.color` |
 
