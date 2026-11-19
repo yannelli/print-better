@@ -41,7 +41,7 @@ Wrangler writes the new database ID into `server/wrangler.jsonc`. Keep that chan
 
 ## Secrets
 
-The deploy script fills each secret with a random value. Cloudflare never shows a secret again, and the script doesn't print them.
+The deploy script fills each secret with a random value. Cloudflare never shows a secret again, so the script saves each `APP_SECRET` and `AUTH_PEPPER` it creates to `~/.config/print-better/secrets.env`, a file only you can read.
 
 | Secret | What it protects | If you lose it |
 | --- | --- | --- |
@@ -51,9 +51,11 @@ The deploy script fills each secret with a random value. Cloudflare never shows 
 
 <Callout type="warning" title="Keep a copy of APP_SECRET and AUTH_PEPPER">
 
-To keep a copy, replace both secrets with values you saved. Do it before you create the first account, while nothing depends on them yet.
+Copy both values from `~/.config/print-better/secrets.env` to a password manager. The script saves them only when it creates them.
 
 </Callout>
+
+A server deployed with an older script has no saved copy. To make one, replace both secrets with values you save, before you create the first account, while nothing depends on them yet:
 
 ```sh
 openssl rand -base64 48 | tr -d '/+=\n' | cut -c1-48

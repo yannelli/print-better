@@ -4,6 +4,11 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
+### Fixed
+
+- **deploy:** Saves the `APP_SECRET` and `AUTH_PEPPER` that `scripts/deploy.sh` creates to `~/.config/print-better/secrets.env` (readable only by you), since Cloudflare never shows a secret again.
+- **extensions:** Names the **Server admin > Extensions** screen correctly in the messages for an extension that is off or unavailable.
+
 ## [0.1.5] - 2026-11-19
 
 ### Added
