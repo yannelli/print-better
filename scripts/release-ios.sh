@@ -17,28 +17,22 @@ TEAM="${APPLE_TEAM_ID:?export APPLE_TEAM_ID}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y%m%d.%H%M%S)}"
 command -v xcodegen >/dev/null || die "XcodeGen is required: brew install xcodegen"
 
-# The App Store Connect API key lets xcodebuild register the IDs, make the profiles and upload.
+# The App Store Connect API key uploads the build. altool finds the key file by its ID.
 if [ -z "${ASC_KEY_ID:-}" ]; then
   keys=("$KEYS"/AuthKey_*.p8)
   [ "${#keys[@]}" -eq 1 ] && [ -f "${keys[0]}" ] || die "keep one AuthKey_<key ID>.p8 in $KEYS, or export ASC_KEY_ID"
   ASC_KEY_ID="$(basename "${keys[0]}" .p8)"
   ASC_KEY_ID="${ASC_KEY_ID#AuthKey_}"
 fi
-key="$KEYS/AuthKey_$ASC_KEY_ID.p8"
-[ -f "$key" ] || die "missing $key"
+[ -f "$KEYS/AuthKey_$ASC_KEY_ID.p8" ] || die "missing $KEYS/AuthKey_$ASC_KEY_ID.p8"
+[ "$DESTINATION" = export ] || [ -n "${ASC_ISSUER_ID:-}" ] || die "export ASC_ISSUER_ID (docs/ios.md)"
 
-if [ -z "${ASC_ISSUER_ID:-}" ]; then
-  # The issuer ID is the Public ID of the team's provider. altool reads the password from the environment itself.
-  lookup="xcrun altool --list-providers -u \"\$APPLE_ID\" -p @env:APPLE_PASSWORD"
-  [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] || die "export ASC_ISSUER_ID, or APPLE_ID and APPLE_PASSWORD to look it up"
-  providers="$(xcrun altool --list-providers -u "$APPLE_ID" -p @env:APPLE_PASSWORD 2>&1)" ||
-    die "couldn't list providers. Run $lookup to see why, or export ASC_ISSUER_ID"
-  ASC_ISSUER_ID="$(printf '%s\n' "$providers" | grep -w "$TEAM" |
-    grep -Eo '[0-9A-Fa-f]{8}(-[0-9A-Fa-f]{4}){3}-[0-9A-Fa-f]{12}' | head -n1 || true)"
-  [ -n "$ASC_ISSUER_ID" ] || die "no provider for team $TEAM in $lookup. Export ASC_ISSUER_ID"
-fi
-auth=(-allowProvisioningUpdates -authenticationKeyPath "$key" -authenticationKeyID "$ASC_KEY_ID"
-  -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+# Manual signing with the App Store profiles from docs/ios.md, picked per target.
+APP_PROFILE="${APP_PROFILE:-PB iOS App Store}"
+SHARE_PROFILE="${SHARE_PROFILE:-PB iOS Share App Store}"
+signing=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution"
+  'PROVISIONING_PROFILE_SPECIFIER=$(PB_PROFILE_$(TARGET_NAME))'
+  "PB_PROFILE_PrintBetter=$APP_PROFILE" "PB_PROFILE_PrintBetterShare=$SHARE_PROFILE")
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -47,7 +41,7 @@ xcodegen generate --spec "$IOS_DIR/project.yml" --quiet
 
 say "archiving $VERSION ($BUILD_NUMBER)"
 xcodebuild -project "$IOS_DIR/PrintBetter.xcodeproj" -scheme PrintBetter -configuration Release \
-  -destination 'generic/platform=iOS' -archivePath "$OUT/PrintBetter.xcarchive" "${auth[@]}" \
+  -destination 'generic/platform=iOS' -archivePath "$OUT/PrintBetter.xcarchive" "${signing[@]}" \
   DEVELOPMENT_TEAM="$TEAM" MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" archive
 
 # manageAppVersionAndBuildNumber is off so App Store Connect gets the build number above unchanged.
@@ -57,24 +51,27 @@ cat >"$OUT/ExportOptions.plist" <<EOF
 <plist version="1.0">
 <dict>
   <key>method</key><string>app-store-connect</string>
-  <key>destination</key><string>$DESTINATION</string>
+  <key>destination</key><string>export</string>
   <key>teamID</key><string>$TEAM</string>
-  <key>signingStyle</key><string>automatic</string>
+  <key>signingStyle</key><string>manual</string>
+  <key>signingCertificate</key><string>Apple Distribution</string>
+  <key>provisioningProfiles</key>
+  <dict>
+    <key>dev.yannelli.printbetter.ios</key><string>$APP_PROFILE</string>
+    <key>dev.yannelli.printbetter.ios.share</key><string>$SHARE_PROFILE</string>
+  </dict>
   <key>uploadSymbols</key><true/>
   <key>manageAppVersionAndBuildNumber</key><false/>
 </dict>
 </plist>
 EOF
 
-if [ "$DESTINATION" = upload ]; then
-  say "uploading $VERSION ($BUILD_NUMBER) to App Store Connect"
-else
-  say "exporting the IPA"
-fi
+say "exporting the IPA"
 xcodebuild -exportArchive -archivePath "$OUT/PrintBetter.xcarchive" -exportPath "$OUT" \
-  -exportOptionsPlist "$OUT/ExportOptions.plist" "${auth[@]}"
-if [ "$DESTINATION" = upload ]; then
-  say "uploaded; the build shows in TestFlight once App Store Connect has processed it"
-else
-  say "wrote $OUT/PrintBetter.ipa"
-fi
+  -exportOptionsPlist "$OUT/ExportOptions.plist"
+say "wrote $OUT/PrintBetter.ipa"
+[ "$DESTINATION" = upload ] || exit 0
+
+say "uploading $VERSION ($BUILD_NUMBER) to App Store Connect"
+xcrun altool --upload-package "$OUT/PrintBetter.ipa" --api-key "$ASC_KEY_ID" --api-issuer "$ASC_ISSUER_ID"
+say "uploaded; the build shows in TestFlight once App Store Connect has processed it"

@@ -14,7 +14,7 @@ scripts/make-ios-icon.sh                              # re-renders the app icon,
 The app version comes from `client/Cargo.toml`, like the other clients.
 
 ## Requirements
-- Xcode 26 or later and XcodeGen (`brew install xcodegen`).
+- Xcode 26 or later and XcodeGen (`brew install xcodegen`). Uploads need a release Xcode or the current beta: App Store Connect turns down builds from an older beta (error 90534).
 - For a device build or a release: a paid Apple Developer team, with `APPLE_TEAM_ID` exported before the project is generated.
 - For the app unit tests on a simulator: Developer Mode on the Mac (`DevToolsSecurity -status`). While it's off, the test runner never connects and `xcodebuild test` stops with "The test runner hung before establishing connection". Turn it on with `sudo DevToolsSecurity -enable`.
 
@@ -33,7 +33,7 @@ The app version comes from `client/Cargo.toml`, like the other clients.
 |---|---|
 | App | `dev.yannelli.printbetter.ios` |
 | Share extension | `dev.yannelli.printbetter.ios.share` |
-| App Group | `group.dev.yannelli.printbetter`, also the Keychain access group that holds the device token |
+| Keychain group | `<team ID>.dev.yannelli.printbetter.shared`, holds the device token for the app and the share extension |
 | URL scheme | `printbetter://pair?server=<origin>&token=pbe_…`, the QR code under **Devices > Add a device > iPhone or iPad** |
 
 ## How it talks to the server
@@ -46,23 +46,24 @@ The app version comes from `client/Cargo.toml`, like the other clients.
 - The app pairs with `os: ios` on an iPhone and `os: ipados` on an iPad, so the web app names, and shows an icon for, the right one. Its own text names the device the same way, from `UIDevice.current.model`.
 
 ## Signing
-Signing is automatic and uses an App Store Connect API key with access to Certificates, Identifiers & Profiles. `scripts/release-ios.sh` passes the key with `-allowProvisioningUpdates`, so Xcode registers the two bundle IDs and the App Group, makes the profiles, and uploads with `--upload`. The key file goes in `~/.appstoreconnect/private_keys/`, named `AuthKey_<key ID>.p8` as App Store Connect downloads it.
+Release builds sign manually with an Apple Distribution certificate and 2 App Store profiles. Debug builds sign automatically. The upload uses an App Store Connect API key, which goes in `~/.appstoreconnect/private_keys/` named `AuthKey_<key ID>.p8`, as App Store Connect downloads it.
 
 | Variable | Use |
 |---|---|
 | `APPLE_TEAM_ID` | Team for signing; XcodeGen writes it into the project |
 | `ASC_KEY_ID` | The key ID. Optional while `~/.appstoreconnect/private_keys/` holds one key: the script reads it from the file name |
-| `ASC_ISSUER_ID` | The issuer ID. Optional: the script looks it up with `altool --list-providers`, as the Public ID of the team's provider |
-| `APPLE_ID`, `APPLE_PASSWORD` | Your Apple Account and an app-specific password, for that lookup. altool reads the password from the environment, so it's never on the command line |
+| `ASC_ISSUER_ID` | The issuer ID, from **Users and Access > Integrations > App Store Connect API**. Needed for `--upload` |
+| `APP_PROFILE`, `SHARE_PROFILE` | Profile names for the app and the share extension. Default `PB iOS App Store` and `PB iOS Share App Store` |
 | `BUILD_NUMBER` | `CFBundleVersion`. Defaults to the UTC date and time, such as `20261119.153012`, so each upload has a higher number |
 | `SIMULATOR` | Simulator for `build-ios.sh` (default `iPhone 17 Pro`) |
 
 ## Releasing to TestFlight
-NOTE: You need the App Manager or Admin role in App Store Connect, and `APPLE_TEAM_ID`, `APPLE_ID` and `APPLE_PASSWORD` exported, or `ASC_ISSUER_ID` instead of the last two.
+NOTE: You need the App Manager or Admin role in App Store Connect, an Apple Distribution certificate in the login keychain, and `APPLE_TEAM_ID` and `ASC_ISSUER_ID` exported.
 
-1. Run `scripts/release-ios.sh`. The first run registers the two bundle IDs and the App Group, then it writes `build/ios/release/PrintBetter.ipa`.
-2. In App Store Connect, open **Apps**, click **+**, then **New App**. Choose iOS, name it Print Better, pick the bundle ID `dev.yannelli.printbetter.ios`, and enter any SKU. The bundle ID is only in the list once step 1 has registered it.
-3. Run `scripts/release-ios.sh --upload`. It archives a new build and uploads it to the app.
-4. In App Store Connect, open the app's **TestFlight** tab, wait for the build to finish processing, and add testers. The app and the share extension declare that they use no non-exempt encryption, so there is no export compliance question.
+1. In the developer portal, register 2 App IDs: `dev.yannelli.printbetter.ios` and `dev.yannelli.printbetter.ios.share`. They need no capabilities.
+2. Make an **App Store Connect** profile for each one with your Apple Distribution certificate, named as `APP_PROFILE` and `SHARE_PROFILE` above. Download both and open them to install.
+3. In App Store Connect, open **Apps**, click **+**, then **New App**. Choose iOS, name it Print Better, pick the bundle ID `dev.yannelli.printbetter.ios`, and enter any SKU.
+4. Run `scripts/release-ios.sh --upload`. It archives a new build, exports `build/ios/release/PrintBetter.ipa` and uploads it with altool.
+5. In App Store Connect, open the app's **TestFlight** tab, wait for the build to finish processing, and add testers. The app and the share extension declare that they use no non-exempt encryption, so there is no export compliance question.
 
 Testers get the build in the TestFlight app. Internal testers get it as soon as it's processed; the first build for external testers goes through Beta App Review.
