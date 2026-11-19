@@ -28,14 +28,14 @@ A token acts as you, with your role in each workspace. Treat it like a password.
 
 ## Find your workspace and printers
 
-Every print route includes a workspace ID. It is also the part after `/w/` in the web app's address.
+Every print route includes a workspace ID. It's also the part after `/w/` in the web app's address.
 
 ```sh
 curl https://your-print-better.example/api/workspaces \
   -H "Authorization: Bearer $PRINTBETTER_TOKEN"
 ```
 
-The answer lists each workspace with its `id`, `name`, and your `role`. Save the ID:
+The response lists each workspace with its `id`, `name`, and your `role`. Save the ID:
 
 ```sh
 export WORKSPACE_ID=your_workspace_id
@@ -59,7 +59,7 @@ curl -X POST "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/job
   -d '{"text": "Hello from Print Better"}'
 ```
 
-The answer is `{ "job": ... }`, with the job already `queued`. The first line of the text becomes the job's title.
+The response is `{ "job": ... }`, with the job already `queued`. The first line of the text becomes the job's title.
 
 To choose the printer, the title, and settings, add them to the body:
 
@@ -95,7 +95,7 @@ Files go up in two steps. First you describe the file, then you send it.
 
 ### Create the job
 
-Send the file's name, type, and exact size in bytes. The answer has the job and an `uploadUrl`.
+Send the file's name, type, and exact size in bytes. The response has the job and an `uploadUrl`.
 
 ```sh
 FILE=report.pdf
@@ -119,7 +119,7 @@ curl -X PUT "$UPLOAD_URL" \
   --data-binary @"$FILE"
 ```
 
-The `Content-Type` must match the type you declared, and the body must be exactly the declared size. The answer is `{ "job": ... }`, now `queued` and on its way to the printer.
+The `Content-Type` must match the type you declared, and the body must be exactly the declared size. The response is `{ "job": ... }`, now `queued` and on its way to the printer.
 
 </Steps>
 
@@ -131,17 +131,17 @@ Finish the upload within an hour. After that, the job fails with **The upload ne
 
 The accepted types are `application/pdf`, `image/jpeg`, `image/png`, and `text/plain`. Files can be as large as the workspace's upload limit, 50 MB unless an admin changed it.
 
-For small files, you can skip the upload. Send the file inline as `base64`, with `contentType` and `fileName`, in one request. The whole request body can be up to 6 MB.
+For small files, you can skip the upload and send the file inline as `base64`, with `contentType` and `fileName`, in one request. The whole request body can be up to 6 MB.
 
 ## Check a job
 
-Every answer above includes the job's `id`. Save it:
+Every response above includes the job's `id`. Save it:
 
 ```sh
 export JOB_ID=your_job_id
 ```
 
-Then ask for the job to follow it:
+To follow the job, request it:
 
 ```sh
 curl "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/jobs/$JOB_ID" \

@@ -8,7 +8,7 @@ Extensions are optional features that ship with Print Better. Each one stays off
 
 ## Turn on an extension
 
-An extension needs two switches. A server admin makes it available on the server. Then a workspace owner turns it on for their workspace. It works only where both are on.
+An extension needs two switches. A server admin makes it available on the server, then a workspace owner turns it on for their workspace. It works only where both are on.
 
 <Steps>
 
@@ -18,13 +18,13 @@ A server admin opens [**Server admin**](/admin/extensions) and selects the **Ext
 
 ### Turn it on for the workspace
 
-A workspace owner opens [**Settings**](/settings) and finds the **Extensions** section. Turn on the extension's switch, read what changes, and select **Turn on**.
+A workspace owner opens **Settings** > [**Extensions**](/settings/extensions). Turn on the extension's switch, read what changes, and select **Turn on**.
 
 </Steps>
 
 Pages that are already open update without a reload. Devices update their print windows too.
 
-In **Workspace settings**, each extension shows where it stands:
+On the **Extensions** tab, each extension shows its status:
 
 | Status | What it means |
 | --- | --- |
@@ -37,18 +37,22 @@ On the server admin's **Extensions** tab, each extension shows how many workspac
 
 ## Turn off an extension
 
-Either switch turns an extension off.
+Either switch turns an extension off:
 
-- A workspace owner turns off the extension's switch in **Settings**, then selects **Turn off**. This affects only that workspace.
+- A workspace owner turns off the extension's switch in **Settings** > [**Extensions**](/settings/extensions), then selects **Turn off**. This affects only that workspace.
 - A server admin turns off **Available to workspaces**. This stops the extension in every workspace at once.
 
-The usual rules come back right away. Print Better keeps the extension's data, such as groups and roles. Turn the extension back on and everything is as you left it. The data is deleted only with the workspace or printer it belongs to.
+The usual rules come back right away.
+
+Print Better keeps the extension's data, such as groups and roles. Turn the extension back on and everything is as you left it. The data is deleted only with the workspace or printer it belongs to.
 
 ## How extensions behave
 
-While an extension is off, Print Better behaves as if it didn't exist. While it is on, its rules apply in the web app, the API, AI assistants, email to print, and on devices.
+While an extension is off, Print Better behaves as if it didn't exist. While it's on, its rules apply in the web app, the API, AI assistants, email to print, and on devices.
 
-Turning an extension on or off appears in [Activity](/docs/workspaces/activity), and so does every change it makes. Extensions ship with the server, so turning one on never needs a new deploy.
+Extensions ship with the server, so turning one on never needs a new deploy.
+
+Turning an extension on or off appears in [Activity](/docs/workspaces/activity), and so does every change it makes.
 
 AI assistants see an extension's tools once a server admin makes it available. While it is off in a workspace, those tools explain how to turn it on. See [MCP tools](/docs/reference/mcp).
 

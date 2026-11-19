@@ -1,16 +1,16 @@
-On a Mac or Linux computer with Print Better, every printer on your other devices shows up in the computer's own print window. Print from any app, with each printer's real options, from anywhere the computer has internet.
+On a Mac or Linux computer with Print Better, every printer on your other devices shows up in the computer's own print window. You can print to them from any app, with each printer's own options, wherever the computer has internet.
 
 ## How it works
 
-Every added printer in the workspace that is connected to another device appears on this computer as a normal printer. You see it in every app's print window. On a Mac, it is also listed in **System Settings** > **Printers & Scanners**.
+Every added printer in the workspace that's connected to another device appears on this computer as a normal printer, in every app's print window. On a Mac, it's also listed in **System Settings** > **Printers & Scanners**.
 
 Each printer keeps its Print Better name. Its location reads like "Upstairs office (via Print Better)", or uses the device's name when the printer has no location.
 
-When you print, the computer's print system hands the job to Print Better on this computer. Print Better sends it to the server, which sends it to the device next to the printer. You don't need to be on the printer's network.
+When you print, the computer's print system hands the job to Print Better on this computer. Print Better sends it to the server, and the server sends it to the device next to the printer. You don't need to be on the printer's network.
 
 The job appears in [**Print jobs**](/jobs) with the computer and the account that printed it, for example **From Front desk Mac (alex)**.
 
-This is on by default for paired Macs and Linux computers. It isn't available on Windows yet. A Linux computer without the CUPS print system, such as a headless Raspberry Pi, doesn't use it.
+This is on by default for paired Macs and Linux computers. It isn't available on Windows yet. A Linux computer without the CUPS print system (a headless Raspberry Pi, for example) doesn't use it.
 
 Changes reach the computer without a restart. New printers appear, removed ones disappear, and renamed ones update.
 
@@ -29,7 +29,13 @@ Each printer offers the options the real printer has. On a Mac, the print dialog
 
 Your choices travel with the job to the device next to the printer. Settings the print window doesn't send follow the printer's [default settings](/docs/printers/settings#default-settings).
 
-When a printer's options change, the device next to it notices the next time it looks for printers. That happens when it starts, every 10 minutes, and when you select **Look now** on that device's page. Your computer then updates the printer's options.
+When a printer's options change, the device next to it notices the next time it looks for printers. Your computer then updates the printer's options.
+
+A device looks for printers:
+
+- When it starts
+- Every 10 minutes
+- When you select **Look now** on that device's page
 
 ### Supply levels on a Mac
 
@@ -39,7 +45,7 @@ The **Supplies** button there opens the printer's page in the web app.
 
 ## Choose which printers appear
 
-Each computer can show all of the workspace's printers, or only some. Owners and admins choose this in the web app.
+Each computer can show all of the workspace's printers, or only some. Owners and admins choose which in the web app.
 
 <Steps>
 
@@ -66,7 +72,9 @@ Each row shows how the printer is set up on that computer:
 | **Adding** | The computer hasn't added it yet. |
 | **Couldn't add** | The computer's print system refused. The problem shows above the list. |
 
-A row can also say **Also installed directly as** followed by a printer name. That means someone set up the same printer on this computer without Print Better. Print Better keeps its own copy, which keeps working away from that network. Hide one of them if you don't want both.
+A row can also say **Also installed directly as** followed by a printer name. That means someone set up the same printer on this computer without Print Better.
+
+Print Better keeps its own copy, which keeps working away from that network. Hide one of them if you don't want both.
 
 The section needs Print Better 0.1.3 or later on the computer. On older versions it says **Update Print Better on** followed by the computer's name.
 
@@ -76,17 +84,19 @@ With [Printer access](/docs/extensions/printer-access) turned on, a computer sho
 
 Under **Printers on this computer**, pick a printer in **Default printer**. The row says which printer is the default right now.
 
-**Don’t change** leaves the computer's default alone. It is the starting choice.
+**Don’t change** leaves the computer's default alone. It's the starting choice.
 
 The computer applies your choice once. If someone later picks another default on the computer itself, their choice wins. The web app setting goes back to **Don’t change**. Pick the printer again to apply it again.
 
-If the choice can't apply yet, the row says why. For example, a hidden printer can't be the default, unless the computer also has it installed directly. In that case the directly installed printer becomes the default. Hiding the chosen default printer sets the choice back to **Don’t change**.
+If the choice can't apply yet, the row says why. For example, a hidden printer can't be the default, unless the computer also has it installed directly. In that case the directly installed printer becomes the default.
 
-When the computer is offline, the row says the change applies when it is back.
+Hiding the chosen default printer sets the choice back to **Don’t change**.
+
+When the computer is offline, the row says the change applies when it's back.
 
 ### Macs set to Last Printer Used
 
-A Mac's print window can ignore the default printer. This happens when **Default printer** in **System Settings** > **Printers & Scanners** is **Last Printer Used**. The window then opens on the last printer you used on the current network. **Last Printer Used** is the macOS default.
+A Mac's print window ignores the default printer when **Default printer** in **System Settings** > **Printers & Scanners** is **Last Printer Used**. The window then opens on the last printer you used on the current network. **Last Printer Used** is the macOS default.
 
 When a Mac uses this setting, the web app tells you. To always start on your chosen printer, set **Default printer** in **System Settings** > **Printers & Scanners** to that printer. Print Better doesn't change this setting for you.
 

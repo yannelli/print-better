@@ -14,7 +14,7 @@ Owners and admins can change these settings.
 
 ### Open Email to print
 
-Open [**Settings**](/settings) and find **Email to print**.
+Open **Settings** > [**Email to print**](/settings/email).
 
 ### Turn it on
 
@@ -22,7 +22,7 @@ Turn on **Allow printing by email**.
 
 ### Choose who can send
 
-**Accept email from members** lets anyone in the workspace print from the email address on their account. It is on by default.
+**Accept email from members** lets anyone in the workspace print from the email address on their account. It's on by default.
 
 To accept other senders, list them under **Also accept email from**. Write one address per line, such as `alex@example.com`. Start a line with `@` to allow a whole domain, such as `@example.com`.
 
@@ -32,7 +32,7 @@ Select **Save changes**.
 
 </Steps>
 
-If the server doesn't receive email yet, the section says **Incoming email isn’t set up on this server yet.**
+If the server doesn't receive email yet, the tab says **Incoming email isn’t set up on this server yet.**
 
 ## Give a printer an email address
 
@@ -54,11 +54,13 @@ Type a name under **Email name for this printer**, such as `kitchen`. Then selec
 
 The printer's address is that name, then `@`, then the email domain your server admin set up. For example, `kitchen@print.example.com`.
 
-Names use lowercase letters, numbers, dots, dashes, and underscores. They start and end with a letter or a number. Each name belongs to one printer on the whole server. If another printer uses it, saving fails with **That email alias is already used by another printer**.
+Names use lowercase letters, numbers, dots, dashes, and underscores. They start and end with a letter or a number.
+
+Each name belongs to one printer on the whole server. If another printer uses it, saving fails with **That email alias is already used by another printer**.
 
 ## Send a document
 
-Send an email to the printer's address, with the documents attached.
+Send an email to the printer's address, with the documents attached:
 
 - Each attachment prints as its own job. Print Better prints up to 10 attachments from one message.
 - Attachments can be PDF, JPG, PNG, or plain text files. Other files are skipped.
@@ -83,9 +85,9 @@ With [Printer access](/docs/extensions/printer-access) turned on, a member also 
 
 The server refuses the message when:
 
-- no printer has email turned on at that address;
-- the sender isn't allowed to print there;
-- the message has nothing printable.
+- No printer has email turned on at that address
+- The sender isn't allowed to print there
+- The message has nothing printable
 
 With Cloudflare Email Routing, the sender gets a bounce that gives the reason. With Resend inbound, the message is dropped without a reply.
 
