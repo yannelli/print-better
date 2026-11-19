@@ -1,4 +1,4 @@
-This page explains how a device finds printers and what happens to each new printer it finds. Use it to understand why a printer appears, and to turn discovery methods on or off.
+A device finds printers on the network, over USB, and in the computer's own print system. The **Add printers automatically** setting decides whether each new printer is added for you or waits for you.
 
 ## Where a device looks
 
@@ -17,9 +17,14 @@ Printers that Print Better added to the print window from your other devices are
 
 ## When a device looks
 
+A device looks for printers:
+
 - When Print Better starts.
 - Every 10 minutes.
-- When you ask: **Look now** on the device's page, **Find printers** in the menu bar icon or on the status page, or `printbetter discover` on the device.
+- When you ask:
+  - **Look now** on the device's page.
+  - **Find printers** in the menu bar icon or on the status page.
+  - `printbetter discover` on the device.
 
 A device also checks each added printer every 60 seconds. It reports the printer's state, problems such as low toner, and supply levels. See [Status and supplies](/docs/printers/status).
 
@@ -35,7 +40,12 @@ Each printer a device finds for the first time is **found**. It can't take jobs 
 | **All of them** | Every printer the device finds. |
 | **Ask me first** | Nothing. Found printers wait under **Found but not added** for you to add them. |
 
-Each device can follow the workspace or choose for itself. On the device's page, under **New printers**, **Add new printers automatically** offers **Use the workspace setting** (the default), **Add the likely ones**, **Add every printer found**, and **Ask me first**.
+Each device can follow the workspace or choose for itself. On the device's page, under **New printers**, **Add new printers automatically** offers:
+
+- **Use the workspace setting** (the default)
+- **Add the likely ones**
+- **Add every printer found**
+- **Ask me first**
 
 To add a found printer yourself, see [Add a printer](/docs/printers/add).
 

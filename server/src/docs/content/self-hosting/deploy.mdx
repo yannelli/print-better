@@ -1,8 +1,8 @@
-This page walks you through deploying Print Better to your own Cloudflare account. At the end you have a running server, client downloads that devices can install, and your first account.
+Deploy Print Better to your own Cloudflare account. At the end you have a running server, client downloads that devices can install, and your first account.
 
 ## Requirements
 
-- A Cloudflare account on the **Workers Paid** plan. Passwords are hashed with scrypt, which needs more CPU time than the Free plan allows.
+- A Cloudflare account on the **Workers Paid** plan. The server hashes passwords with scrypt, which needs more CPU time than the Free plan allows.
 - Node.js 22.12 or later, pnpm, `git`, `jq`, and `openssl`. Wrangler, Cloudflare's command line tool, installs inside `server/`.
 - To build the client downloads: a Mac with Rust, `zig`, `cargo-zigbuild`, and Developer ID certificates. See [Publish the client downloads](#publish-the-client-downloads).
 
@@ -64,7 +64,9 @@ Run the two commands once for `APP_SECRET` and once for `AUTH_PEPPER`. Paste a n
 
 ## Open your server
 
-Open the setup link the script printed. It looks like `https://your-print-better.example/setup?token=...`. Follow the steps in [Quickstart](/docs/quickstart#create-your-account). The first account becomes the workspace owner and a server admin.
+Open the setup link the script printed. It looks like `https://your-print-better.example/setup?token=...`. Follow the steps in [Quickstart](/docs/quickstart#create-your-account).
+
+The first account becomes the workspace owner and a server admin.
 
 The script prints the link only on the run that creates `SETUP_TOKEN`. If you lost it, set a new token and type it into **Setup code** on `/setup`:
 
@@ -72,7 +74,7 @@ The script prints the link only on the run that creates `SETUP_TOKEN`. If you lo
 pnpm --dir server exec wrangler secret put SETUP_TOKEN
 ```
 
-After setup, the token has no use. Delete it if you like:
+After setup, the token has no use. You can delete it:
 
 ```sh
 pnpm --dir server exec wrangler secret delete SETUP_TOKEN
@@ -82,18 +84,18 @@ pnpm --dir server exec wrangler secret delete SETUP_TOKEN
 
 The install commands and **Add a device** download the client from your own R2 bucket. Publish once after the first deploy, and again for each new client version.
 
-```sh
-scripts/release.sh --publish remote
-```
-
-The script builds every platform on your Mac, signs and notarizes the macOS app and installer, and uploads the files. It uploads the files first and the `latest.json` list last, so devices never see a version whose files are missing.
-
 You need:
 
 - Rust 1.92 or later, with the targets listed in `docs/release.md`.
 - `zig` and `cargo-zigbuild` for the Linux builds.
 - The **Developer ID Application** and **Developer ID Installer** certificates in your Keychain.
 - `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password), and `APPLE_TEAM_ID` in the environment, for notarization.
+
+```sh
+scripts/release.sh --publish remote
+```
+
+The script builds every platform on your Mac, signs and notarizes the macOS app and installer, and uploads the files. It uploads the files first and the `latest.json` list last, so devices never see a version whose files are missing.
 
 | Option | What it does |
 | --- | --- |

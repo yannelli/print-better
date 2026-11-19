@@ -1,28 +1,46 @@
-Print Better lets you print from anywhere to the printers you already have. This page explains the parts of Print Better and how a document gets to a printer.
+Print Better prints from anywhere to the printers you already have.
 
 ## What Print Better does
 
-You run your own Print Better server on your Cloudflare account. A small program runs on a computer next to your printers and connects to that server. You send a document from the web app, a print window, the API, an AI assistant, or email. The computer next to the printer receives the document and prints it.
+You run your own Print Better server on your Cloudflare account. A small program runs on a computer next to your printers and connects to that server.
 
-That computer only makes outgoing connections. You never open a port on your network.
+You can send a document from:
+
+- The web app
+- A print window
+- The API
+- An AI assistant
+- Email
+
+The computer next to the printer receives the document and prints it. That computer only makes outgoing connections, so you never open a port on your network.
 
 ## The parts
 
 ### Server
 
-The server is a Cloudflare Worker that you deploy once. It serves the web app, the REST API, and the MCP server for AI assistants. It keeps accounts, devices, printers, and jobs in a D1 database, and documents in R2 storage. Every server also serves these docs at `/docs`, so they match the version you run.
+The server is a Cloudflare Worker that you deploy once. It serves the web app, the REST API, and the MCP server for AI assistants.
+
+It keeps accounts, devices, printers, and jobs in a D1 database, and documents in R2 storage.
+
+Every server also serves these docs at `/docs`, so they match the version you run.
 
 ### Devices
 
-A device is a computer that runs the Print Better client, `printbetter`. It can be a Mac, a Windows PC, a Linux computer, or a Raspberry Pi. Pick a computer that is near your printers or connected to them with a cable. It must stay on for printing to work.
+A device is a computer that runs the Print Better client, `printbetter`. It can be a Mac, a Windows PC, a Linux computer, or a Raspberry Pi.
+
+Pick a computer that is near your printers or connected to them with a cable. It must stay on for printing to work.
 
 ### Printers
 
-A device finds printers on the network, over USB, and in the computer's own printer list. The **Add printers automatically** setting decides whether new printers are added for you or wait for you. Printers belong to a workspace, such as Home or Office. You invite people to a workspace so they can print.
+A device finds printers on the network, over USB, and in the computer's own printer list. The **Add printers automatically** setting decides whether new printers are added for you or wait for you.
+
+Printers belong to a workspace, such as Home or Office. You invite people to a workspace so they can print.
 
 ### Jobs
 
-A job is one document sent to one printer. When the printer's device is off, the job waits on the server. It prints when the device comes back. You can follow every job on the **Print jobs** screen.
+A job is one document sent to one printer. When the printer's device is off, the job waits on the server and prints when the device comes back.
+
+You can follow every job on the **Print jobs** screen.
 
 ## How a document gets to a printer
 
@@ -33,7 +51,9 @@ A job is one document sent to one printer. When the printer's device is off, the
 
 <Callout type="note">
 
-Email to print is off until you turn it on. Printing from a computer's print window works on a Mac or Linux computer.
+Email to print is off until you turn it on.
+
+Printing from a computer's print window works on a Mac or Linux computer.
 
 </Callout>
 

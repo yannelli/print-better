@@ -1,4 +1,6 @@
-This page turns a Raspberry Pi into an always-on print server. The Pi sits next to your printers, connects them to Print Better, and prints the jobs sent to them. You can set up a new Pi from a blank memory card, or install on a Pi that already runs.
+Set up a Raspberry Pi as an always-on print server. The Pi sits next to your printers, connects them to Print Better, and prints the jobs sent to them.
+
+You can set up a new Pi from a blank memory card, or install on a Pi that already runs.
 
 ## What you need
 
@@ -7,7 +9,12 @@ This page turns a Raspberry Pi into an always-on print server. The Pi sits next 
 - A Wi-Fi network or a network cable.
 - An owner or admin role in the workspace.
 
-Raspberry Pi OS (64-bit) suits a Pi 3, 4, 5, or Zero 2 W. Use Raspberry Pi OS (32-bit) for a Pi Zero, Zero W, Pi 1, or Pi 2. The ARMv6 build for the Pi Zero, Zero W, and Pi 1 is best effort.
+Use the operating system that matches your Pi:
+
+- Pi 3, 4, 5, or Zero 2 W: Raspberry Pi OS (64-bit)
+- Pi Zero, Zero W, Pi 1, or Pi 2: Raspberry Pi OS (32-bit)
+
+The ARMv6 build for the Pi Zero, Zero W, and Pi 1 is best effort.
 
 ## Set up a new Pi
 
@@ -78,7 +85,9 @@ The Pi runs Print Better as a system service under the `printbetter` user, from 
 - Older network printers it finds with SNMP.
 - USB printers plugged into the Pi. A udev rule lets the service open them.
 
-The web app lists the Pi as **Raspberry Pi or Linux**. Settings and pairing live in `/etc/printbetter/`, and the log is in `/var/lib/printbetter/logs/printbetter.log`. Read it with `journalctl -u printbetter` too.
+The web app lists the Pi as **Raspberry Pi or Linux**.
+
+Settings and pairing are in `/etc/printbetter/`. The log is in `/var/lib/printbetter/logs/printbetter.log`, and `journalctl -u printbetter` shows it too.
 
 ## Next steps
 

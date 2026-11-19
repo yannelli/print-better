@@ -1,4 +1,4 @@
-This page lists every tool the built-in MCP server offers, with the scope each one needs. It also explains how assistants connect and sign in. For a guided start, see [With AI assistants](/docs/printing/ai-assistants).
+The tables below list every tool the built-in MCP server offers, with the scope each one needs. For a guided start, see [With AI assistants](/docs/printing/ai-assistants).
 
 ## The server address
 
@@ -6,7 +6,9 @@ This page lists every tool the built-in MCP server offers, with the scope each o
 https://your-print-better.example/mcp
 ```
 
-The **Connect AI** page in the web app shows the same address and the steps for each assistant. Tools call the same code as the web app and the REST API, so the same roles and permissions apply.
+The **Connect AI** page in the web app shows the same address and the steps for each assistant.
+
+Tools call the same code as the web app and the REST API, so the same roles and permissions apply.
 
 ## Connect an assistant
 
@@ -56,7 +58,10 @@ Authorization: Bearer pbt_...
 
 ## Signing in
 
-Assistants sign in with OAuth. When one connects, Print Better opens a page that asks whether to let the app use Print Better. It lists what the app will be able to do. Under **Which workspace can it use?**, choose one workspace or **All my workspaces**. Then choose **Allow** or **Don't allow**.
+Assistants sign in with OAuth. When one connects, Print Better opens a page that asks whether to let the app use Print Better, and lists what the app will be able to do.
+
+1. Under **Which workspace can it use?**, choose one workspace or **All my workspaces**.
+2. Choose **Allow** or **Don't allow**.
 
 - The access token lasts 1 hour. The refresh token lasts 30 days and changes on every use.
 - Reusing an old refresh token disconnects the app, in case someone copied it.
@@ -77,6 +82,8 @@ The MCP server accepts only bearer tokens, never the browser cookie. It takes pe
 Personal API tokens hold all three. When an assistant asks for none of them, it gets all three. A missing scope returns `403` with `insufficient_scope`, so the assistant can ask for more.
 
 ## Which workspace a tool uses
+
+A tool picks its workspace in this order:
 
 1. The workspace the connection is limited to, if any.
 2. Otherwise the `workspaceId` argument.
@@ -141,7 +148,7 @@ Start with `get_setup_status`. It returns a checklist for the workspace and the 
 
 ### Printer access
 
-These tools need the [Printer access](/docs/extensions/printer-access) extension. They are listed once a server admin makes it available. Each call fails with a message that says how to turn it on until a workspace owner does.
+These tools need the [Printer access](/docs/extensions/printer-access) extension. They are listed once a server admin makes it available. Until a workspace owner turns it on, each call fails with a message that says how to turn it on.
 
 | Tool | Scope | What it does |
 | --- | --- | --- |
@@ -164,7 +171,9 @@ These tools need the [Printer access](/docs/extensions/printer-access) extension
 
 Each result has structured content and two text blocks: a short summary, then the same data as JSON.
 
-When a tool can't do what you asked, the result is marked as an error with a plain message, such as "Choose a printer". The assistant can read it and try again. Every change a tool makes appears in the workspace's activity log.
+When a tool can't do what you asked, the result is marked as an error with a plain message, such as "Choose a printer". The assistant can read it and try again.
+
+Every change a tool makes appears in the workspace's activity log.
 
 ## Protocol details
 

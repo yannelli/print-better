@@ -1,6 +1,8 @@
-This page covers keeping your server current and your data safe. You update the server with the deploy script, publish new client versions for your devices, and back up the database and two secrets.
+Update the server with the deploy script, publish new client versions for your devices, and back up the database and two secrets.
 
 ## Update the server
+
+Read `CHANGELOG.md` before you update. It lists what changed in each version.
 
 From your copy of the repository, get the new code and deploy it:
 
@@ -11,9 +13,7 @@ scripts/deploy.sh
 
 The deploy script builds the web app, deploys the Worker, and then applies any new database migrations. It skips secrets that already exist, so your secrets stay the same.
 
-Connected devices lose their connection while the Worker restarts. They reconnect on their own within about a minute. Jobs sent during that time wait on the server and print once the device is back.
-
-Read `CHANGELOG.md` before you update. It lists what changed in each version.
+Connected devices lose their connection while the Worker restarts. They reconnect on their own within about 1 minute. Jobs sent during that time wait on the server and print once the device is back.
 
 ## Database changes
 
@@ -37,7 +37,7 @@ Once the upload finishes, Macs and Linux devices find the new version within abo
 
 ## Back up your data
 
-Three things are worth backing up:
+Back up these three things:
 
 | What | Why | How |
 | --- | --- | --- |
@@ -53,7 +53,7 @@ Export the database to a SQL file:
 pnpm --dir server exec wrangler d1 export print-better --remote --output print-better.sql
 ```
 
-D1 also keeps its own history for point-in-time restores. See what is available:
+D1 also keeps its own history for point-in-time restores. To see what is available, run:
 
 ```sh
 pnpm --dir server exec wrangler d1 time-travel info print-better

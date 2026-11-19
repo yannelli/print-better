@@ -19,7 +19,7 @@ To add a page: add it to `nav.ts`, create the MDX file, and run `pnpm --dir serv
 ## Page shape
 
 - Do not write a `#` heading, frontmatter, or `export const meta`. The site shows the title and description from `nav.ts` above the page.
-- Start with one short paragraph that says what the page helps the reader do.
+- Start with one short paragraph that gives the answer or the first action. Don't open with "This page explains".
 - Use `##` for sections and `###` for subsections, in sentence case. Both appear in the "On this page" list.
 - End task pages with a "Next steps" section that uses `<Cards>`, when there is an obvious next page.
 
@@ -71,11 +71,20 @@ Select **Add a device** and follow the steps.
 
 ## Writing rules
 
-- US English. Second person ("you"). Present tense. Active voice.
-- One instruction per sentence. Instructions use the imperative: "Select **Add printer**."
-- Sentences: 20 words or fewer for instructions, 25 or fewer for descriptions. Paragraphs: 6 sentences or fewer.
-- Name buttons, fields, and screens exactly as the app shows them, in bold. Check the strings in `server/src`.
-- No em dashes or en dashes. No filler words such as "simply", "just", or "easy". No hedging and no hype.
+- US English. Second person ("you"). Present tense. Active voice. Contractions are fine.
+- Lead with the answer or the action. The first sentence of a page or section says what happens or what to do.
+- Name buttons, fields, settings, and screens exactly as the app shows them, in bold. Check the strings in `server/src`. Quote commands, paths, and error text exactly.
+- Write procedures as numbered steps, one action per step: "Select **Add printer**." Use `<Steps>` for a whole task and a numbered list for a short one.
+- Put prerequisites before the first step, under a heading such as "Before you start" or "Requirements".
+- Put an exception beside the step it affects. When you know what the reader sees after a step, say it.
+- One topic per paragraph, one to three sentences. A one-sentence paragraph is fine.
+- Put countable things one per line: options, conditions, files, places to look. Introduce each list with a line that ends in a colon.
+- Sentences: 20 words or fewer for instructions, 25 or fewer for descriptions.
+- No em dashes or en dashes. Ranges use "to" or a hyphen: "2 to 32 characters".
+- Use digits for counts, times, sizes, and versions.
+- State limits and consequences flat: "The link works for 1 hour."
+- No marketing and no filler. Don't write "simply", "just", "easy", "seamless", "robust", "powerful", "leverage", "streamline", "it's important to note", or "best" as a bare claim.
+- End after the expected result or the open problem. No closing summary, slogan, or offer of more help.
 - Write only what the code does today. Do not describe planned features.
 - No real people, hostnames, IP addresses, emails, server URLs, or ids. Use examples such as "Office laser", "Front desk Mac", `alex@example.com`, and `https://your-print-better.example`.
 

@@ -1,4 +1,7 @@
-This page sets up email for your server. Sending email delivers invites, reset links, and printer alerts. Receiving email lets people print by sending a document to a printer's own address. Both are optional and off by default.
+Your server can send email and receive email. Both are optional and off by default.
+
+- Sending email delivers invites, reset links, and printer alerts.
+- Receiving email lets people print by sending a document to a printer's own address.
 
 ## Without email
 
@@ -20,7 +23,9 @@ The server works without email. Without it:
 
 ## Set up sending
 
-Open **Server admin**, then **Email**. Under **Sending email**, choose a provider in **How to send email**. Enter **Send from**, for example `Print Better <print@example.com>`. The address must belong to a domain you set up with your email provider.
+1. Open **Server admin**, then **Email**.
+2. Under **Sending email**, choose a provider in **How to send email**.
+3. Enter **Send from**, for example `Print Better <print@example.com>`. The address must belong to a domain you set up with your email provider.
 
 ## Send with Resend
 
@@ -60,7 +65,11 @@ Choose **Cloudflare Email**. Enter **Send from** and select **Save changes**. Th
 
 ## Set up email to print
 
-Email to print needs three things turned on: the server receives mail, a workspace allows it, and a printer has an address.
+Email to print needs three things turned on:
+
+- The server receives mail.
+- A workspace allows it.
+- A printer has an address.
 
 ## Receive with Cloudflare Email Routing
 
@@ -72,7 +81,7 @@ In the Cloudflare dashboard, turn on Email Routing for your domain. Add a catch-
 
 ### Choose Email Routing in Server admin
 
-In **Server admin**, then **Email**, go to **Receiving email**. Under **How email arrives**, choose **Cloudflare Email Routing**. Enter the **Email domain for printers**, for example `print.example.com`. Select **Save changes**.
+In **Server admin**, then **Email**, go to **Receiving email**. Under **How email arrives**, choose **Cloudflare Email Routing**. Enter the **Email domain for printers**, for example `print.example.com`, and select **Save changes**.
 
 </Steps>
 
@@ -96,13 +105,15 @@ https://your-print-better.example/api/hooks/resend
 
 ### Choose Resend in Server admin
 
-Under **How email arrives**, choose **Resend**. Enter the **Email domain for printers**. Paste the **Webhook signing secret** from Resend. It starts with `whsec_`. Select **Save changes**.
+Under **How email arrives**, choose **Resend**. Enter the **Email domain for printers**.
+
+Paste the **Webhook signing secret** from Resend. It starts with `whsec_`. Select **Save changes**.
 
 </Steps>
 
 ## Turn it on for a workspace and a printer
 
-1. In **Workspace settings**, under **Email to print**, turn on **Allow printing by email**. Choose who may send. See [Workspace settings](/docs/workspaces/settings).
+1. In **Settings** > [**Email to print**](/settings/email), turn on **Allow printing by email**. Choose who may send. See [Workspace settings](/docs/workspaces/settings).
 2. On a printer's page, under **Sharing**, turn on **Print by email**. Enter an **Email name for this printer**, such as `kitchen`, and select **Save name**.
 
 People then send documents to that name at your printer domain, for example `kitchen@print.example.com`. See [By email](/docs/printing/email).

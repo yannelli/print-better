@@ -1,4 +1,4 @@
-This page describes how Print Better protects accounts, devices, documents, and your network. It covers what is stored and where, how devices prove who they are, how long documents are kept, and what network sharing exposes.
+Print Better stores its data in your Cloudflare account and on your devices. The sections below cover what each place holds, how devices prove who they are, how long documents are kept, and what network sharing exposes.
 
 ## What is stored where
 
@@ -10,11 +10,11 @@ This page describes how Print Better protects accounts, devices, documents, and 
 | Durable Objects | The live connections to devices and open pages. They hold no lasting data. |
 | Each device | Its device key in `credentials.json`, readable only by the account that runs Print Better. Its settings, its job queue, and its log. |
 
-SSO client secrets, the Resend API key, and the Resend webhook secret are encrypted with AES-GCM before they are stored. The key comes from `APP_SECRET`.
+The server encrypts SSO client secrets, the Resend API key, and the Resend webhook secret with AES-GCM before it stores them. The key comes from `APP_SECRET`.
 
 ## Passwords and passkeys
 
-- Passwords are hashed with scrypt (N=2^15, r=8, p=3). The input is an HMAC-SHA256 of the password keyed with `AUTH_PEPPER`.
+- The server hashes passwords with scrypt (N=2^15, r=8, p=3). The input is an HMAC-SHA256 of the password keyed with `AUTH_PEPPER`.
 - After 10 failed attempts for one account in 15 minutes, the server refuses that account's sign-ins until the 15 minutes pass. Each network address also has a limit.
 - Passkeys are bound to the server's hostname. The server keeps only their public keys.
 - Recovery codes are single use and stored as hashes.
@@ -24,7 +24,9 @@ See [Sign-in](/docs/self-hosting/sign-in).
 
 ## Sessions
 
-A browser session lasts 30 days and renews while you use it. Its cookie is `HttpOnly`, `Secure`, and `SameSite=Lax`. Requests that change something must come from the server's own origin. Under **Your account**, then **Sign-in and security**, **Where you’re signed in** lists every session and can sign the others out.
+A browser session lasts 30 days and renews while you use it. Its cookie is `HttpOnly`, `Secure`, and `SameSite=Lax`. Requests that change something must come from the server's own origin.
+
+Under **Your account**, then **Sign-in and security**, **Where you’re signed in** lists every session and can sign the others out.
 
 ## Tokens
 
@@ -55,7 +57,7 @@ Every key, code, and token is random, shown once, and stored as a SHA-256 hash.
 - OAuth tokens work only with the MCP server. The REST API refuses them.
 - An OAuth refresh token changes on every use. Reusing an old one disconnects the app.
 - A token acts as the person who made it. Their role and printer permissions still apply.
-- Tokens can't change passwords, passkeys, sessions, recovery codes, or create other tokens. Those need a browser session.
+- Tokens can't change passwords, passkeys, sessions, or recovery codes, and can't create other tokens. Those need a browser session.
 
 ## How devices authenticate
 
@@ -72,7 +74,9 @@ A device key can only:
 
 Removing a device revokes its key at once. A revoked device stops and waits for someone to run `printbetter unpair` and pair it again.
 
-Devices only make outgoing connections, over HTTPS and a secure WebSocket. You don't open any port for Print Better. The status page on each device listens only on `127.0.0.1:47631`. It refuses requests from other websites and from other host names.
+Devices only make outgoing connections, over HTTPS and a secure WebSocket. You don't open any port for Print Better.
+
+The status page on each device listens only on `127.0.0.1:47631`. It refuses requests from other websites and from other host names.
 
 ## Documents
 
@@ -87,7 +91,13 @@ When you print a web address, the server fetches it and stores the result like a
 
 ## Email to print
 
-Email to print is off until a server admin sets up receiving, a workspace turns it on, and a printer gets an address. The server refuses mail that fails DMARC, and mail from senders who aren't allowed. Members must send from a verified email. See [Email](/docs/self-hosting/email#which-mail-is-refused).
+Email to print is off until all three of these are done:
+
+- A server admin sets up receiving.
+- A workspace turns it on.
+- A printer gets an address.
+
+The server refuses mail that fails DMARC, and mail from senders who aren't allowed. Members must send from a verified email. See [Email](/docs/self-hosting/email#which-mail-is-refused).
 
 ## Network sharing
 
@@ -105,7 +115,9 @@ The printers a Mac or Linux computer adds to its print window use a separate pri
 
 ## Raspberry Pi setup files
 
-The web app writes the Pi's setup files in your browser. Your Wi-Fi password and the Pi's password never reach the server. The setup turns on SSH and gives the Pi user `sudo` without a password. Set a strong password or use an SSH key.
+The web app writes the Pi's setup files in your browser. Your Wi-Fi password and the Pi's password never reach the server.
+
+The setup turns on SSH and gives the Pi user `sudo` without a password. Set a strong password or use an SSH key.
 
 ## Updates
 
