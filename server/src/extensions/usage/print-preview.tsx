@@ -1,6 +1,6 @@
 import { ChevronDown, CircleAlert } from 'lucide-react'
 import type { JobPreview, Prices } from '@shared/usage'
-import { formatAmount, formatMicros } from '@shared/usage-text'
+import { amountOf, formatAmount, formatMicros } from '@shared/usage-text'
 import { usePrinters } from '@/hooks/printers'
 import { fileContentType } from '@/routes/print/use-print-submit'
 import type { SlotProps } from '../registry'
@@ -9,12 +9,6 @@ import { useDocumentPages, useSettled } from './use-document-pages'
 import { meterLine, tightest } from './words'
 
 const HOLDS = { approval: 'It waits for approval before it prints.', release: 'It waits until you release it at the printer.' }
-
-function jobAmount(preview: JobPreview, unit: JobPreview['meters'][number]['unit'], currency: string): string {
-  const { usage } = preview
-  const value = unit === 'pages' ? usage.pages : unit === 'sheets' ? usage.sheets : unit === 'jobs' ? 1 : usage.costMicros
-  return formatAmount(unit, value, currency)
-}
 
 /** The one line people always see: a refusal, or what the tightest limit leaves them. */
 function Outcome({ preview, prices }: { preview: JobPreview; prices: Prices }) {
@@ -28,7 +22,7 @@ function Outcome({ preview, prices }: { preview: JobPreview; prices: Prices }) {
   }
   const meter = tightest(preview.meters)
   if (!meter) return null
-  const line = `${meterLine(meter, prices.currency, prices.timeZone)}. This job uses ${jobAmount(preview, meter.unit, prices.currency)}.`
+  const line = `${meterLine(meter, prices.currency, prices.timeZone)}. This job uses ${formatAmount(meter.unit, amountOf(preview.usage, meter.unit), prices.currency)}.`
   return (
     <p className={meter.over ? 'text-sm text-on-warn-container' : 'text-sm text-muted-foreground'} role="status">
       {meter.over ? `This job goes over ${meter.name}: ${line}` : line}
