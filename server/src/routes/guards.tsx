@@ -4,6 +4,7 @@ import { AppShell } from '@/components/shell/app-shell'
 import { Loading } from '@/components/states'
 import { loginHref, useInstance, useSession } from '@/hooks/auth'
 import { preferredWorkspace, rememberWorkspace } from '@/hooks/workspace'
+import { workspaceScreenHref } from '@/lib/app-links'
 
 export function FullPageLoading() {
   return <Loading className="min-h-dvh" />
@@ -26,6 +27,18 @@ export function RootRedirect() {
   return (
     <RequireAuth>
       <Redirect to={target ? `~/w/${target.id}` : '~/welcome'} replace />
+    </RequireAuth>
+  )
+}
+
+/** `/printers` and the other workspace-free links open that screen in the workspace the root redirect would pick. */
+export function WorkspaceScreenRedirect() {
+  const session = useSession()
+  const target = preferredWorkspace(session.data?.workspaces ?? [])
+  const href = workspaceScreenHref(location.pathname, target?.id, location.search + location.hash)
+  return (
+    <RequireAuth>
+      <Redirect to={`~${href}`} replace />
     </RequireAuth>
   )
 }

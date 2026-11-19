@@ -1,0 +1,76 @@
+Print Better prints from anywhere to the printers you already have.
+
+## What Print Better Does
+
+You run your own Print Better server on your Cloudflare account. A small program runs on a computer next to your printers and connects to that server.
+
+You can send a document from:
+
+- The web app
+- A print window
+- The API
+- An AI assistant
+- Email
+
+The computer next to the printer receives the document and prints it. That computer only makes outgoing connections, so you never open a port on your network.
+
+## The Parts
+
+### Server
+
+The server is a Cloudflare Worker that you deploy once. It serves the web app, the REST API, and the MCP server for AI assistants.
+
+It keeps accounts, devices, printers, and jobs in a D1 database, and documents in R2 storage.
+
+Every server also serves these docs at `/docs`, so they match the version you run.
+
+### Devices
+
+A device is a computer that runs the Print Better client, `printbetter`. It can be a Mac, a Windows PC, a Linux computer, or a Raspberry Pi.
+
+Pick a computer that is near your printers or connected to them with a cable. It must stay on for printing to work.
+
+### Printers
+
+A device finds printers on the network, over USB, and in the computer's own printer list. The **Add printers automatically** setting decides whether new printers are added for you or wait for you.
+
+Printers belong to a workspace, such as Home or Office. You invite people to a workspace so they can print.
+
+### Jobs
+
+A job is 1 document sent to 1 printer. When the printer's device is off, the job waits on the server and prints when the device comes back.
+
+You can follow every job on the **Print jobs** screen.
+
+## How a Document Gets to a Printer
+
+1. You send a document from the web app, a print window, the API, an AI assistant, or email.
+2. The server checks who you are and what you can do. It stores the document and queues the job.
+3. The server sends the job to the printer's device over a connection that the device keeps open.
+4. The device prints the document and reports progress, printer status, and supply levels back.
+
+<Callout type="note">
+
+Email to print is off until you turn it on.
+
+Printing from a computer's print window works on a Mac or Linux computer.
+
+</Callout>
+
+## Next Steps
+
+<Cards>
+
+<Card href="/docs/quickstart" title="Quickstart">Deploy the server, pair a computer, and print your first page.</Card>
+
+<Card href="/docs/devices/macos" title="Install on a Mac">Install the signed Print Better app and pair it with your server.</Card>
+
+<Card href="/docs/devices/linux" title="Install on Linux">Install the client as a system service on a Linux computer.</Card>
+
+<Card href="/docs/devices/raspberry-pi" title="Install on a Raspberry Pi">Turn a Raspberry Pi into an always-on bridge for your printers.</Card>
+
+<Card href="/docs/printing/web" title="Print From the Web App">Print from any browser, including your phone.</Card>
+
+<Card href="/docs/printing/ai-assistants" title="Print With AI Assistants">Connect Claude and other MCP clients so they can print for you.</Card>
+
+</Cards>

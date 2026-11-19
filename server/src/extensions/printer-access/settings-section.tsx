@@ -15,7 +15,6 @@ function DefaultRole({ ws, access, canEdit }: { ws: string; access: WorkspaceAcc
   return (
     <Section
       id="printer-access"
-      title="Printer access"
       description="Who can see, print to, and manage each printer. Owners and admins can always use every printer."
       flush
     >
@@ -40,7 +39,7 @@ function DefaultRole({ ws, access, canEdit }: { ws: string; access: WorkspaceAcc
   )
 }
 
-export default function PrinterAccessSettings({ ws }: SlotProps['settingsSection']) {
+export default function PrinterAccessSettings({ ws }: SlotProps['settingsTab']) {
   const access = useWorkspaceAccess(ws)
   const canEdit = useCanManage()
   return (

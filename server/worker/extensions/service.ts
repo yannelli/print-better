@@ -86,7 +86,7 @@ export async function patchWorkspaceExtension(ctx: Ctx, workspaceId: string, id:
   const ext = extensionInfo(id)
   const wanted = switchValue(body, 'enabled')
   const current = (await workspaceViews(ctx.env, workspaceId)).find((e) => e.id === ext.id) as WorkspaceExtension
-  if (wanted && !current.available) throw conflict(`A server admin has to make ${ext.name} available first, under Admin > Extensions`, 'extension_unavailable')
+  if (wanted && !current.available) throw conflict(`A server admin has to make ${ext.name} available first, under Server admin > Extensions`, 'extension_unavailable')
   if (current.enabled !== wanted) {
     await setEnabled(ctx.env, workspaceId, ext.id, wanted)
     await audit(ctx, workspaceId, 'extension.update', ext.id, { enabled: wanted })

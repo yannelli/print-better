@@ -43,7 +43,6 @@ export function EmailSection({ workspace, canManage }: { workspace: Workspace; c
   return (
     <Section
       id="email"
-      title="Email to print"
       description="Let people print by emailing a document to a printer’s own address. Each printer’s address is set on its page."
       flush
     >

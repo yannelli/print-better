@@ -1,0 +1,184 @@
+For a guided start, see [With AI Assistants](/docs/printing/ai-assistants).
+
+## The Server Address
+
+```text
+https://your-print-better.example/mcp
+```
+
+The **Connect AI** page in the web app shows the same address and the steps for each assistant.
+
+Tools call the same code as the web app and the REST API, so the same roles and permissions apply.
+
+## Connect an Assistant
+
+<Tabs>
+
+<Tab label="Claude">
+
+1. In Claude, open **Settings**, then **Connectors**.
+2. Choose **Add custom connector**.
+3. Name it Print Better and paste the address.
+4. Choose **Connect**. On the Print Better page that opens, check the details and choose **Allow**.
+
+</Tab>
+
+<Tab label="Claude Code">
+
+Run this command:
+
+```sh
+claude mcp add --transport http print-better https://your-print-better.example/mcp
+```
+
+Start Claude Code, type `/mcp`, pick `print-better`, and sign in when your browser opens.
+
+</Tab>
+
+<Tab label="ChatGPT">
+
+1. Open **Settings**, then **Apps and connectors**, then **Advanced**, and turn on **Developer mode**.
+2. Back in **Apps and connectors**, choose **Create**.
+3. Name it Print Better, paste the address, and pick OAuth for authentication.
+4. Choose **Create**, then sign in and choose **Allow** on the Print Better page.
+
+</Tab>
+
+<Tab label="Other tools">
+
+For tools that can't sign in, create a personal API token under **Your account**, then **Apps and tokens**. Send it with every request:
+
+```http
+Authorization: Bearer pbt_...
+```
+
+</Tab>
+
+</Tabs>
+
+## Signing In
+
+Assistants sign in with OAuth. When one connects, Print Better opens a page that asks whether to let the app use Print Better, and lists what the app will be able to do.
+
+1. Under **Which workspace can it use?**, choose 1 workspace or **All my workspaces**.
+2. Choose **Allow** or **Don't allow**.
+
+- The access token lasts 1 hour. The refresh token lasts 30 days and changes on every use.
+- Reusing an old refresh token disconnects the app, in case someone copied it.
+- A connection request expires after 10 minutes.
+
+To disconnect an app, open **Your account**, then **Apps and tokens**. Under **Connected apps**, select **Disconnect**.
+
+The MCP server accepts only bearer tokens, never the browser cookie. It takes personal API tokens (`pbt_`) and OAuth tokens issued for this address (`pbo_`).
+
+## Scopes
+
+| Scope | Shown on the consent page as | Tools |
+| --- | --- | --- |
+| `read` | See your printers, devices and print jobs | Tools that list and get. |
+| `print` | Print documents on your printers | `print`, `print_test_page`, `cancel_job`, `retry_job`. |
+| `write` | Change settings, devices and people | Every other tool that changes something. |
+
+Personal API tokens hold all 3. When an assistant asks for none of them, it gets all 3. A missing scope returns `403` with `insufficient_scope`, so the assistant can ask for more.
+
+## Which Workspace a Tool Uses
+
+A tool picks its workspace in this order:
+
+1. The workspace the connection is limited to, if any.
+2. Otherwise the `workspaceId` argument.
+3. Otherwise your only workspace. With several, the tool asks for a `workspaceId` and lists your choices.
+
+## Tools
+
+Start with `get_setup_status`. It returns a checklist for the workspace and the next tool to call.
+
+### Account and Workspaces
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `get_setup_status` | `read` | Checklist: devices paired and online, printers added, first print, members. Suggests the next tool. |
+| `whoami` | `read` | You, your workspaces and roles, whether you are a server admin, and any workspace limit. |
+| `list_workspaces` | `read` | Your workspaces and your role in each. |
+| `create_workspace` | `write` | Creates a workspace with you as its owner. |
+| `update_workspace` | `write` | Renames a workspace or changes its settings: auto-add, retention, retry time, upload limit, network sharing, email to print, default printer. |
+| `list_members` | `read` | Members and their roles. |
+| `invite_member` | `write` | Creates an invite link that works for 7 days. Emails it when you give an address and email is set up. |
+| `update_member_role` | `write` | Changes a member's role. Owner rules apply. |
+| `remove_member` | `write` | Removes a member, or leaves the workspace. |
+| `list_audit` | `read` | The activity log, newest first. Admins and owners. |
+
+### Devices
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `list_devices` | `read` | Devices with their online state and settings. |
+| `update_device` | `write` | Renames a device or changes its settings. Admins and owners. |
+| `remove_device` | `write` | Removes a device and its printers, and tells it to unpair if online. Admins and owners. |
+| `create_device_install` | `write` | Creates a single-use setup code with install commands and Raspberry Pi first-boot steps. Admins and owners. |
+| `device_command` | `write` | Runs `discover`, `refresh`, `identify`, `logs`, `diagnose`, `restart`, or `update` on an online device. Waits up to 20 seconds. Admins and owners. |
+
+### Printers
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `list_printers` | `read` | Added and found printers, with status and supply levels. |
+| `get_printer` | `read` | One printer with status, supplies, paper sizes, two-sided and color support, routes, and defaults. |
+| `update_printer` | `write` | Adds or removes a printer, renames it, sets its location, replaces its defaults, or changes network sharing and its email name. Admins and owners. |
+| `remove_printer` | `write` | Forgets a printer. It comes back as found if its device still sees it. Admins and owners. |
+| `identify_printer` | `write` | Makes the printer beep, blink, or show a message. Its device must be online. |
+| `print_test_page` | `print` | Prints the built-in one-page test on an added printer. |
+
+### Jobs
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `print` | `print` | Prints exactly one of `text`, a `url` the server fetches, or `base64` with `contentType` and `fileName`. Optional `printerId`, `title`, and `options`. Uses the default printer without `printerId`. |
+| `list_jobs` | `read` | Jobs, newest first, by printer or status. |
+| `get_job` | `read` | One job with its status, pages, and any problem message. |
+| `cancel_job` | `print` | Cancels an unfinished job. Members cancel their own; admins any job. |
+| `retry_job` | `print` | Prints a failed or canceled job again, while its document is still stored. |
+
+### Server Admin
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `get_instance_settings` | `read` | Server admins: name, sign-up, sign-in, and email settings. Secrets show only whether they are set. |
+| `update_instance_settings` | `write` | Server admins: changes those settings. A string sets a secret, `null` clears it. |
+
+### Printer Access
+
+These tools need the [Printer Access](/docs/extensions/printer-access) extension. They are listed once a server admin makes it available. Until a workspace owner turns it on, each call fails with a message that says how to turn it on.
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `list_groups` | `read` | Groups of members and devices, with their members. |
+| `create_group` | `write` | Admins: creates a group. |
+| `update_group` | `write` | Admins: renames or describes a group. |
+| `delete_group` | `write` | Admins: deletes a group and its grants. |
+| `set_group_member` | `write` | Admins: adds or removes a person or a device. |
+| `list_printer_roles` | `read` | Built-in and custom roles with their permissions. |
+| `create_printer_role` | `write` | Admins: creates a custom role. |
+| `update_printer_role` | `write` | Admins: edits a custom role. |
+| `delete_printer_role` | `write` | Admins: deletes a custom role that nothing uses. |
+| `get_printer_access` | `read` | A printer's Everyone role and grants. Without `printerId`, the workspace default and workspace-wide grants. |
+| `set_printer_everyone_role` | `write` | Sets a printer's Everyone role, or the workspace default without `printerId`. |
+| `grant_printer_access` | `write` | Gives a member, group, or device a role on one printer, or on every printer without `printerId`. |
+| `revoke_printer_access` | `write` | Removes a grant. |
+| `explain_printer_access` | `read` | Explains why someone has their permissions on a printer. |
+
+## Results and Errors
+
+Each result has structured content and 2 text blocks: a short summary, then the same data as JSON.
+
+When a tool can't do what you asked, the result is marked as an error with a plain message, such as "Choose a printer". The assistant can read it and try again.
+
+Every change a tool makes appears in the workspace's activity log.
+
+## Protocol Details
+
+- Transport: streamable HTTP at `POST /mcp`, stateless, with JSON responses.
+- Protocol versions: `2026-07-28`, plus `2025-11-25`, `2025-06-18`, and `2025-03-26` through `initialize`.
+- Requests can be up to 16 MB. A `base64` document can be about 12 MB.
+- OAuth discovery: `/.well-known/oauth-protected-resource/mcp` and `/.well-known/oauth-authorization-server`.
+- The server offers tools only. It has no resources or prompts.

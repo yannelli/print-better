@@ -101,7 +101,7 @@ pub fn ipp_state(job: &ServerJob, owner: Option<&RemotePrinter>) -> (SharedJobSt
     let message = job.status_message.clone().filter(|m| !m.is_empty());
     match job.status.as_str() {
         "printing" => (SharedJobState::Processing, message),
-        "completed" => (SharedJobState::Completed, None),
+        "completed" => (SharedJobState::Completed, message),
         "failed" => (SharedJobState::Aborted, message.or_else(|| Some("The job failed.".into()))),
         "canceled" => (SharedJobState::Canceled, None),
         _ => match owner.filter(|p| !p.online) {

@@ -1,0 +1,62 @@
+Print Better records the changes people and devices make in a workspace. The activity list shows who changed what, and when.
+
+## See Recent Activity
+
+Only owners and admins can see activity.
+
+Open **Settings** > [**Activity**](/settings/activity). It shows changes newest first, 50 at a time. Select **Show more** at the bottom for older ones.
+
+Each line shows who made the change, what changed (with its ID in parentheses), and when. Hover over the time to see the exact date.
+
+## What Is Recorded
+
+Print Better records changes to:
+
+- Printers, such as adding, renaming, or forgetting one
+- Print jobs, such as creating, canceling, retrying, or removing one
+- Devices, install codes, and device commands
+- Members, invites, and roles
+- Workspace settings and extensions
+- [Printer Access](/docs/extensions/printer-access) groups, roles, and who has access
+- API tokens limited to this workspace
+
+Print Better records a change the same way whether it comes from the web app, the API, an AI assistant, or a device.
+
+## Who Made the Change
+
+| Shown as | Who |
+| --- | --- |
+| A person's name | That person, in the web app, or with their API token or AI assistant. |
+| A device's name | A paired device, for example when it joins the workspace. |
+| An email address | A document someone emailed to a printer. |
+
+## The API and AI Assistants
+
+With the API, page through the full list:
+
+```sh
+curl "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/audit" \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN"
+```
+
+Each response has `items` and a `nextCursor`. To get the next page, add `?cursor=` with that value. See [REST API](/docs/reference/rest-api).
+
+An AI assistant can read the same list with the `list_audit` tool. Ask it, for example, "Who changed the office printer this week?"
+
+## Next Steps
+
+<Cards>
+
+<Card href="/docs/workspaces/members" title="Members and Roles">
+
+Choose who can change things in the workspace.
+
+</Card>
+
+<Card href="/docs/reference/security" title="Security">
+
+How Print Better protects accounts, devices, and documents.
+
+</Card>
+
+</Cards>

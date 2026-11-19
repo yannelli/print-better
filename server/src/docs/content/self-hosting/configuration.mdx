@@ -1,0 +1,119 @@
+## Where Settings Live
+
+| Setting | Where | Who changes it |
+| --- | --- | --- |
+| Cloudflare bindings, schedule, custom domain | `server/wrangler.jsonc` | You, then deploy again |
+| `SETUP_TOKEN`, `APP_SECRET`, `AUTH_PEPPER` | Worker secrets | You, with `wrangler secret put` |
+| Server name, sign-up, sign-in, email, extensions | **Server admin**, saved in D1 | Server admins |
+| Printer, job, and email rules for one workspace | **Workspace settings**, saved in D1 | Workspace owners and admins |
+
+See [Workspace Settings](/docs/workspaces/settings) for the workspace rules.
+
+## wrangler.jsonc
+
+```jsonc title="wrangler.jsonc"
+{
+  "name": "print-better",
+  "d1_databases": [{ "binding": "DB", "database_name": "print-better", "migrations_dir": "migrations" }],
+  "r2_buckets": [{ "binding": "FILES", "bucket_name": "print-better-files" }],
+  "durable_objects": { "bindings": [{ "name": "HUB", "class_name": "WorkspaceHub" }] },
+  "triggers": { "crons": ["*/15 * * * *"] },
+  "vars": { "APP_NAME": "Print Better" }
+}
+```
+
+The full file has a few more keys, such as `assets` and `observability`. The table describes those too.
+
+| Key | Default | Purpose |
+| --- | --- | --- |
+| `name` | `print-better` | The Worker's name. Email Routing sends mail to this Worker. |
+| `d1_databases` | `DB` bound to `print-better` | Accounts, workspaces, devices, printers, jobs, tokens, and settings. |
+| `r2_buckets` | `FILES` bound to `print-better-files` | Print documents and client downloads. |
+| `durable_objects` | `HUB`, class `WorkspaceHub` | One hub per workspace that holds the device connections. |
+| `triggers.crons` | Every 15 minutes | Runs the cleanup tasks below. |
+| `vars.APP_NAME` | `Print Better` | The server name until a server admin sets **Name** in **Server admin**. |
+| `observability` | On | Sends Worker logs to Cloudflare Workers Logs. |
+| `assets.run_worker_first` | API, MCP, OAuth, install, and download paths | Paths the Worker answers. Every other path serves the web app. |
+
+These 2 keys are optional and absent by default:
+
+| Key | Add it to |
+| --- | --- |
+| `routes` | Serve the server on your own domain. See [Use Your Own Domain](/docs/self-hosting/deploy#use-your-own-domain). |
+| `send_email` | Send email through Cloudflare. Add `"send_email": [{ "name": "EMAIL" }]`. See [Email](/docs/self-hosting/email#send-with-cloudflare). |
+
+Run `scripts/deploy.sh` after any change to this file.
+
+## Secrets
+
+| Secret | Purpose |
+| --- | --- |
+| `SETUP_TOKEN` | Must match the setup code to create the first account. |
+| `APP_SECRET` | Key for the AES-GCM encryption of stored secrets, such as SSO client secrets and the Resend API key. |
+| `AUTH_PEPPER` | Server-wide secret mixed into every password hash and recovery code. |
+
+The deploy script creates all 3. See [Secrets](/docs/self-hosting/deploy#secrets) for what happens if you lose one.
+
+For local development, copy `server/.dev.vars.example` to `server/.dev.vars` and fill in the 3 values.
+
+## Server Admin
+
+Server admins see **Server admin** in the sidebar. The first account on the server is a server admin.
+
+### General
+
+- **Name**: Shown on the sign-in page and in emails.
+- **Who can create an account**: **Only people with an invite link** (the default) or **Anyone with the address**. With the second choice, new people can sign up and make their own workspace.
+
+### Sign-In Options
+
+Turns on Google sign-in and sign-in with any OpenID Connect provider. See [Sign-In](/docs/self-hosting/sign-in).
+
+### Email
+
+Sets up sending email and receiving email to print. See [Email](/docs/self-hosting/email).
+
+### People
+
+**Everyone on this server** lists every account. For each person you can:
+
+- Select **Make admin** or **Remove admin**. Server admins can change sign-in, email, and sign-up settings, and manage every account.
+- Select **Reset password** to get a one-time link to send them.
+- Select **Delete account**. They are removed from every workspace and can't sign in again.
+
+The server always keeps at least 1 server admin.
+
+You can't delete someone who is the only owner of a workspace. Transfer or delete that workspace first.
+
+### Extensions
+
+Makes optional features available to workspaces. See [Extensions](/docs/extensions).
+
+## Scheduled Cleanup
+
+Every 15 minutes the Worker:
+
+- Deletes stored documents of finished jobs older than each workspace's **Keep documents for** time.
+- Deletes expired sessions, sign-in challenges, setup codes, device codes, API and OAuth tokens, and unused invites.
+- Deletes OAuth app registrations older than 30 days that have no tokens.
+- Marks uploads that never finished after 1 hour as failed.
+- Marks jobs with no progress for the workspace's **Keep trying for** time as failed.
+- Marks devices offline when their connection is gone.
+
+## Next Steps
+
+<Cards>
+
+<Card href="/docs/self-hosting/sign-in" title="Sign-In">
+
+Choose how people sign in and who can create an account.
+
+</Card>
+
+<Card href="/docs/self-hosting/updates-and-backups" title="Updates and Backups">
+
+Update the server and keep a copy of your data.
+
+</Card>
+
+</Cards>

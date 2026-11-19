@@ -1,0 +1,113 @@
+Workspace settings decide how your workspace handles printers, print jobs, and email. Open [**Settings**](/settings) in the sidebar, then pick a tab.
+
+Owners and admins can change these settings. Members can see them but can't change them.
+
+Each section saves on its own. After a change, select **Save changes**, or **Undo** to go back.
+
+## General
+
+The [**General**](/settings/general) tab has the workspace's name and default printer.
+
+| Setting | What it does |
+| --- | --- |
+| **Workspace name** | Shown in the menu and on invites. |
+| **Default printer** | Used when someone prints without picking a printer. |
+
+A job sent without a printer goes to the default printer, so it matters most for the [API](/docs/printing/api) and [AI assistants](/docs/printing/ai-assistants). The web app's print dialog also starts with it.
+
+Choose **Ask each time** for no default printer. Every job then has to name its printer.
+
+A printer stops being the default when you stop using it or forget it.
+
+Owners also see [Delete This Workspace](#delete-this-workspace) at the bottom of this tab.
+
+## Printing
+
+The [**Printing**](/settings/printing) tab has 2 sections: **Print jobs** and **New devices and printers**.
+
+### Print Jobs
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| **Keep documents for** | 24 hours | How long the server keeps a document after its job finishes. The job stays in the list. |
+| **Keep trying for** | 24 hours | How long a job can wait without progress before it stops with **Didn't print**. |
+| **Largest file people can print** | 50 MB | The size limit for every document, however it is sent. |
+
+**Keep documents for** offers 1 hour, 24 hours, 3 days, 7 days, or 30 days. The API accepts up to 90 days. Once the document is deleted, nobody can download it or try the job again.
+
+**Keep trying for** offers 1 hour, 6 hours, 24 hours, 3 days, or 7 days. The API accepts up to 14 days. Raise it if a device is often off for longer.
+
+**Largest file people can print** takes a whole number of megabytes, from 1 to 100.
+
+### New Devices and Printers
+
+| Setting | What it does |
+| --- | --- |
+| **Add printers automatically** | Whether printers a device finds are added for you. See [Add Printers Automatically](/docs/printers/add#add-printers-automatically). |
+| **Share printers on the local network** | The starting value for devices you add later. See [Share on Your Network](/docs/printers/lan-sharing). |
+
+## Email to Print
+
+The [**Email to print**](/settings/email) tab lets people print by emailing a document to a printer's own address.
+
+| Setting | What it does |
+| --- | --- |
+| **Allow printing by email** | Turns email to print on for this workspace. |
+| **Accept email from members** | Members can print from the email address on their account. |
+| **Also accept email from** | Other senders. One address per line, or `@` and a domain to allow the whole domain. |
+
+See [Print by Email](/docs/printing/email) for the full setup.
+
+## Printer Access
+
+The [**Printer access**](/settings/printer-access) tab appears only while the [Printer Access](/docs/extensions/printer-access) extension is on. It has **Everyone gets**, **Printer roles**, and **Access to every printer**.
+
+Changes on this tab apply as soon as you make them. There is no **Save changes** button.
+
+## Extensions
+
+The [**Extensions**](/settings/extensions) tab lists optional features for this workspace. Only owners can turn an extension on or off. See [Extensions](/docs/extensions).
+
+## Activity
+
+The [**Activity**](/settings/activity) tab lists recent changes in the workspace. Only owners and admins see it. See [Activity](/docs/workspaces/activity).
+
+## Delete This Workspace
+
+Only owners see this section, at the bottom of the [**General**](/settings/general) tab.
+
+<Steps>
+
+### Start the Deletion
+
+Under **Delete this workspace**, select **Delete workspace**.
+
+### Confirm
+
+Type the workspace's name, then select **Delete forever**.
+
+</Steps>
+
+<Callout type="warning">
+
+Deleting a workspace removes every printer, device, and print job in it, for everyone. Its devices are signed out and stop printing. This can't be undone.
+
+</Callout>
+
+## Next Steps
+
+<Cards>
+
+<Card href="/docs/workspaces/members" title="Members and Roles">
+
+Invite people and choose what they can change.
+
+</Card>
+
+<Card href="/docs/workspaces/activity" title="Activity">
+
+See who changed what, and when.
+
+</Card>
+
+</Cards>

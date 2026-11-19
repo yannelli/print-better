@@ -2,7 +2,7 @@
 //! CUPS-Get-Printers (one printer group each).
 
 use super::client::PrinterAttrs;
-use super::job::quality;
+use super::job::{quality, sides};
 use super::tags::{op, printer_state};
 use super::value::{Attribute, Group, Value};
 use crate::model::{Capabilities, PrinterState, PrinterStatus, Supply, SupplyKind};
@@ -21,6 +21,7 @@ pub const REQUESTED: &[&str] = &[
     "color-supported",
     "print-color-mode-supported",
     "sides-supported",
+    "sides-default",
     "media-supported",
     "media-default",
     "media-source-supported",
@@ -56,6 +57,7 @@ pub fn parse(g: &Group) -> PrinterAttrs {
         identify_supported: g.get("operations-supported").is_some_and(|a| a.ints().any(|o| o == i32::from(op::IDENTIFY_PRINTER)))
             || g.get("identify-actions-supported").is_some(),
         page_ranges_supported: page_ranges_supported(g),
+        sides_default: g.get("sides-default").and_then(Attribute::str).and_then(sides),
     }
 }
 

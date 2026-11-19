@@ -1,0 +1,139 @@
+Passwords and passkeys always work on your server. Google and other single sign-on providers are optional.
+
+## Who Can Create an Account
+
+New accounts are invite-only by default. A workspace owner or admin sends an invite link from [Members](/docs/workspaces/members), and the person creates an account from that link.
+
+To let anyone with your server's address sign up:
+
+1. Open **Server admin**, then **General**.
+2. Under **Who can create an account**, choose **Anyone with the address**.
+3. Select **Save changes**.
+
+People who sign up without an invite name their own new workspace after they sign up.
+
+Single sign-on follows the same rule. Without an invite, a new Google or OpenID Connect sign-in works only when sign-up is open.
+
+## Passwords
+
+A password needs at least 8 characters. A username has 2 to 32 letters, numbers, dots, dashes, or underscores. People sign in with their username or their email address.
+
+The server hashes passwords with scrypt and a server-wide secret, `AUTH_PEPPER`. After 10 failed attempts for 1 account within 15 minutes, the server refuses further attempts for that account until the 15 minutes pass.
+
+## Passkeys
+
+A passkey signs you in with a fingerprint, face, or device PIN. Anyone can create an account with a passkey and no password.
+
+To add a passkey:
+
+1. Open **Your account**, then **Sign-in and security**.
+2. Under **Passkeys**, select **Add a passkey**.
+
+<Callout type="warning">
+
+A passkey works only on the hostname where it was created. Choose your final domain before people register passkeys. See [Use Your Own Domain](/docs/self-hosting/deploy#use-your-own-domain).
+
+</Callout>
+
+You can't remove your last way to sign in. Add a password, another passkey, or a connected account first.
+
+## Sign in With Google
+
+<Steps>
+
+### Create an OAuth Client
+
+In Google Cloud Console, open **APIs & Services**, then **Credentials**. Create an OAuth client ID of type **Web application**.
+
+### Add the Redirect Address
+
+Add this address under **Authorized redirect URIs**:
+
+```text
+https://your-print-better.example/api/auth/sso/google/callback
+```
+
+**Server admin** shows the same address as **Redirect address**, ready to copy.
+
+### Turn It On
+
+Open **Server admin**, then **Sign-in options**. Under **Sign in with Google**, paste the **Client ID** and **Client secret**. Turn on **Show this option on the sign-in page**, then select **Save changes**.
+
+</Steps>
+
+## Sign in With Your Organization
+
+This works with Microsoft Entra ID, Okta, Authentik, Keycloak, and other OpenID Connect providers.
+
+<Steps>
+
+### Register an App With Your Provider
+
+Create a confidential web client. Use this redirect address:
+
+```text
+https://your-print-better.example/api/auth/sso/oidc/callback
+```
+
+Print Better asks for the scopes `openid email profile`.
+
+### Enter the Details
+
+Open **Server admin**, then **Sign-in options**. Under **Sign in with your organization**, fill in:
+
+- **Button name**: People see "Continue with" followed by this name.
+- **Issuer address**: The `https` address of your provider. Its discovery document must be at the issuer address plus `/.well-known/openid-configuration`.
+- **Client ID** and **Client secret**.
+
+### Turn It On
+
+Turn on **Show this option on the sign-in page**, then select **Save changes**. The server checks the issuer's discovery document when you save.
+
+</Steps>
+
+## How Single Sign-On Finds an Account
+
+When someone signs in with Google or your organization, the server looks for an account in this order:
+
+1. An account already connected to that Google or organization account.
+2. An account whose verified email matches the provider's verified email. They are connected right away.
+3. A new account, when the person has an invite or sign-up is open.
+
+If an account has that email but hasn't verified it, sign-in stops. The person signs in another way first and connects the provider from their account.
+
+## Connect an Existing Account
+
+Once Google or your organization sign-in is on, people can connect it to the account they have:
+
+1. Open **Your account**, then **Sign-in and security**.
+2. Under **Connected accounts**, choose the provider.
+
+A connected account is also a backup way in.
+
+## Getting Back In
+
+| Way back in | How it works |
+| --- | --- |
+| Recovery codes | Under **Sign-in and security**, select **Create recovery codes**. You get 10 codes. Each works once, and new codes replace the old ones. On the sign-in page, select **Forgot your password?** and enter a code. |
+| Reset link by email | On **Forgot your password?**, use **Email me a reset link**. The link works for 1 hour. This needs [outbound email](/docs/self-hosting/email). |
+| Reset link from an admin | In **Server admin**, then **People**, select **Reset password** next to the person. Send them the one-time link. It works for 24 hours. |
+
+Setting a new password from a reset link signs out every other session.
+
+## Next Steps
+
+<Cards>
+
+<Card href="/docs/self-hosting/email" title="Email">
+
+Send invites, reset links, and email verification.
+
+</Card>
+
+<Card href="/docs/reference/security" title="Security">
+
+How the server stores passwords, sessions, and tokens.
+
+</Card>
+
+</Cards>

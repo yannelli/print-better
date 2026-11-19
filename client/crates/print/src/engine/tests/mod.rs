@@ -1,6 +1,9 @@
 //! Route fallthrough: unreachable or unusable routes give way to the next one; anything that may
 //! have reached the printer stops the walk.
 
+mod expect;
+mod follow;
+
 use super::{CancelFlag, Engine, EngineOptions, PrintOutcome};
 use crate::backends::tests::{EventLog, closed_port, connected_within, drop_after, listener, read_all, stall};
 use crate::convert::tests::TestDir;
@@ -47,7 +50,7 @@ async fn unreachable_and_malformed_routes_fall_through() {
     let p = printer(vec![socket(closed_port().await), "socket://".into(), socket(port)]);
     let log = EventLog::default();
     let outcome = engine(&dir).print(&p, &document(&dir, PDF), &JobOptions::default(), &CancelFlag::default(), &log.sink()).await;
-    assert_eq!(outcome.expect("third route prints"), PrintOutcome { route: RouteKind::Socket, pages: None });
+    assert_eq!(outcome.expect("third route prints"), PrintOutcome { route: RouteKind::Socket, pages: None, warning: None });
     let sent = server.await.expect("server");
     assert!(sent.starts_with(b"\x1b%-12345X@PJL JOB NAME=\"Engine test\"") && sent.windows(PDF.len()).any(|w| w == PDF));
 }

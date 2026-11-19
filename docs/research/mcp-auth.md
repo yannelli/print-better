@@ -1,38 +1,48 @@
-# Print Better protocol research: MCP, OAuth, WebAuthn, OIDC, RFC 8628, OWASP
+# Print Better Protocol Research: MCP, OAuth, WebAuthn, OIDC, RFC 8628, OWASP
 
-Researched 2026-11-18 from primary sources (URL under each heading). UNVERIFIED = not confirmed in a primary source. Nothing installed.
+The Print Better Worker has to be an MCP server that Claude and ChatGPT can sign in to. It also needs passkey and Google sign-in, device pairing with a short code, and password storage, all inside the Workers runtime.
 
-## 0. Read first
+Researched 2026-11-18 from primary sources, with the URLs under each heading. Nothing was installed.
+
+Markers used below:
+- UNVERIFIED: not confirmed in a primary source.
+- (inference): my conclusion from the sources, not a stated rule.
+
+## 0. Read First
 - MCP latest is `2026-07-28`: stateless (no initialize, no sessions, no GET stream, no ping). Hosted Claude still uses the legacy `initialize` handshake per its docs, so build a dual-era stateless server.
 - Dynamic Client Registration is now spec-Deprecated; Client ID Metadata Documents (CIMD) are preferred. Claude and ChatGPT both prefer CIMD when the AS advertises it and both still fall back to DCR.
 - WebAuthn Level 3 became a W3C Recommendation on 2026-08-25.
 - OWASP PBKDF2 (600k) exceeds the Workers WebCrypto PBKDF2 cap (100k). No native Argon2id; `scrypt` exists via `node:crypto`.
 
-## 1. MCP transport and client compatibility
+## 1. MCP Transport and Client Compatibility
+An MCP client talks to the server by POSTing JSON-RPC messages to 1 HTTP endpoint. The 2026-07-28 version drops the handshake and sessions, but hosted clients still send the older `initialize` handshake, so the server has to answer both.
+
 Sources: https://modelcontextprotocol.io/specification/versioning , .../2026-07-28/basic/transports/streamable-http , .../2026-07-28/basic/versioning , .../2025-11-25/basic/transports , https://claude.com/docs/connectors/building/index , https://zuplo.com/learn/mcp/compatibility/clients/claude-connectors , https://developers.openai.com/apps-sdk/build/mcp-server
 - Latest version string: `2026-07-28` (marked Current). Earlier: `2025-11-25`, `2025-06-18`, `2025-03-26`, `2024-11-05` (HTTP+SSE, Deprecated). Date = last backwards-incompatible change.
-- 2026-07-28 transport: one endpoint, POST only. Each JSON-RPC message is its own POST; body is exactly ONE request or notification (client never sends responses).
+- 2026-07-28 transport: 1 endpoint, POST only. Each JSON-RPC message is its own POST; body is exactly ONE request or notification (client never sends responses).
 - Required POST headers: `Accept: application/json, text/event-stream` (client MUST send; spec defines no server rejection, be lenient), `MCP-Protocol-Version: 2026-07-28` (MUST equal `_meta["io.modelcontextprotocol/protocolVersion"]`), `Mcp-Method` (= body `method`, all requests), `Mcp-Name` (= `params.name`/`params.uri` for tools/call, resources/read, prompts/get; non-ASCII as `=?base64?...?=`).
 - Server errors (HTTP 400 unless noted): header missing/mismatch `-32020`; unsupported version `-32022` with `data:{supported,requested}`; missing/invalid `_meta` `-32602`; missing client capability `-32021`; unknown method 404 + `-32601`; bad `Origin` 403.
 - Responses: request gets `application/json` (single object) OR `text/event-stream` scoped to that request; client MUST accept both. Notification gets `202` no body. JSON-only is fully compliant.
 - GET and DELETE removed in 2026-07-28; server SHOULD answer 405. Ignore `Mcp-Session-Id` and `Last-Event-ID`; never mint or echo session ids. Server-to-client requests replaced by MRTR (`resultType:"input_required"`); change notifications via POST `subscriptions/listen` (SSE).
-- Legacy 2025-11-25: one endpoint supporting POST and GET; `MCP-Session-Id` is optional (MAY be assigned on the InitializeResult; clients echo only if given); GET MUST return SSE or 405; POST may return JSON; notifications/responses get 202; `MCP-Protocol-Version` on all post-init requests (absent means assume `2025-03-26`; invalid means 400); invalid Origin 403. Header names case-insensitive (`Mcp-Session-Id` vs `MCP-Session-Id` is cosmetic).
+- Legacy 2025-11-25: 1 endpoint supporting POST and GET; `MCP-Session-Id` is optional (MAY be assigned on the InitializeResult; clients echo only if given); GET MUST return SSE or 405; POST may return JSON; notifications/responses get 202; `MCP-Protocol-Version` on all post-init requests (absent means assume `2025-03-26`; invalid means 400); invalid Origin 403. Header names case-insensitive (`Mcp-Session-Id` vs `MCP-Session-Id` is cosmetic).
 - Stateless JSON-only (POST JSON, GET 405, no sessions) is compliant with 2025-03-26..2025-11-25 (sessions MAY, 405 explicitly allowed) and is the native 2026-07-28 shape, which adds: `server/discover`, `_meta` validation, Mcp-Method/Mcp-Name checks, `resultType` on every result, `ttlMs`+`cacheScope` on list results.
 - Era matrix (versioning page): modern client + legacy-only server fails; legacy client + modern-only server fails (400, missing headers); dual-era server works with everything. Dual-era dispatch: request with modern `_meta` is served statelessly; an `initialize` request selects legacy semantics. A modern client falls back to `initialize` only when the probe gets 400/404/405 whose body is not a recognized modern JSON-RPC error.
 - Recommended build (inference): route on `_meta` presence. Modern: full 2026 shape. Legacy: answer `initialize` without a session id, 202 for `notifications/initialized`, `ping` returns `{}`, omit `resultType`/`ttlMs`/`cacheScope`, 405 on GET.
 - Claude hosted (claude.ai, Desktop, mobile, Cowork): Streamable HTTP; docs (verified 2026-07-31) say it still runs `initialize`; "support for 2026-07-28 is rolling out". Anthropic's own example server is stateless JSON (`sessionIdGenerator: undefined, enableJsonResponse: true`), so the minimal shape works. URL ending `/sse` selects legacy SSE. Unsupported: resource subscriptions, sampling. Limits: ~150k chars/tool result, 240s/tool call. Strict `Origin` checks break Anthropic requests (allow absent Origin). Egress `160.79.104.0/21`. Directory rule: every tool declares `readOnlyHint` and `destructiveHint` (custom-connector enforcement UNVERIFIED).
-- Claude Code: one third-party packet capture (Sept 2026, v2.1.283, https://computingforgeeks.com/migrate-mcp-server-stateless/) shows `server/discover` probe first with `MCP-Protocol-Version: 2026-07-28`, then `subscriptions/listen`; falls back to the 2025-11-25 handshake on HTTP 400. Single source; official docs silent. Claude Desktop/claude.ai adoption of 2026-07-28: UNVERIFIED.
+- Claude Code: 1 third-party packet capture (Sept 2026, v2.1.283, https://computingforgeeks.com/migrate-mcp-server-stateless/) shows `server/discover` probe first with `MCP-Protocol-Version: 2026-07-28`, then `subscriptions/listen`; falls back to the 2025-11-25 handshake on HTTP 400. Single source; official docs silent. Claude Desktop/claude.ai adoption of 2026-07-28: UNVERIFIED.
 - ChatGPT: Streamable HTTP at a stable URL such as `/mcp`. Session handling, GET 405 tolerance and negotiated protocol version: UNVERIFIED (OpenAI pages link both 2025-06-18 and 2025-11-25). Tool metadata is frozen at workspace admin approval; custom headers unsupported.
 - Behavior of a server without `listChanged` receiving `subscriptions/listen`: not specified (UNVERIFIED). Test against Claude Code; candidate is ack with empty `notifications` then graceful `resultType:"complete"`.
 
-## 2. MCP message shapes
+## 2. MCP Message Shapes
 Sources: .../2026-07-28/server/tools , .../2026-07-28/server/discover , .../2026-07-28/basic , .../2026-07-28/changelog , .../2025-11-25/basic/lifecycle , .../2025-11-25/basic/utilities/ping , .../2025-06-18/changelog , schema.ts at https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/2026-07-28/schema.ts
+
 Legacy handshake (2025-11-25; still needed):
 ```json
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"c","version":"1"}}}
 {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"print-better","title":"Print Better","version":"0.1.0"},"instructions":"..."}}
 ```
 - Negotiation: server echoes the requested version if supported, else its latest supported; client disconnects if it cannot accept. `serverInfo`: `name`,`version` required; `title`,`description`,`icons`,`websiteUrl` optional. `instructions` optional. Then client POSTs `{"jsonrpc":"2.0","method":"notifications/initialized"}` (no id) and gets 202. `ping` returns `{"result":{}}` (removed in 2026).
+
 Modern (2026-07-28): no handshake. Every request carries `params._meta` with `io.modelcontextprotocol/protocolVersion` (required), `.../clientCapabilities` (required, may be `{}`), `.../clientInfo` (SHOULD). Server SHOULD put `io.modelcontextprotocol/serverInfo` in each result `_meta`.
 ```json
 {"jsonrpc":"2.0","id":"d1","result":{"resultType":"complete","supportedVersions":["2026-07-28","2025-11-25"],"capabilities":{"tools":{}},"_meta":{"io.modelcontextprotocol/serverInfo":{"name":"print-better","version":"0.1.0"}},"instructions":"...","ttlMs":3600000,"cacheScope":"public"}}
@@ -47,7 +57,9 @@ Modern (2026-07-28): no handshake. Every request carries `params._meta` with `io
 - Codes: `-32700` parse, `-32600` invalid request, `-32601` method not found, `-32602` invalid params, `-32603` internal; MCP `-32020` HeaderMismatch, `-32021` MissingRequiredClientCapability, `-32022` UnsupportedProtocolVersion (`-32020..-32099` reserved for spec). Never emit legacy `-32002` (resource not found, now `-32602`) or `-32042`.
 - Safe to ignore: icons, elicitation/MRTR (never return `input_required`), sampling/roots/logging (Deprecated; do not emit `notifications/message` unless `_meta.logLevel` is sent), tasks extension `io.modelcontextprotocol/tasks` (advertise only if implemented), `x-mcp-header`, `extensions`, resources/prompts/completions, OTel `traceparent` meta, progress.
 
-## 3. MCP authorization (2026-07-28 spec + client reality)
+## 3. MCP Authorization (2026-07-28 Spec + Client Reality)
+The MCP server is an OAuth resource server. A client that gets a 401 reads the protected-resource metadata, finds the authorization server, identifies itself (CIMD or DCR), runs the authorization code flow with PKCE, and then sends the access token as a Bearer header on every request.
+
 Sources: https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization (+ /authorization-server-discovery, /client-registration), https://datatracker.ietf.org/doc/html/rfc9728 , https://claude.com/docs/connectors/building/authentication , .../lazy-authentication , https://claude.ai/oauth/claude-code-client-metadata , https://developers.openai.com/apps-sdk/build/auth
 - Roles: MCP server = OAuth 2.1 resource server; auth optional in spec. Same Worker can host the AS (issuer = origin). Access token only in `Authorization: Bearer` on every request, never in the query.
 - PRM (RFC 9728) MUST be served with `resource` (MUST equal the URL; Claude needs an exact match to the URL the user typed) and `authorization_servers` (>=1; Claude uses only the first). Discover via `WWW-Authenticate: Bearer resource_metadata="..."` on 401, else `/.well-known/oauth-protected-resource/<path>` then root. Response 200 `application/json`.
@@ -64,12 +76,15 @@ Sources: https://modelcontextprotocol.io/specification/2026-07-28/basic/authoriz
 - RFC 8707: client MUST send `resource` (canonical MCP URL, prefer no trailing slash, e.g. `https://pb.example.com/mcp`) in BOTH authorize and token requests even if AS ignores it. AS binds it into the token (`aud`); RS MUST verify audience is itself, accept only own tokens, never pass tokens through. Both Claude and ChatGPT send it.
 - RFC 9207 `iss`: AS SHOULD return `iss` in every authorize response (incl. errors) and advertise `authorization_response_iss_parameter_supported`; clients MUST compare a present `iss` to the recorded issuer by exact string before redeeming the code (new in 2026-07-28). ChatGPT rejects missing/mismatched `iss` when advertised. Claude validation: UNVERIFIED.
 - Refresh: clients MAY add `offline_access` if in AS `scopes_supported` (Claude does); AS decides. Claude refreshes on 401 and up to 5 min before expiry; return `invalid_grant` for dead refresh tokens; rotate refresh tokens for public clients (return the new one in the same response). `/token` MUST accept `application/x-www-form-urlencoded`; `/register` is JSON. Without `offline_access`, ChatGPT access can lapse.
-- Errors: 401 + `WWW-Authenticate` for missing/invalid token (Claude ignores `WWW-Authenticate` on a 200 and a 200 with `isError` never starts sign-in); 403 `error="insufficient_scope", scope="...", resource_metadata="..."` triggers step-up (any other 403 is terminal in Claude). Send all needed scopes in one challenge.
+- Errors: 401 + `WWW-Authenticate` for missing/invalid token (Claude ignores `WWW-Authenticate` on a 200 and a 200 with `isError` never starts sign-in); 403 `error="insufficient_scope", scope="...", resource_metadata="..."` triggers step-up (any other 403 is terminal in Claude). Send all needed scopes in 1 challenge.
 - Claude timing: 10s for discovery/register/token, 30s for refresh; caches PRM and AS metadata ~5 min; AS host must be reachable from Anthropic egress (WAF can break it).
 - Minimum endpoint set for claude.ai (derived from the above): (1) `POST /mcp` returning 401 with `resource_metadata`; (2) `GET /.well-known/oauth-protected-resource[/mcp]`; (3) `GET /.well-known/oauth-authorization-server`; (4) `GET /authorize` (login/consent UI, CIMD fetch, exact redirect check); (5) `POST /token` (authorization_code + refresh_token, PKCE, form body); (6) `POST /register` unless CIMD-only. Optional: revocation, userinfo (ChatGPT enterprise domain rules want OIDC + userinfo with `email_verified`).
 
 ## 4. WebAuthn Level 3 (W3C Recommendation 2026-08-25)
+Registration gives the server a credential id and public key inside `authData`. Each sign-in returns a signature over `authData` and the hash of `clientDataJSON`. The server checks the challenge, origin and `rpIdHash`, then verifies that signature with the stored key.
+
 Sources: https://www.w3.org/TR/webauthn-3/ (7.1, 7.2, 6.1, 6.5.1, 6.5.5, 5.4, 5.8.5, 13.4.3, 14.6.1, 15.1), https://www.rfc-editor.org/rfc/rfc9053 (7.1, 7.2), https://www.rfc-editor.org/rfc/rfc8230 , https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential/parseCreationOptionsFromJSON_static
+
 Byte layout:
 ```
 authData = rpIdHash[32] | flags[1] | signCount[4, u32 BE] | attestedCredentialData? | extensions(CBOR map)?
@@ -87,6 +102,7 @@ attCredData = aaguid[16] | credIdLen[2, u16 BE, <=1023] | credId[credIdLen] | cr
 | -7 ES256 | `{1:2,3:-7,-1:1,-2:x32,-3:y32}` | `{kty:"EC",crv:"P-256",x,y}` base64url | `{name:"ECDSA",hash:"SHA-256"}`, import `{name:"ECDSA",namedCurve:"P-256"}` | ASN.1 DER, convert to raw r\|\|s (64) |
 | -8 EdDSA | `{1:1,3:-8,-1:6,-2:x32}` | `{kty:"OKP",crv:"Ed25519",x}` | `{name:"Ed25519"}` (Workers supports Secure Curves; legacy `NODE-ED25519` exists) | raw 64 bytes |
 | -257 RS256 | `{1:3,3:-257,-1:n,-2:e}` | `{kty:"RSA",n,e,alg:"RS256"}` | `{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"}` | raw, not ASN.1 wrapped |
+
 - DER to raw: `30 len 02 rlen r 02 slen s`; strip leading `00`, left-pad r and s to 32 bytes each. P-256 DER is <=72 bytes, so single-byte lengths suffice. L3 guarantees ES256 keys use P-256 uncompressed and EdDSA uses Ed25519; spec warns to check the point is on the curve (rely on importKey, behavior on Workers UNVERIFIED).
 - Assertion checks (7.2): if `allowCredentials` given, credential id must be in it. Known user: credential belongs to that user and `userHandle` (if present) equals the account handle. Discoverable login (no user yet): `response.userHandle` MUST be present, look up the user, then require the credential belongs to them. Then `type=="webauthn.get"`, challenge, origin, `rpIdHash`; UP MUST be set; UV required iff you asked `userVerification:"required"` (else ignore); stored BE must equal current BE (if stored BE=1 current must be 1, if 0 current must be 0); update BS.
 - Signature: verify `sig` over `authData || SHA-256(clientDataJSON)` (raw concatenated bytes) with the stored key.
@@ -94,17 +110,21 @@ attCredData = aaguid[16] | credIdLen[2, u16 BE, <=1023] | credId[credIdLen] | cr
 - Recommended options: `pubKeyCredParams` `[{type:"public-key",alg:-8},{...,alg:-7},{...,alg:-257}]` (spec: SHOULD include at least these; avoid -9, -19, -35 variants per RFC 9864 note); `authenticatorSelection:{residentKey:"required",requireResidentKey:true,userVerification:"required"}` (spec: set `requireResidentKey` iff `residentKey` is required; choosing UV "required" for passkey-primary login and "preferred" for second-factor use is my inference); `attestation:"none"`; `timeout` 300000 (range 300000-600000); challenge >=16 random bytes (use 32), single use, expiry ~5 min, stored server side; `user.id` = 64 random bytes stored on the account, no PII; `excludeCredentials` = user's existing ids. Conditional mediation enables passkey autofill on the login field.
 - Store per credential: id, publicKey (or JWK), alg, signCount, BE, BS, uvInitialized, transports, createdAt, nickname.
 
-## 5. OIDC (Google and generic)
+## 5. OIDC (Google and Generic)
+Google sign-in uses the authorization code flow with PKCE. The server validates the returned `id_token` and keys the user by `sub`.
+
 Sources: https://accounts.google.com/.well-known/openid-configuration (fetched live 2026-11-18), https://developers.google.com/identity/openid-connect/openid-connect , https://openid.net/specs/openid-connect-core-1_0.html (3.1.3.7), https://openid.net/specs/openid-connect-discovery-1_0.html
 - Google discovery: `https://accounts.google.com/.well-known/openid-configuration`. `issuer` `https://accounts.google.com`; `authorization_endpoint` `https://accounts.google.com/o/oauth2/v2/auth`; `token_endpoint` `https://oauth2.googleapis.com/token`; `userinfo_endpoint` `https://openidconnect.googleapis.com/v1/userinfo`; `jwks_uri` `https://www.googleapis.com/oauth2/v3/certs`; `revocation_endpoint` `https://oauth2.googleapis.com/revoke`; `device_authorization_endpoint` `https://oauth2.googleapis.com/device/code`. Signing alg `RS256` only; scopes `openid email profile`.
 - PKCE: `code_challenge_methods_supported` is `["plain","S256"]`, use S256. Token endpoint auth: `client_secret_post`/`client_secret_basic` (web client sends its secret even with PKCE). `authorization_response_iss_parameter_supported:true`, so verify `iss` on the callback equals `https://accounts.google.com`.
 - id_token validation: `iss` is `https://accounts.google.com` OR `accounts.google.com` (Google docs; discovery lists only the https form, accept both); `aud` equals your client id (reject extra untrusted audiences; if `azp` present it should be your client id); `exp` > now (allow small skew), sanity-check `iat`; `nonce` equals the per-request value (always send one; Google docs are inconsistent on whether it is required); `alg` must be RS256 (reject `none`/HS*); signature by the JWKS key whose `kid` matches. OIDC Core allows skipping signature verification for tokens received straight from the token endpoint over TLS; still verify if the token ever transits the browser.
 - Claims: key users by `sub` (stable, never reused, <=255 ASCII); `email` can change, trust it only with `email_verified:true`; check `hd` for Workspace-only access; `name`/`picture` may be absent.
-- JWKS caching: honor HTTP cache headers. Live response: `cache-control: public, max-age=21749, must-revalidate`, two RS256 `use:sig` keys. On unknown `kid`, refetch once (rate-limited), else reject. In Workers keep an isolate-level cache with TTL from `max-age`, optionally backed by the Cache API.
+- JWKS caching: honor HTTP cache headers. Live response: `cache-control: public, max-age=21749, must-revalidate`, 2 RS256 `use:sig` keys. On unknown `kid`, refetch once (rate-limited), else reject. In Workers keep an isolate-level cache with TTL from `max-age`, optionally backed by the Cache API.
 - Generic discovery (Discovery 1.0): URL = issuer (trailing `/` removed) + `/.well-known/openid-configuration`; returned `issuer` MUST be identical to the issuer URL used and to token `iss`. REQUIRED fields: `issuer`, `authorization_endpoint`, `token_endpoint` (unless implicit-only), `jwks_uri`, `response_types_supported`, `subject_types_supported`, `id_token_signing_alg_values_supported` (MUST include RS256). RECOMMENDED: `userinfo_endpoint`, `scopes_supported`, `claims_supported`, `registration_endpoint`. Client needs at minimum: issuer, authorization_endpoint, token_endpoint, jwks_uri, id_token_signing_alg_values_supported (+ `code_challenge_methods_supported`, `token_endpoint_auth_methods_supported` when present).
 - Flow: authorization code + PKCE S256 + `state` + `nonce`, all stored server side (single use, ~10 min).
 
 ## 6. RFC 8628 Device Authorization Grant
+A device without a browser asks the server for a short user code, shows it, and polls the token endpoint while the user approves that code on another device.
+
 Source: https://www.rfc-editor.org/rfc/rfc8628 (sections 3.1-3.5, 5.1, 5.2, 6.1). Advertise `device_authorization_endpoint` in AS metadata (section 4).
 - Request: `POST` form-encoded to the device authorization endpoint with `client_id` (public client) and optional `scope`. Response 200 JSON with `Cache-Control: no-store`: `device_code`, `user_code`, `verification_uri` (REQUIRED, short and typable), `verification_uri_complete` (optional, for QR), `expires_in` (REQUIRED seconds; RFC example 1800), `interval` (optional, default 5).
 - Poll: `POST /token` with `grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=...&client_id=...`. Errors: `authorization_pending` (keep polling, wait >= interval); `slow_down` (interval += 5 for this and all later requests); `access_denied` and `expired_token` (stop; restart only after user action); any other error (stop). On connection timeout back off (doubling RECOMMENDED).
@@ -112,17 +132,17 @@ Source: https://www.rfc-editor.org/rfc/rfc8628 (sections 3.1-3.5, 5.1, 5.2, 6.1)
 - `device_code`: not shown to users, so use very high entropy (inference: 256 bits). Do not embed `user_code` in `verification_uri` (NOT RECOMMENDED); use `verification_uri_complete` for QR only, and the server SHOULD still display the code and ask the approver to confirm it matches the device screen.
 - Threat: a guessed `user_code` lets an attacker bind the device to their own account. Require an authenticated session (passkey) at the approval page and show device name/IP. Lifetime: pick 10-15 min (inference). On Workers, count attempts atomically (Durable Object; KV is eventually consistent).
 
-## 7. OWASP password storage
+## 7. OWASP Password Storage
 Sources: https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html (also raw markdown from the OWASP CheatSheetSeries repo), https://github.com/cloudflare/workerd/issues/1346 , https://developers.cloudflare.com/workers/runtime-apis/nodejs/crypto/ , https://developers.cloudflare.com/workers/platform/limits/
 - Preference: Argon2id, then scrypt, then bcrypt (legacy), PBKDF2 only when FIPS-140 is required.
 - Argon2id minimums (all p=1): m=19456 KiB t=2 (headline); m=47104 t=1; m=12288 t=3; m=9216 t=4; m=7168 t=5. Never Argon2i.
 - scrypt (r=8): N=2^17 p=1 (128 MiB); 2^16 p=2; 2^15 p=3; 2^14 p=5; 2^13 p=10.
 - bcrypt: cost >=10, 72-byte password cap. PBKDF2-HMAC-SHA256: 600,000 iterations; SHA512 220,000; SHA1 1,400,000 (legacy).
-- Per-user random salt required; optional pepper (HMAC after hashing, key stored outside the DB). Tune so one hash takes under 1 second.
+- Per-user random salt required; optional pepper (HMAC after hashing, key stored outside the DB). Tune so 1 hash takes under 1 second.
 - Workers constraints: WebCrypto has PBKDF2 but production caps iterations at 100,000 (workerd issue #1346, open as of Oct 2026; the cap was only made configurable inside workerd), so OWASP's 600k is not reachable via `crypto.subtle`. `node:crypto` `argon2` is NOT supported on Workers; `scrypt`/`scryptSync` were added 2024-07-03 (needs `nodejs_compat`, default on for compatibility date >= 2026-08-04). The 128 MiB isolate cap rules out scrypt N=2^17; N=2^15 p=3 (32 MiB) or 2^14 p=5 is the practical fit (Node's default `maxmem` is 32 MiB from memory, so raise it explicitly; both that and Workers behavior UNVERIFIED). Free plan CPU is 10 ms per request, so any compliant hash needs the Paid plan (default 30 s CPU, up to 5 min).
 - Tradeoff (inference): a pure-TS or WASM Argon2id (19 MiB, t=2) is OWASP's first choice but adds code or a dependency; with passkeys as the primary login, scrypt N=2^15 r=8 p=3 via `node:crypto` is the smallest compliant path. Store params in the hash string and rehash on login when params rise.
 
-## 8. Open items (UNVERIFIED)
+## 8. Open Items (UNVERIFIED)
 - Whether claude.ai, Claude Desktop and ChatGPT send `server/discover` or `initialize` today; which `protocolVersion` ChatGPT negotiates; ChatGPT behavior with no `Mcp-Session-Id` and GET 405.
 - Hosted-Claude CIMD `client_id` URL; Claude `iss` validation; whether strict `Origin` rejection applies (what Origin, if any, Anthropic sends).
 - `subscriptions/listen` handling for servers without `listChanged`; whether any current client still sends JSON-RPC batches.

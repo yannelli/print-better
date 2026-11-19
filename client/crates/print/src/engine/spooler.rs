@@ -103,7 +103,7 @@ async fn state(name: &str, job: u32) -> Result<spool::JobState> {
 }
 
 async fn follow(a: &Attempt<'_>, name: &str, job: u32, pages: Option<u32>) -> Result<PrintOutcome> {
-    let done = |printed: u32| Ok(PrintOutcome { route: RouteKind::Os, pages: pages.or((printed > 0).then_some(printed)) });
+    let done = |printed: u32| Ok(PrintOutcome { route: RouteKind::Os, pages: pages.or((printed > 0).then_some(printed)), warning: None });
     let started = Instant::now();
     let (mut delay, mut errors, mut printed) = (FIRST_POLL, 0, 0);
     let mut last: Option<PrintEvent> = None;

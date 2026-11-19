@@ -1,11 +1,11 @@
-import { CircleCheck, CircleX, Send } from 'lucide-react'
+import { CircleCheck, CircleX, Send, TriangleAlert } from 'lucide-react'
 import type { Job } from '@shared/types'
-import { StatusPill } from '@/components/status'
+import { StatusPill, toneContainer } from '@/components/status'
 import { Button } from '@/components/ui/button'
 import { useJob } from '@/hooks/jobs'
 import { plural } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { jobStatus } from '@/lib/words'
+import { jobStatus, printedWithProblem } from '@/lib/words'
 
 export function SentState({
   ws,
@@ -22,14 +22,13 @@ export function SentState({
 }) {
   const job = useJob(ws, created.id).data ?? created
   const words = jobStatus(job)
-  const Icon = job.status === 'completed' ? CircleCheck : job.status === 'failed' ? CircleX : Send
+  const warned = printedWithProblem(job)
+  const Icon = warned ? TriangleAlert : job.status === 'completed' ? CircleCheck : job.status === 'failed' ? CircleX : Send
+  const tone = job.status === 'failed' ? 'bad' : warned ? 'warn' : 'ok'
   return (
     <div className="flex flex-col items-center gap-6 py-6 text-center">
       <span
-        className={cn(
-          'flex size-20 items-center justify-center rounded-[2rem] animate-in zoom-in-50 duration-500 ease-spring',
-          job.status === 'failed' ? 'bg-bad-container text-on-bad-container' : 'bg-ok-container text-on-ok-container',
-        )}
+        className={cn('flex size-20 items-center justify-center rounded-[2rem] animate-in zoom-in-50 duration-500 ease-spring', toneContainer(tone))}
       >
         <Icon className="size-9" />
       </span>

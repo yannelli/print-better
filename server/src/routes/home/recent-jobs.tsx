@@ -6,7 +6,7 @@ import { SkeletonRows } from '@/components/states'
 import { StatusPill } from '@/components/status'
 import { useJobs } from '@/hooks/jobs'
 import { dateTime, timeAgo } from '@/lib/format'
-import { jobStatus } from '@/lib/words'
+import { jobStatus, printedWithProblem } from '@/lib/words'
 
 const SHOWN = 5
 
@@ -37,6 +37,7 @@ export function RecentJobs({ ws }: { ws: string }) {
                   <span className="truncate text-sm text-muted-foreground">
                     {job.printerName ?? 'Removed printer'}, <time title={dateTime(job.createdAt)}>{timeAgo(job.createdAt)}</time>
                   </span>
+                  {printedWithProblem(job) && <span className="text-sm text-on-warn-container">{status.detail}</span>}
                 </div>
               </div>
               <StatusPill status={status} className="sm:shrink-0" />
