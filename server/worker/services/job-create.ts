@@ -94,6 +94,9 @@ function parseDocument(body: Json, maxBytes: number): DocumentInput {
   return { kind: 'url', url: str(body, 'url', { max: 2000, pattern: /^https?:\/\/\S+$/i, hint: 'url must be an http(s) URL' }) }
 }
 
+/** Where a member's job comes from: an AI assistant, the web app, or a token. */
+export const requestSource = (ctx: Ctx): 'mcp' | 'web' | 'api' => ctx.via ?? (ctx.actor.type === 'user' ? 'web' : 'api')
+
 /** `POST /workspaces/:ws/jobs`: an upload slot (two-step), text, a URL the server fetches, or inline base64. */
 export async function createJob(ctx: Ctx, workspaceId: string, body: Json): Promise<{ job: Job; uploadUrl?: string }> {
   requireScope(ctx, 'print')
@@ -105,7 +108,7 @@ export async function createJob(ctx: Ctx, workspaceId: string, body: Json): Prom
     workspaceId,
     printer,
     userId: user.id,
-    source: ctx.via ?? (ctx.actor.type === 'user' ? 'web' : 'api'),
+    source: requestSource(ctx),
     title: optStr(body, 'title', { max: 200 }) ?? null,
     options: body.options === undefined ? {} : parseJobOptions(body.options),
     document,
