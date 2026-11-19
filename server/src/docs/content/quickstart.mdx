@@ -1,0 +1,116 @@
+This guide takes you from an empty Cloudflare account to a printed page. You deploy the server, create your account, connect a computer near your printer, and print a test page.
+
+## Before you start
+
+You need:
+
+- A Cloudflare account on the **Workers Paid** plan. Password hashing needs more CPU time than the Free plan allows.
+- A computer with Node.js 22.12 or later, pnpm, `git`, `jq`, and `openssl`, to deploy the server.
+- A Mac with Rust, `zig`, `cargo-zigbuild`, and Developer ID certificates, to build the client downloads. See [Publish the client downloads](/docs/self-hosting/deploy#publish-the-client-downloads).
+- A Mac, a Linux computer, or a Raspberry Pi near your printer. It must stay on for printing to work.
+
+<Steps>
+
+### Deploy the server
+
+Clone the Print Better repository, then run the deploy script from its folder.
+
+```sh
+pnpm --dir server install
+pnpm --dir server exec wrangler login
+scripts/deploy.sh
+```
+
+The script creates the database, the storage bucket, and the Worker. At the end it prints a one-time setup link. Keep that link private. [Deploy to Cloudflare](/docs/self-hosting/deploy) explains each step and the secrets it creates.
+
+### Publish the client downloads
+
+Devices download Print Better from your own server. On your Mac, build and publish the client once:
+
+```sh
+scripts/release.sh --publish remote
+```
+
+### Create your account
+
+Open the setup link from the deploy script. Select **Get started**.
+
+Enter **Your name** and a **Username**. Under **How do you want to sign in?**, choose **Password** or **Passkey**. Select **Continue**.
+
+Under **Name this place**, keep **Home** or type a name such as "Office". Select **Create account**. With a passkey, the button says **Create account and passkey**.
+
+You are now the owner of this workspace and a server admin. The app opens **Add a device** next.
+
+### Add a device
+
+On **What will connect your printers?**, choose **Mac**, **Linux computer**, or **Raspberry Pi**. Select **Continue**.
+
+Follow the install steps on the page. Each one includes a setup code that works once.
+
+<Tabs>
+
+<Tab label="Mac">
+
+Select **Download Print Better for Mac** and open the installer. When it finishes, select **Connect this Mac** on the Mac you installed it on. See [Install on a Mac](/docs/devices/macos).
+
+</Tab>
+
+<Tab label="Linux">
+
+Copy the install command, paste it into a terminal, and press Enter. See [Install on Linux](/docs/devices/linux).
+
+</Tab>
+
+<Tab label="Raspberry Pi">
+
+Fill in the form and select **Create setup files**. Copy the three files to the memory card, then start the Pi. See [Install on a Raspberry Pi](/docs/devices/raspberry-pi).
+
+</Tab>
+
+</Tabs>
+
+Select **I’ve done this**, or **I’ve started the Pi**. The page shows **Waiting for your device…** until the device connects, then **Connected**. Select **Continue**.
+
+### Add a printer
+
+The device looks for printers on its network, over USB, and in its own printer list. Some may show **Added automatically**.
+
+Under **Choose the printers to use**, check the printers people should print to. Select **Add 1 printer**, or the matching count. If nothing shows up, turn the printer on and wait. New printers appear by themselves.
+
+### Print a test page
+
+Under **Print a test page**, choose the printer if there is more than one. Select **Print a test page**.
+
+When the page says **You’re all set**, the test page is on its way. If no paper comes out, open the printer's page to see what is wrong.
+
+</Steps>
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/printing/web" title="Print from the web app">
+
+Upload a document from any browser, including your phone.
+
+</Card>
+
+<Card href="/docs/printing/print-window" title="Print from your computer">
+
+Use workspace printers from the print window on a Mac or Linux computer.
+
+</Card>
+
+<Card href="/docs/workspaces/members" title="Invite people">
+
+Add the people who should print, and choose their roles.
+
+</Card>
+
+<Card href="/docs/reference/troubleshooting" title="Troubleshooting">
+
+Fix a device that stays offline or a printer that was not found.
+
+</Card>
+
+</Cards>
