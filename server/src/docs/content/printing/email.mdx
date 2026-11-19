@@ -1,26 +1,26 @@
 Give a printer its own email address. Anyone you allow can then print by sending a document to it from any phone or computer.
 
-Email to print is off by default. Three things must be on, in this order:
+Email to print is off by default and needs 3 things, in this order:
 
 1. The server receives email. A server admin sets this up once. See [Email](/docs/self-hosting/email).
 2. The workspace allows printing by email.
 3. The printer has an email address.
 
-## Allow printing by email in a workspace
+## Allow Printing by Email in a Workspace
 
 Owners and admins can change these settings.
 
 <Steps>
 
-### Open Email to print
+### Open Email to Print
 
 Open **Settings** > [**Email to print**](/settings/email).
 
-### Turn it on
+### Turn It On
 
 Turn on **Allow printing by email**.
 
-### Choose who can send
+### Choose Who Can Send
 
 **Accept email from members** lets anyone in the workspace print from the email address on their account. It's on by default.
 
@@ -34,19 +34,19 @@ Select **Save changes**.
 
 If the server doesn't receive email yet, the tab says **Incoming email isn’t set up on this server yet.**
 
-## Give a printer an email address
+## Give a Printer an Email Address
 
 <Steps>
 
-### Open the printer
+### Open the Printer
 
 Open [**Printers**](/printers) and select the printer.
 
-### Turn on Print by email
+### Turn on Print by Email
 
 Under **Sharing**, turn on **Print by email**.
 
-### Choose its email name
+### Choose Its Email Name
 
 Type a name under **Email name for this printer**, such as `kitchen`. Then select **Save name**.
 
@@ -58,7 +58,7 @@ Names use lowercase letters, numbers, dots, dashes, and underscores. They start 
 
 Each name belongs to one printer on the whole server. If another printer uses it, saving fails with **That email alias is already used by another printer**.
 
-## Send a document
+## Send a Document
 
 Send an email to the printer's address, with the documents attached:
 
@@ -70,7 +70,7 @@ Send an email to the printer's address, with the documents attached:
 
 Jobs use the printer's [default settings](/docs/printers/settings#default-settings). They appear in [**Print jobs**](/jobs) as **From email**, titled with the file name or the subject.
 
-## Who can print by email
+## Who Can Print by Email
 
 A message prints only when the sender is allowed:
 
@@ -79,9 +79,9 @@ A message prints only when the sender is allowed:
 
 Mail that fails the sender's DMARC check never prints. This stops people from faking an allowed address.
 
-With [Printer access](/docs/extensions/printer-access) turned on, a member also needs the **Print** permission on the printer. Other senders can print only to printers where **Everyone** has the **Print** permission.
+With [Printer Access](/docs/extensions/printer-access) turned on, a member also needs the **Print** permission on the printer. Other senders can print only to printers where **Everyone** has the **Print** permission.
 
-## When a message doesn't print
+## When a Message Doesn't Print
 
 The server refuses the message when:
 
@@ -91,7 +91,7 @@ The server refuses the message when:
 
 With Cloudflare Email Routing, the sender gets a bounce that gives the reason. With Resend inbound, the message is dropped without a reply.
 
-## Next steps
+## Next Steps
 
 <Cards>
 
@@ -101,7 +101,7 @@ Set up the address that receives email to print.
 
 </Card>
 
-<Card href="/docs/printing/jobs" title="Print jobs">
+<Card href="/docs/printing/jobs" title="Print Jobs">
 
 Check that an emailed document printed.
 

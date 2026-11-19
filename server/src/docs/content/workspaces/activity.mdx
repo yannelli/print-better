@@ -1,14 +1,14 @@
 Print Better records the changes people and devices make in a workspace. The activity list shows who changed what, and when.
 
-## See recent activity
+## See Recent Activity
 
 Only owners and admins can see activity.
 
-Open **Settings** > [**Activity**](/settings/activity). It lists the 50 most recent changes, newest first.
+Open **Settings** > [**Activity**](/settings/activity). It shows changes newest first, 50 at a time. Select **Show more** at the bottom for older ones.
 
 Each line shows who made the change, what changed (with its ID in parentheses), and when. Hover over the time to see the exact date.
 
-## What is recorded
+## What Is Recorded
 
 Print Better records changes to:
 
@@ -17,12 +17,12 @@ Print Better records changes to:
 - Devices, install codes, and device commands
 - Members, invites, and roles
 - Workspace settings and extensions
-- [Printer access](/docs/extensions/printer-access) groups, roles, and who has access
+- [Printer Access](/docs/extensions/printer-access) groups, roles, and who has access
 - API tokens limited to this workspace
 
 Print Better records a change the same way whether it comes from the web app, the API, an AI assistant, or a device.
 
-## Who made the change
+## Who Made the Change
 
 | Shown as | Who |
 | --- | --- |
@@ -30,9 +30,7 @@ Print Better records a change the same way whether it comes from the web app, th
 | A device's name | A paired device, for example when it joins the workspace. |
 | An email address | A document someone emailed to a printer. |
 
-## See older activity
-
-The **Activity** tab shows only the latest 50 changes. To read further back, use the API or an AI assistant.
+## The API and AI Assistants
 
 With the API, page through the full list:
 
@@ -45,11 +43,11 @@ Each response has `items` and a `nextCursor`. To get the next page, add `?cursor
 
 An AI assistant can read the same list with the `list_audit` tool. Ask it, for example, "Who changed the office printer this week?"
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/workspaces/members" title="Members and roles">
+<Card href="/docs/workspaces/members" title="Members and Roles">
 
 Choose who can change things in the workspace.
 

@@ -1,8 +1,8 @@
-Every print job can carry options, such as copies, two-sided printing, and paper size. This page lists each option and its values, and how a printer's defaults and abilities change the result.
+Every print job can carry options, such as copies, two-sided printing, and paper size.
 
 ## Example
 
-In the [REST API](/docs/printing/api) and in [MCP tools](/docs/reference/mcp), options go in an `options` object:
+In the [REST API](/docs/printing/api) and in [MCP Tools](/docs/reference/mcp), options go in an `options` object:
 
 ```json
 {
@@ -39,17 +39,17 @@ The server rejects option names it doesn't know, so a typo never prints the wron
 
 `pageRanges` can be up to 100 characters, and the server removes any spaces in it.
 
-### Page ranges
+### Page Ranges
 
 Write page numbers and ranges, separated by commas: `1-3,5,8-10`. Every range needs a first and a last page.
 
-### Paper sizes, trays, and paper types
+### Paper Sizes, Trays, and Paper Types
 
 Paper sizes use standard names that include the size, such as `na_letter_8.5x11in`, `na_legal_8.5x14in`, or `iso_a4_210x297mm`. The web app shows them as names like "Letter (8.5 × 11 in)".
 
 Trays and paper types use the printer's own names, such as `tray-1`, `manual`, `stationery`, or `labels`. Each printer reports the ones it has.
 
-## Where you can set each option
+## Where You Can Set Each Option
 
 | Option | Web app print dialog | Printer default settings |
 | --- | --- | --- |
@@ -85,7 +85,7 @@ In the web app, these labels stand for these values:
 | **Shrink to fit the page**, **Fill the whole page**, **Actual size** | `fit`, `fill`, `none` |
 | **Draft (faster, uses less ink)**, **Normal**, **Best** | `draft`, `normal`, `high` |
 
-## How printer defaults work
+## How Printer Defaults Work
 
 Each printer has [default settings](/docs/printers/settings#default-settings). Admins set them on the printer's page. The API sets them with the printer's `defaults` field, which replaces all of them at once.
 
@@ -99,7 +99,7 @@ The device next to the printer combines them when the job prints, so if a defaul
 
 The web app's print dialog sends only the options you change. Everything you leave alone follows the printer's defaults.
 
-## How printer abilities limit options
+## How Printer Abilities Limit Options
 
 Each device reports what its printers can do, in each printer's `capabilities`:
 
@@ -129,17 +129,17 @@ The server accepts any valid value, even one the printer lacks. The device decid
 
 Copies and page ranges are never dropped, because that would change what prints. If the printer can't apply them, the device makes the copies or picks the pages itself. If it can't do that either, the job stops and says why. For example: **This printer can't print selected pages or extra copies over this connection.**
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/printers/settings" title="Printer settings">
+<Card href="/docs/printers/settings" title="Printer Settings">
 
 Set the defaults every print starts with.
 
 </Card>
 
-<Card href="/docs/printing/api" title="Print with the API">
+<Card href="/docs/printing/api" title="Print With the API">
 
 Send jobs with options from your own scripts.
 
