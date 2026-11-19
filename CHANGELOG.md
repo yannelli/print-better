@@ -9,6 +9,7 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 - **extensions:** optional modules that stay off until a server admin makes one available under **Admin > Extensions** and a workspace owner turns it on under **Workspace settings > Extensions**. Turning one off restores the default rules and keeps its data. New routes `/api/admin/extensions` and `/api/workspaces/:ws/extensions`, audited as `extension.update`, and an `access` event that tells open pages to refresh.
 - **printer access:** an extension that decides who can see, print to, and manage each printer, with built-in roles (Viewer, User, Manager) and custom ones, groups of members and devices, a per-printer Everyone setting, and grants on one printer or on all of them. It applies in the web app, the REST API, MCP (14 new tools), email to print, and the printers a computer's print window offers. Turning it on changes nothing by itself (docs/printer-access.md).
 - **printer access:** `GET /api/workspaces/:ws/access/me` reports what the caller may do on each printer, also while printer access is off.
+- **remote printers:** a job that a computer may not send fails in its print queue with "You can't print to this printer from this computer".
 
 ## [0.1.3] - 2026-11-19
 
