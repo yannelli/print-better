@@ -116,7 +116,7 @@ export function clientStatus(client: Client): StatusWords {
   return { label: 'Online', tone: 'ok' }
 }
 
-export const OS_NAMES = { macos: 'Mac', windows: 'Windows PC', linux: 'Linux computer' } as const
+export const OS_NAMES = { macos: 'Mac', windows: 'Windows PC', linux: 'Linux computer', ios: 'iPhone' } as const
 
 export function deviceKind(client: Pick<Client, 'os' | 'arch'>): string {
   if (!client.os) return 'Device'
@@ -127,7 +127,7 @@ export function deviceKind(client: Pick<Client, 'os' | 'arch'>): string {
 const capitalized = (text: string) => text.charAt(0).toUpperCase() + text.slice(1)
 
 /** "this Mac" or "this computer", for sentences about a desktop. */
-export const thisComputer = (client: Pick<Client, 'os'>) => (client.os === 'macos' ? 'this Mac' : 'this computer')
+export const thisComputer = (client: Pick<Client, 'os'>) => (client.os === 'macos' ? 'this Mac' : client.os === 'ios' ? 'this iPhone' : 'this computer')
 
 /** Where a desktop's own printers are set up, for "Add it in …" instructions. */
 export const printerSettingsPlace = (client: Pick<Client, 'os'>) =>

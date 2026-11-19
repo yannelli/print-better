@@ -11,8 +11,9 @@ import { usePrinters } from '@/hooks/printers'
 import { useCanManage, useWs } from '@/hooks/workspace'
 import { plural, timeAgo } from '@/lib/format'
 import { availableUpdate } from '@/lib/updates'
-import { clientStatus, deviceKind } from '@/lib/words'
+import { deviceKind } from '@/lib/words'
 import { DeviceIcon } from './device-icon'
+import { deviceStatus, isPhone } from './phone'
 import { UpdateBadge } from './update-badge'
 
 function DeviceRow({ ws, client, printers, update }: { ws: string; client: Client; printers: Printer[]; update: string | null }) {
@@ -31,16 +32,18 @@ function DeviceRow({ ws, client, printers, update }: { ws: string; client: Clien
           <span className="truncate text-base font-medium">{client.name}</span>
           <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span>{deviceKind(client)}</span>
-            <span>
-              {plural(added, 'printer')}
-              {found > 0 && `, ${found} more found`}
-            </span>
-            {!client.online && <span>Last seen {timeAgo(client.lastSeenAt)}</span>}
+            {!isPhone(client) && (
+              <span>
+                {plural(added, 'printer')}
+                {found > 0 && `, ${found} more found`}
+              </span>
+            )}
+            {!client.online && !isPhone(client) && <span>Last seen {timeAgo(client.lastSeenAt)}</span>}
             {client.version && <Mono>v{client.version}</Mono>}
             {update && <UpdateBadge version={update} />}
           </span>
         </span>
-        <StatusPill status={clientStatus(client)} />
+        <StatusPill status={deviceStatus(client)} />
         <ChevronRight className="size-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
       </Link>
     </li>
@@ -63,7 +66,7 @@ export default function Devices() {
     <>
       <PageHeader
         title="Devices"
-        description="Computers and Raspberry Pis that connect your printers to Print Better."
+        description="Computers and Raspberry Pis that connect your printers to Print Better, and iPhones that print to them."
         actions={clients.data?.length ? addButton : undefined}
       />
       <QueryState query={clients}>

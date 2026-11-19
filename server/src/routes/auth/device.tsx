@@ -25,7 +25,7 @@ function DeviceFacts({ info }: { info: DeviceCodeInfo }) {
         <LaptopMinimal className="size-6" />
       </span>
       <dl className="grid min-w-0 grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[0.9375rem]">
-        <dt className="text-muted-foreground">Computer</dt>
+        <dt className="text-muted-foreground">{info.os === 'ios' ? 'Device' : 'Computer'}</dt>
         <dd className="truncate"><Mono>{info.hostname}</Mono></dd>
         <dt className="text-muted-foreground">System</dt>
         <dd>{OS_NAMES[info.os] ?? info.os} ({info.arch})</dd>
@@ -156,7 +156,7 @@ export default function DeviceApprove() {
   return (
     <AuthLayout
       title="Connect this device?"
-      description={`Only continue if you just started setting up Print Better on this computer. The code works until ${dateTime(info.data.expiresAt)}.`}
+      description={`Only continue if you just started setting up Print Better on this ${info.data.os === 'ios' ? 'iPhone' : 'computer'}. The code works until ${dateTime(info.data.expiresAt)}.`}
     >
       <DeviceFacts info={info.data} />
       <Approve code={code} info={info.data} onDone={setOutcome} />

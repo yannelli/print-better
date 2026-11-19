@@ -1,4 +1,4 @@
-import { CircuitBoard, Laptop, Monitor, Server } from 'lucide-react'
+import { CircuitBoard, Laptop, Monitor, Server, Smartphone } from 'lucide-react'
 import { useState } from 'react'
 import { type Option, OptionCards } from '@/components/option-cards'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ const OPTIONS: Option<DeviceChoice>[] = [
   { value: 'windows', label: 'Windows PC', description: 'Windows 10 or 11', media: <Monitor /> },
   { value: 'linux', label: 'Linux computer', description: 'Ubuntu, Debian, Fedora and others', media: <Server /> },
   { value: 'pi', label: 'Raspberry Pi', description: 'Set up a new Pi as a printer bridge', media: <CircuitBoard /> },
+  { value: 'iphone', label: 'iPhone', description: 'Print from your iPhone to these printers', media: <Smartphone /> },
 ]
 
 export function ChooseKind({ initial, onChoose }: { initial: DeviceChoice | null; onChoose: (choice: DeviceChoice) => void }) {
@@ -21,8 +22,8 @@ export function ChooseKind({ initial, onChoose }: { initial: DeviceChoice | null
   return (
     <div className="flex flex-col gap-6">
       <StepHeading
-        title="What will connect your printers?"
-        description="Pick the computer that is near your printers, or connected to them with a cable. It needs to stay on for printing to work."
+        title="What are you adding?"
+        description="A computer near your printers, or connected to them with a cable, connects them to Print Better and needs to stay on. An iPhone prints to them from anywhere."
       />
       <OptionCards<DeviceChoice | ''>
         label="Kind of device"
