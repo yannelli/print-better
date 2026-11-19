@@ -1,17 +1,46 @@
 # MCP server
 
-Endpoint: `POST <origin>/mcp`, streamable HTTP, stateless, JSON responses only. Goal: an agent can do everything the web UI can, including a full first-time setup, with the same permission checks as the REST API (tools call the same service functions; no parallel logic). Code: `server/worker/mcp/` and `server/worker/oauth/`; background: `docs/research/mcp-auth.md`.
+Endpoint: `POST <origin>/mcp`, streamable HTTP, stateless, JSON responses only.
+
+Goal: An agent can do everything the web UI can, including a full first-time setup, with the same permission checks as the REST API. Tools call the same service functions as REST, so there is no parallel logic.
+
+Code: `server/worker/mcp/` and `server/worker/oauth/`. Background: `docs/research/mcp-auth.md`.
 
 ## Protocol eras
-- **2026-07-28 (modern)**: chosen when `params._meta` carries `io.modelcontextprotocol/protocolVersion` (or the `MCP-Protocol-Version` header says 2026-07-28). Every request must also carry `_meta["io.modelcontextprotocol/clientCapabilities"]` (missing → 400 `-32602`) and the headers `MCP-Protocol-Version` (= `_meta`), `Mcp-Method` (= `method`) and, for `tools/call`, `Mcp-Name` (= `params.name`, `=?base64?…?=` decoded); a mismatch is 400 `-32020`, another version 400 `-32022` with `data: { supported, requested }`. Methods: `server/discover`, `tools/list` (`ttlMs` 1 h, `cacheScope: "private"`), `tools/call`, `subscriptions/listen` (completes at once with nothing; the tool list changes only when a server admin makes an extension available or unavailable, and clients see that on their next `tools/list`). Every result has `resultType: "complete"` and `_meta["io.modelcontextprotocol/serverInfo"]`. Unknown method: 404 `-32601`.
-- **2025-11-25, 2025-06-18, 2025-03-26 (legacy)**: `initialize` echoes a supported version, else answers 2025-11-25; no session id is ever minted. `ping` → `{}`; `tools/list`, `tools/call` as above without `resultType`/`ttlMs`/`cacheScope`. After `initialize`, a `MCP-Protocol-Version` header naming an unsupported version is 400 `-32022`. Unknown method: 200 with `-32601`.
-- Both: notifications get 202 with no body; JSON arrays (batches) are 400 `-32600`; GET and DELETE are 405; bodies over 16 MB are 413 `-32600` (base64 documents ride inside `tools/call`, so about 12 MB decoded).
+- **2026-07-28 (modern)**: chosen when `params._meta` carries `io.modelcontextprotocol/protocolVersion` (or the `MCP-Protocol-Version` header says 2026-07-28).
+  - Every request must also carry `_meta["io.modelcontextprotocol/clientCapabilities"]` (missing → 400 `-32602`) and these headers:
+    - `MCP-Protocol-Version` (= `_meta`)
+    - `Mcp-Method` (= `method`)
+    - `Mcp-Name` for `tools/call` (= `params.name`, `=?base64?…?=` decoded)
+  - A header mismatch is 400 `-32020`. Any other version is 400 `-32022` with `data: { supported, requested }`.
+  - Methods: `server/discover`, `tools/list` (`ttlMs` 1 h, `cacheScope: "private"`), `tools/call`, `subscriptions/listen`.
+  - `subscriptions/listen` completes at once with nothing. The tool list changes only when a server admin makes an extension available or unavailable, and clients see that on their next `tools/list`.
+  - Every result has `resultType: "complete"` and `_meta["io.modelcontextprotocol/serverInfo"]`.
+  - Unknown method: 404 `-32601`.
+- **2025-11-25, 2025-06-18, 2025-03-26 (legacy)**:
+  - `initialize` echoes a supported version, else answers 2025-11-25. No session id is ever minted.
+  - `ping` → `{}`.
+  - `tools/list` and `tools/call` work as above, without `resultType`, `ttlMs` or `cacheScope`.
+  - After `initialize`, a `MCP-Protocol-Version` header naming an unsupported version is 400 `-32022`.
+  - Unknown method: 200 with `-32601`.
+- Both:
+  - Notifications get 202 with no body.
+  - JSON arrays (batches) are 400 `-32600`.
+  - GET and DELETE are 405.
+  - Bodies over 16 MB are 413 `-32600`. Base64 documents are sent inside `tools/call`, so the limit is about 12 MB decoded.
 
 ## Auth
-- Bearer only, never cookies, so `Origin` is not checked. Accepted: a personal token `pbt_…` (Account → API tokens) or an OAuth access token `pbo_…` whose audience is exactly `<origin>/mcp`.
+- Bearer tokens only, never cookies, so `Origin` is not checked.
+- Accepted tokens: a personal token `pbt_…` (Account → API tokens) or an OAuth access token `pbo_…` whose audience is exactly `<origin>/mcp`.
 - Missing or invalid token: 401 with `WWW-Authenticate: Bearer resource_metadata="<origin>/.well-known/oauth-protected-resource/mcp", scope="read write print"` (plus `error="invalid_token"` when one was sent).
-- Scopes: `read` (list/get tools), `write` (manage tools), `print` (`print`, `print_test_page`, `cancel_job`, `retry_job`). PATs hold all three. A missing scope is 403 with `WWW-Authenticate: Bearer error="insufficient_scope", scope="read write print", resource_metadata="…"`, so a client steps up once. The services enforce the same scopes (`requireScope`), so REST and MCP cannot drift.
-- `offline_access` is never a permission; refresh tokens are always issued. A request that names none of `read`, `write`, `print` is granted all three, and the consent page lists exactly what is granted.
+- Scopes:
+  - `read`: list/get tools
+  - `write`: manage tools
+  - `print`: `print`, `print_test_page`, `cancel_job`, `retry_job`
+- PATs hold all three scopes. A missing scope is 403 with `WWW-Authenticate: Bearer error="insufficient_scope", scope="read write print", resource_metadata="…"`, so a client steps up once.
+- The services enforce the scopes (`requireScope`), so REST and MCP always apply the same checks.
+- `offline_access` is never a permission. Refresh tokens are always issued.
+- A request that names none of `read`, `write`, `print` is granted all three, and the consent page lists exactly what is granted.
 
 ## OAuth 2.1 authorization server (issuer = origin, path-less)
 | Endpoint | Notes |
@@ -23,19 +52,32 @@ Endpoint: `POST <origin>/mcp`, streamable HTTP, stateless, JSON responses only. 
 | `POST /oauth/register` | RFC 7591 for public clients (`token_endpoint_auth_method` `none`); redirect URIs must be https, http on localhost/127.0.0.1/[::1], or an app scheme, never with a fragment |
 | `POST /oauth/revoke` | RFC 7009: 200 even for unknown tokens (400 only without `token`); a refresh token revokes its whole connection, an access token only itself |
 
-- Clients: Client ID Metadata Documents (an https `client_id` is fetched: public DNS names on the default port only, no redirects, 5 s, 16 KB, document `client_id` must match, cached for `Cache-Control` max-age clamped to 5 min to 24 h, 1 h by default, refetched every time on `no-store`/`no-cache`) or DCR registrations (cron deletes them after 30 days without tokens). Known redirects: Claude `https://claude.ai/api/mcp/auth_callback`, ChatGPT `https://chatgpt.com/connector_platform_oauth_redirect`, Claude Code loopback.
-- Lifetimes: authorization request 10 min, code 5 min, access token (`pbo_`) 1 h, refresh token (`pbr_`) 30 days, rotated on every use. Presenting a used refresh token revokes the connection (RFC 9700); losing a race against a concurrent refresh is a plain `invalid_grant`.
+- Clients are Client ID Metadata Documents or DCR registrations:
+  - Client ID Metadata Documents: An https `client_id` is fetched from public DNS names on the default port only, with no redirects, a 5 s timeout and a 16 KB limit. The document's `client_id` must match. It is cached for its `Cache-Control` max-age, clamped to 5 min to 24 h (1 h by default), and refetched every time on `no-store`/`no-cache`.
+  - DCR registrations: Cron deletes them after 30 days without tokens.
+- Known redirects:
+  - Claude: `https://claude.ai/api/mcp/auth_callback`
+  - ChatGPT: `https://chatgpt.com/connector_platform_oauth_redirect`
+  - Claude Code: loopback
+- Lifetimes:
+  - authorization request: 10 min
+  - code: 5 min
+  - access token (`pbo_`): 1 h
+  - refresh token (`pbr_`): 30 days, rotated on every use
+- Presenting a used refresh token revokes the connection (RFC 9700). Losing a race against a concurrent refresh is a plain `invalid_grant`.
 - Throttles per IP: authorize 60 per 10 min, register 20 per hour.
-- Storage: tokens are hashed in `api_tokens` (`oauth-refresh` / `oauth-access`, `resource` = audience). A connection's first refresh token is its root; later tokens point at it with `parent_id`. Account → API tokens lists each connection as kind `oauth`, named after the app; deleting it revokes everything.
+- Storage: Tokens are hashed in `api_tokens` (`oauth-refresh` / `oauth-access`, `resource` = audience). A connection's first refresh token is its root, and later tokens point at it with `parent_id`.
+- Account → API tokens lists each connection as kind `oauth`, named after the app. Deleting it revokes every token in the connection.
 
 Consent flow contract (Worker ↔ SPA):
 1. `GET /oauth/authorize?…` as above. The SPA sends signed-out users through `/login?next=…` first.
 2. `GET /api/oauth/requests/:id` (session) → `{ client: { name, uri, logoUri }, redirectHost, scopes, workspaces: WorkspaceSummary[] }`. `uri` is the verified metadata host for CIMD clients, else the self-declared `client_uri`.
-3. `POST /api/oauth/requests/:id/approve` `{ workspaceId: string | null }` → `{ redirectTo }` (code, state, iss appended); a non-null `workspaceId` pins the connection to that workspace. `POST …/deny` → `{ redirectTo }` with `error=access_denied`. An expired request is 404 `oauth_request_expired`.
+3. `POST /api/oauth/requests/:id/approve` `{ workspaceId: string | null }` → `{ redirectTo }` (code, state, iss appended). A non-null `workspaceId` pins the connection to that workspace. `POST …/deny` → `{ redirectTo }` with `error=access_denied`. An expired request is 404 `oauth_request_expired`.
 
 ## Tool results
-- Every success returns `structuredContent` plus two text blocks: a short human summary, then the same JSON serialized, so clients that ignore `structuredContent` still see ids.
-- Service and validation errors become results with `isError: true` and a plain-language message the model can act on (for example `printer_required`, `workspace_required` listing the choices, `no_workspace`, `command_failed`). An unknown tool or non-object `arguments` is JSON-RPC `-32602`. Unknown or missing top-level arguments are reported by name.
+- Every success returns `structuredContent` plus two text blocks: a short human summary, then the same JSON serialized. Clients that ignore `structuredContent` still see ids.
+- Service and validation errors become results with `isError: true` and a plain-language message the model can act on (for example `printer_required`, `workspace_required` listing the choices, `no_workspace`, `command_failed`).
+- An unknown tool or non-object `arguments` is JSON-RPC `-32602`. Unknown or missing top-level arguments are reported by name.
 - Workspace: the token's pinned workspace, else `workspaceId`, else the user's only workspace.
 - Annotations are explicit on every tool (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint: false`). Inputs are JSON Schema objects with `additionalProperties: false`.
 - Every mutation is audited by the service it calls, with actor type `token`.
@@ -73,7 +115,9 @@ Consent flow contract (Worker ↔ SPA):
 | `update_instance_settings` | write | Instance admins: deep-merged changes; secret fields are write-only (a string sets, `null` clears) |
 
 ### Extension tools
-After the core tools, `tools/list` adds the tools of each extension a server admin has made available (docs/extensions.md). While the extension is off in the workspace, each call fails with a message that says how to turn it on. Printer access (docs/printer-access.md):
+After the core tools, `tools/list` adds the tools of each extension a server admin has made available (docs/extensions.md). While the extension is off in the workspace, each call fails with a message that says how to turn it on.
+
+Printer access (docs/printer-access.md):
 
 | Tool | Scope | Purpose |
 |---|---|---|

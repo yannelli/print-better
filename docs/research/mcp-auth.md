@@ -1,6 +1,12 @@
 # Print Better protocol research: MCP, OAuth, WebAuthn, OIDC, RFC 8628, OWASP
 
-Researched 2026-11-18 from primary sources (URL under each heading). UNVERIFIED = not confirmed in a primary source. Nothing installed.
+The Print Better Worker has to be an MCP server that Claude and ChatGPT can sign in to. It also needs passkey and Google sign-in, device pairing with a short code, and password storage, all inside the Workers runtime. These notes record what each spec and client requires, and where the Workers limits get in the way.
+
+Researched 2026-11-18 from primary sources, with the URLs under each heading. Nothing was installed.
+
+Markers used below:
+- UNVERIFIED: not confirmed in a primary source.
+- (inference): my conclusion from the sources, not a stated rule.
 
 ## 0. Read first
 - MCP latest is `2026-07-28`: stateless (no initialize, no sessions, no GET stream, no ping). Hosted Claude still uses the legacy `initialize` handshake per its docs, so build a dual-era stateless server.
@@ -9,6 +15,8 @@ Researched 2026-11-18 from primary sources (URL under each heading). UNVERIFIED 
 - OWASP PBKDF2 (600k) exceeds the Workers WebCrypto PBKDF2 cap (100k). No native Argon2id; `scrypt` exists via `node:crypto`.
 
 ## 1. MCP transport and client compatibility
+An MCP client talks to the server by POSTing JSON-RPC messages to one HTTP endpoint. The 2026-07-28 version drops the handshake and sessions, but hosted clients still send the older `initialize` handshake, so the server has to answer both.
+
 Sources: https://modelcontextprotocol.io/specification/versioning , .../2026-07-28/basic/transports/streamable-http , .../2026-07-28/basic/versioning , .../2025-11-25/basic/transports , https://claude.com/docs/connectors/building/index , https://zuplo.com/learn/mcp/compatibility/clients/claude-connectors , https://developers.openai.com/apps-sdk/build/mcp-server
 - Latest version string: `2026-07-28` (marked Current). Earlier: `2025-11-25`, `2025-06-18`, `2025-03-26`, `2024-11-05` (HTTP+SSE, Deprecated). Date = last backwards-incompatible change.
 - 2026-07-28 transport: one endpoint, POST only. Each JSON-RPC message is its own POST; body is exactly ONE request or notification (client never sends responses).
@@ -27,12 +35,14 @@ Sources: https://modelcontextprotocol.io/specification/versioning , .../2026-07-
 
 ## 2. MCP message shapes
 Sources: .../2026-07-28/server/tools , .../2026-07-28/server/discover , .../2026-07-28/basic , .../2026-07-28/changelog , .../2025-11-25/basic/lifecycle , .../2025-11-25/basic/utilities/ping , .../2025-06-18/changelog , schema.ts at https://github.com/modelcontextprotocol/modelcontextprotocol/blob/main/schema/2026-07-28/schema.ts
+
 Legacy handshake (2025-11-25; still needed):
 ```json
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"c","version":"1"}}}
 {"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-11-25","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"print-better","title":"Print Better","version":"0.1.0"},"instructions":"..."}}
 ```
 - Negotiation: server echoes the requested version if supported, else its latest supported; client disconnects if it cannot accept. `serverInfo`: `name`,`version` required; `title`,`description`,`icons`,`websiteUrl` optional. `instructions` optional. Then client POSTs `{"jsonrpc":"2.0","method":"notifications/initialized"}` (no id) and gets 202. `ping` returns `{"result":{}}` (removed in 2026).
+
 Modern (2026-07-28): no handshake. Every request carries `params._meta` with `io.modelcontextprotocol/protocolVersion` (required), `.../clientCapabilities` (required, may be `{}`), `.../clientInfo` (SHOULD). Server SHOULD put `io.modelcontextprotocol/serverInfo` in each result `_meta`.
 ```json
 {"jsonrpc":"2.0","id":"d1","result":{"resultType":"complete","supportedVersions":["2026-07-28","2025-11-25"],"capabilities":{"tools":{}},"_meta":{"io.modelcontextprotocol/serverInfo":{"name":"print-better","version":"0.1.0"}},"instructions":"...","ttlMs":3600000,"cacheScope":"public"}}
@@ -48,6 +58,8 @@ Modern (2026-07-28): no handshake. Every request carries `params._meta` with `io
 - Safe to ignore: icons, elicitation/MRTR (never return `input_required`), sampling/roots/logging (Deprecated; do not emit `notifications/message` unless `_meta.logLevel` is sent), tasks extension `io.modelcontextprotocol/tasks` (advertise only if implemented), `x-mcp-header`, `extensions`, resources/prompts/completions, OTel `traceparent` meta, progress.
 
 ## 3. MCP authorization (2026-07-28 spec + client reality)
+The MCP server is an OAuth resource server. A client that gets a 401 reads the protected-resource metadata, finds the authorization server, identifies itself (CIMD or DCR), runs the authorization code flow with PKCE, and then sends the access token as a Bearer header on every request.
+
 Sources: https://modelcontextprotocol.io/specification/2026-07-28/basic/authorization (+ /authorization-server-discovery, /client-registration), https://datatracker.ietf.org/doc/html/rfc9728 , https://claude.com/docs/connectors/building/authentication , .../lazy-authentication , https://claude.ai/oauth/claude-code-client-metadata , https://developers.openai.com/apps-sdk/build/auth
 - Roles: MCP server = OAuth 2.1 resource server; auth optional in spec. Same Worker can host the AS (issuer = origin). Access token only in `Authorization: Bearer` on every request, never in the query.
 - PRM (RFC 9728) MUST be served with `resource` (MUST equal the URL; Claude needs an exact match to the URL the user typed) and `authorization_servers` (>=1; Claude uses only the first). Discover via `WWW-Authenticate: Bearer resource_metadata="..."` on 401, else `/.well-known/oauth-protected-resource/<path>` then root. Response 200 `application/json`.
@@ -69,7 +81,10 @@ Sources: https://modelcontextprotocol.io/specification/2026-07-28/basic/authoriz
 - Minimum endpoint set for claude.ai (derived from the above): (1) `POST /mcp` returning 401 with `resource_metadata`; (2) `GET /.well-known/oauth-protected-resource[/mcp]`; (3) `GET /.well-known/oauth-authorization-server`; (4) `GET /authorize` (login/consent UI, CIMD fetch, exact redirect check); (5) `POST /token` (authorization_code + refresh_token, PKCE, form body); (6) `POST /register` unless CIMD-only. Optional: revocation, userinfo (ChatGPT enterprise domain rules want OIDC + userinfo with `email_verified`).
 
 ## 4. WebAuthn Level 3 (W3C Recommendation 2026-08-25)
+Registration gives the server a credential id and public key inside `authData`. Each sign-in returns a signature over `authData` and the hash of `clientDataJSON`. The server checks the challenge, origin and `rpIdHash`, then verifies that signature with the stored key.
+
 Sources: https://www.w3.org/TR/webauthn-3/ (7.1, 7.2, 6.1, 6.5.1, 6.5.5, 5.4, 5.8.5, 13.4.3, 14.6.1, 15.1), https://www.rfc-editor.org/rfc/rfc9053 (7.1, 7.2), https://www.rfc-editor.org/rfc/rfc8230 , https://developer.mozilla.org/en-US/docs/Web/API/PublicKeyCredential/parseCreationOptionsFromJSON_static
+
 Byte layout:
 ```
 authData = rpIdHash[32] | flags[1] | signCount[4, u32 BE] | attestedCredentialData? | extensions(CBOR map)?
@@ -87,6 +102,7 @@ attCredData = aaguid[16] | credIdLen[2, u16 BE, <=1023] | credId[credIdLen] | cr
 | -7 ES256 | `{1:2,3:-7,-1:1,-2:x32,-3:y32}` | `{kty:"EC",crv:"P-256",x,y}` base64url | `{name:"ECDSA",hash:"SHA-256"}`, import `{name:"ECDSA",namedCurve:"P-256"}` | ASN.1 DER, convert to raw r\|\|s (64) |
 | -8 EdDSA | `{1:1,3:-8,-1:6,-2:x32}` | `{kty:"OKP",crv:"Ed25519",x}` | `{name:"Ed25519"}` (Workers supports Secure Curves; legacy `NODE-ED25519` exists) | raw 64 bytes |
 | -257 RS256 | `{1:3,3:-257,-1:n,-2:e}` | `{kty:"RSA",n,e,alg:"RS256"}` | `{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"}` | raw, not ASN.1 wrapped |
+
 - DER to raw: `30 len 02 rlen r 02 slen s`; strip leading `00`, left-pad r and s to 32 bytes each. P-256 DER is <=72 bytes, so single-byte lengths suffice. L3 guarantees ES256 keys use P-256 uncompressed and EdDSA uses Ed25519; spec warns to check the point is on the curve (rely on importKey, behavior on Workers UNVERIFIED).
 - Assertion checks (7.2): if `allowCredentials` given, credential id must be in it. Known user: credential belongs to that user and `userHandle` (if present) equals the account handle. Discoverable login (no user yet): `response.userHandle` MUST be present, look up the user, then require the credential belongs to them. Then `type=="webauthn.get"`, challenge, origin, `rpIdHash`; UP MUST be set; UV required iff you asked `userVerification:"required"` (else ignore); stored BE must equal current BE (if stored BE=1 current must be 1, if 0 current must be 0); update BS.
 - Signature: verify `sig` over `authData || SHA-256(clientDataJSON)` (raw concatenated bytes) with the stored key.
@@ -95,6 +111,8 @@ attCredData = aaguid[16] | credIdLen[2, u16 BE, <=1023] | credId[credIdLen] | cr
 - Store per credential: id, publicKey (or JWK), alg, signCount, BE, BS, uvInitialized, transports, createdAt, nickname.
 
 ## 5. OIDC (Google and generic)
+Google sign-in uses the authorization code flow with PKCE. The server validates the returned `id_token` and keys the user by `sub`.
+
 Sources: https://accounts.google.com/.well-known/openid-configuration (fetched live 2026-11-18), https://developers.google.com/identity/openid-connect/openid-connect , https://openid.net/specs/openid-connect-core-1_0.html (3.1.3.7), https://openid.net/specs/openid-connect-discovery-1_0.html
 - Google discovery: `https://accounts.google.com/.well-known/openid-configuration`. `issuer` `https://accounts.google.com`; `authorization_endpoint` `https://accounts.google.com/o/oauth2/v2/auth`; `token_endpoint` `https://oauth2.googleapis.com/token`; `userinfo_endpoint` `https://openidconnect.googleapis.com/v1/userinfo`; `jwks_uri` `https://www.googleapis.com/oauth2/v3/certs`; `revocation_endpoint` `https://oauth2.googleapis.com/revoke`; `device_authorization_endpoint` `https://oauth2.googleapis.com/device/code`. Signing alg `RS256` only; scopes `openid email profile`.
 - PKCE: `code_challenge_methods_supported` is `["plain","S256"]`, use S256. Token endpoint auth: `client_secret_post`/`client_secret_basic` (web client sends its secret even with PKCE). `authorization_response_iss_parameter_supported:true`, so verify `iss` on the callback equals `https://accounts.google.com`.
@@ -105,6 +123,8 @@ Sources: https://accounts.google.com/.well-known/openid-configuration (fetched l
 - Flow: authorization code + PKCE S256 + `state` + `nonce`, all stored server side (single use, ~10 min).
 
 ## 6. RFC 8628 Device Authorization Grant
+A device without a browser asks the server for a short user code, shows it, and polls the token endpoint while the user approves that code on another device.
+
 Source: https://www.rfc-editor.org/rfc/rfc8628 (sections 3.1-3.5, 5.1, 5.2, 6.1). Advertise `device_authorization_endpoint` in AS metadata (section 4).
 - Request: `POST` form-encoded to the device authorization endpoint with `client_id` (public client) and optional `scope`. Response 200 JSON with `Cache-Control: no-store`: `device_code`, `user_code`, `verification_uri` (REQUIRED, short and typable), `verification_uri_complete` (optional, for QR), `expires_in` (REQUIRED seconds; RFC example 1800), `interval` (optional, default 5).
 - Poll: `POST /token` with `grant_type=urn:ietf:params:oauth:grant-type:device_code&device_code=...&client_id=...`. Errors: `authorization_pending` (keep polling, wait >= interval); `slow_down` (interval += 5 for this and all later requests); `access_denied` and `expired_token` (stop; restart only after user action); any other error (stop). On connection timeout back off (doubling RECOMMENDED).

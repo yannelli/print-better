@@ -1,10 +1,28 @@
 # REST API (v1)
 
-Base path `/api`. JSON in and out; types from `server/shared/types.ts` and `printing.ts`. Errors: HTTP status plus `{ error: { code, message } }` (`ApiErrorBody`). Lists return `{ items, nextCursor }` when paginated (cursor = opaque string, `?limit=` default 50, max 200).
+Base path: `/api`. Requests and responses are JSON, with types in `server/shared/types.ts` and `printing.ts`.
 
-Auth: session cookie `pb_session`, or `Authorization: Bearer pbt_…` (personal API token). OAuth access tokens (`pbo_…`) are bound to `/mcp` (RFC 8707) and get 401 here. Cookie-authenticated non-GET requests must send an `Origin` matching the server. `:ws` routes require membership; **A** = admin or owner, **O** = owner only, **I** = instance admin.
+Errors return an HTTP status and `{ error: { code, message } }` (`ApiErrorBody`).
 
-Token scopes: `read` (gets and lists), `print` (create, upload, cancel, retry and delete jobs; test pages), `write` (every other change). PATs hold all three; a missing scope is 403 `insufficient_scope`. Password, passkey, session, PAT-creation, recovery-code and OAuth-consent routes refuse tokens with 403 `session_required`.
+Paginated lists return `{ items, nextCursor }`. The cursor is an opaque string, and `?limit=` defaults to 50 (max 200).
+
+Requests authenticate with the session cookie `pb_session` or `Authorization: Bearer pbt_…` (a personal API token). OAuth access tokens (`pbo_…`) are bound to `/mcp` (RFC 8707) and get 401 here.
+
+Cookie-authenticated non-GET requests must send an `Origin` that matches the server.
+
+`:ws` routes require workspace membership. Marks in the tables below:
+- **A**: admin or owner
+- **O**: owner only
+- **I**: instance admin
+
+Token scopes:
+- `read`: gets and lists
+- `print`: create, upload, cancel, retry and delete jobs; test pages
+- `write`: every other change
+
+PATs hold all three scopes. A token without the scope a route needs gets 403 `insufficient_scope`.
+
+Password, passkey, session, PAT-creation, recovery-code and OAuth-consent routes refuse tokens with 403 `session_required`.
 
 ## Instance and auth
 | Route | Notes |
@@ -82,7 +100,7 @@ Token scopes: `read` (gets and lists), `print` (create, upload, cancel, retry an
 | `POST /workspaces/:ws/printers/:id/refresh` | relays `refresh` |
 | `POST /workspaces/:ws/printers/:id/test-page` | queues the built-in one-page test PDF (source `test`) → `{ job }` |
 
-With printer access active (docs/printer-access.md), each printer's permissions replace the **A** marks here and under Jobs: printers and jobs the caller can't see are left out of lists and answer 404, and other refusals are 403 `printer_access_denied`.
+With printer access active (docs/printer-access.md), each printer's permissions replace the **A** marks here and under Jobs. Printers and jobs the caller can't see are left out of lists and answer 404. Other refusals are 403 `printer_access_denied`.
 
 ## Jobs
 | Route | Notes |
@@ -96,9 +114,15 @@ With printer access active (docs/printer-access.md), each printer's permissions 
 | `POST /workspaces/:ws/jobs/:id/retry` | failed/canceled jobs with a file; `attempts + 1`, back to `queued` → `Job` (not wrapped) |
 | `DELETE /workspaces/:ws/jobs/:id` **A** | terminal jobs only; deletes the file |
 
-Members may print, cancel/retry their own jobs; admins any job. Format allowlist: `DOC_TYPES`; size limit: `settings.maxUploadMb`.
+Members can print, and cancel/retry their own jobs. Admins can cancel/retry any job.
 
-Jobs printed from a paired computer's own print dialog have source `device`, `userId: null`, and `sourceClientId`, `sourceClientName` (null once that device is removed) and `requestedBy` (the computer account name); other sources leave all three null. Devices create them with `/api/client/jobs` (protocol.md, "Remote printers").
+Format allowlist: `DOC_TYPES`. Size limit: `settings.maxUploadMb`.
+
+Jobs printed from a paired computer's own print dialog have source `device` and `userId: null`, and carry:
+- `sourceClientId` and `sourceClientName` (null once that device is removed)
+- `requestedBy` (the computer account name)
+
+Other sources leave all three null. Devices create these jobs with `/api/client/jobs` (protocol.md, "Remote printers").
 
 ## Instance admin
 | Route | Notes |
@@ -109,7 +133,7 @@ Jobs printed from a paired computer's own print dialog have source `device`, `us
 | `DELETE /admin/users/:id` **I** | |
 
 ## Extensions
-Optional modules, off until a server admin makes one available and a workspace owner turns it on (docs/extensions.md). Types: `server/shared/extensions.ts` and `access.ts`.
+Extensions are optional modules. Each stays off until a server admin makes it available and a workspace owner turns it on (docs/extensions.md). Types are in `server/shared/extensions.ts` and `access.ts`.
 
 | Route | Notes |
 |---|---|
@@ -119,7 +143,9 @@ Optional modules, off until a server admin makes one available and a workspace o
 | `PATCH /workspaces/:ws/extensions/:id` **O** | `{ enabled }` → `WorkspaceExtension`; 409 `extension_unavailable` when turning on one that isn't available |
 | `GET /workspaces/:ws/access/me` | `MyPrinterAccess`: the caller's permissions on each printer they can see; also answers while printer access is off |
 
-Printer access routes (`/workspaces/:ws/access…`, `/groups…`, `/printers/:id/access…`) are listed in docs/printer-access.md. While it is off they answer 404 `extension_inactive`, except `GET /access/me` and `GET /access/subject`. Moving either switch sends an `access` event to open pages and refreshes the printers devices offer in their print windows.
+docs/printer-access.md lists the printer access routes (`/workspaces/:ws/access…`, `/groups…`, `/printers/:id/access…`). While printer access is off they answer 404 `extension_inactive`, except `GET /access/me` and `GET /access/subject`.
+
+Moving either switch sends an `access` event to open pages and refreshes the printers devices offer in their print windows.
 
 ## Webhooks and non-API routes
 | Route | Notes |
@@ -140,13 +166,17 @@ Generic: `invalid_request` 400, `unauthorized` 401, `forbidden` 403, `not_found`
 - Resend webhook: `not_enabled` 404, `not_configured` 503, `bad_signature` 401.
 
 ## SPA conventions
-- Links the server generates: invites `<origin>/invite/<pbi_…>`, password resets `<origin>/reset-password#token=<pbp_…>` (fragment; the page posts `{ token, password }` to `/auth/reset/confirm`), device approval `<origin>/device?code=XXXX-XXXX`, first run `<origin>/setup?token=<SETUP_TOKEN>`.
-- SSO is a full-page navigation to `/api/auth/sso/:provider/start?next=/path[&invite=pbi_…]`; success 302s to `next`, failure to `/login?error=<code>&message=<text>`.
+- Links the server generates:
+  - invites: `<origin>/invite/<pbi_…>`
+  - password resets: `<origin>/reset-password#token=<pbp_…>` (a fragment; the page posts `{ token, password }` to `/auth/reset/confirm`)
+  - device approval: `<origin>/device?code=XXXX-XXXX`
+  - first run: `<origin>/setup?token=<SETUP_TOKEN>`
+- SSO is a full-page navigation to `/api/auth/sso/:provider/start?next=/path[&invite=pbi_…]`. Success 302s to `next`, failure to `/login?error=<code>&message=<text>`.
 - Every session-creating endpoint (setup, register, login, passkey signup/login verify, recover, reset confirm) returns `{ user }` and sets `pb_session`.
-- Passkey signup options accept `{ username, name, inviteToken?, setupToken?, workspaceName? }`; with `setupToken` + `workspaceName` while setup is required, it creates the first account.
-- `/workspaces/:ws/events`: the SPA sends the text frame `ping` every 25 s; the hub auto-replies `pong` and drops sockets idle for 90 s. The `workspace` event carries the receiving user's own role.
+- Passkey signup options accept `{ username, name, inviteToken?, setupToken?, workspaceName? }`. With `setupToken` and `workspaceName` while setup is required, it creates the first account.
+- `/workspaces/:ws/events`: The SPA sends the text frame `ping` every 25 s. The hub auto-replies `pong` and drops sockets idle for 90 s. The `workspace` event carries the receiving user's own role.
 - Device commands answer 200 `{ ok, data?, error? }` (`error: "timeout"` after 20 s) or 409 `client_offline`.
-- Instance secrets in `PATCH /admin/settings` (`sso.google.clientSecret`, `sso.oidc.clientSecret`, `email.apiKey`, `email.webhookSecret`): string sets, `null` clears, omitted keeps. `InstanceSettings.email.hasWebhookSecret` reports presence.
-- `POST /workspaces/:ws/jobs` returns an absolute `uploadUrl`; the PUT body must be exactly the declared size.
-- Usernames: 2–32 characters of letters, digits, `.`, `-` and `_`.
+- Instance secrets in `PATCH /admin/settings` (`sso.google.clientSecret`, `sso.oidc.clientSecret`, `email.apiKey`, `email.webhookSecret`): A string sets the secret, `null` clears it, and an omitted key keeps it. `InstanceSettings.email.hasWebhookSecret` reports whether the webhook secret is set.
+- `POST /workspaces/:ws/jobs` returns an absolute `uploadUrl`. The PUT body must be exactly the declared size.
+- Usernames: 2 to 32 characters of letters, digits, `.`, `-` and `_`.
 - Audit `action` strings are `noun.verb` (`printer.update`, `member.remove`, `job.create`, `passkey.add`, `app.approve`, `extension.update`, `access.grant`, `group.add`, …).

@@ -1,10 +1,15 @@
 # Printer access
 
-**Printer access** is an [extension](extensions.md) that controls who can see, print to, and manage each printer. It is off by default. Without it, every member can see every printer, print to every added printer, and see every job; owners and admins can change everything.
+**Printer access** is an [extension](extensions.md) that controls who can see, print to, and manage each printer. It is off by default.
 
-Turn it on in two steps: a server admin makes it available under **Admin > Extensions**, then a workspace owner enables it under **Workspace settings > Extensions**.
+Without it, every member can see every printer, print to every added printer, and see every job. Owners and admins can change everything.
 
-**Turning it on changes nothing by itself.** Every printer starts open to everyone with the **User** role, which is exactly today's access. You then restrict printers one at a time, or change the default for all of them.
+## Turning it on
+
+1. A server admin opens **Server admin > Extensions** and turns on **Available to workspaces** for **Printer access**.
+2. A workspace owner opens **Workspace settings > Extensions**, turns on **Printer access**, and clicks **Turn on** to confirm. A **Printer access** tab appears in **Workspace settings**.
+
+Turning it on changes nothing by itself. Every printer starts open to everyone with the **User** role, which is exactly today's access. You then restrict printers one at a time, or change the default for all of them.
 
 ## Concepts
 
@@ -31,7 +36,9 @@ A role is a named set of permissions.
 | **User** | `view`, `print`, `jobs.read` |
 | **Manager** | all six |
 
-Admins can create **custom roles** from any combination of the six permissions, for example "Prints, sees only own jobs" (`view`, `print`). A custom role in use can be edited (everyone holding it changes at once) but not deleted while a grant, a printer's Everyone setting, or the workspace default uses it.
+Admins can create **custom roles** from any combination of the six permissions, for example "Prints, sees only own jobs" (`view`, `print`).
+
+Admins can edit a custom role while it's in use, and everyone holding it changes at once. A custom role can't be deleted while a grant, a printer's Everyone setting, or the workspace default uses it.
 
 ### Who can be granted access
 
@@ -42,9 +49,16 @@ Admins can create **custom roles** from any combination of the six permissions, 
 
 ### Grants
 
-A grant gives a role to a member, a group, or a device, either on **one printer** or on **every printer** in the workspace (a workspace-wide grant, for example "IT group: Manager on every printer"). Grants never go to Everyone: what Everyone gets is set per printer and by the workspace default, so a restricted printer stays restricted.
+A grant gives a role to a member, a group, or a device, either on **one printer** or on **every printer** in the workspace (a workspace-wide grant, for example "IT group: Manager on every printer").
 
-Each printer also has an **Everyone** setting: **Workspace default** (the default is **User**), any role, or **No access**. Setting Everyone to No access is what makes a printer **restricted**: only owners, admins, and explicit grants can use it.
+Grants never go to Everyone. What Everyone gets is set per printer and by the workspace default, so a restricted printer stays restricted.
+
+Each printer also has an **Everyone** setting, set to one of:
+- **Workspace default** (the default is **User**)
+- any role
+- **No access**
+
+Setting Everyone to **No access** makes a printer **restricted**: Only owners, admins, and explicit grants can use it.
 
 ## How access is decided
 
@@ -56,9 +70,13 @@ For an actor and a printer, in order:
    - the printer's **Everyone** role (its own setting, or the workspace default), for any member or device of the workspace;
    - every grant **on this printer** whose subject matches: the member, a group containing the member or device, or the device;
    - every **workspace-wide grant** whose subject matches.
-4. Implied permissions are added (see above). No permissions means the printer doesn't exist for that actor: lists leave it out and direct requests get `404`.
+4. Implied permissions are added (see above). No permissions means the printer doesn't exist for that actor: Lists leave it out and direct requests get `404`.
 
-Grants only add access; there are no deny rules. To keep someone out of a printer, set Everyone to No access and grant the people who need it.
+Grants only add access. There are no deny rules.
+
+To keep someone out of a printer:
+1. Set the printer's **Everyone** setting to **No access**.
+2. Grant a role on that printer to the people who need it.
 
 ## What changes where
 
@@ -76,15 +94,17 @@ Grants only add access; there are no deny rules. To keep someone out of a printe
 | Groups, custom roles, workspace-wide grants, workspace default role | Workspace admins and owners |
 | Live updates in open browsers | Printer and job events reach only people who can see them; an `access` event tells pages to refresh after any access change |
 
-LAN sharing is outside access control: a printer shared on the local network can be used by anyone on that network. The printer settings page warns about this when a restricted printer is shared.
+LAN sharing is outside access control: A printer shared on the local network can be used by anyone on that network. The printer settings page warns about this when a restricted printer is shared.
 
 ## Turning it off
 
-Turning the extension off (either switch) restores the default rules immediately. Groups, roles, and grants are kept, so turning it back on restores them.
+Turn off either switch from [Turning it on](#turning-it-on). The default rules apply immediately.
+
+Groups, roles, and grants are kept, so turning it back on restores them.
 
 ## API
 
-All under `/api/workspaces/:ws`. Extension routes answer `404 extension_inactive` while it is off, except `GET /access/me` and `GET /access/subject`.
+All routes are under `/api/workspaces/:ws`. While the extension is off they answer `404 extension_inactive`, except `GET /access/me` and `GET /access/subject`.
 
 | Method and path | Who | Body or result |
 |---|---|---|
@@ -107,8 +127,25 @@ All under `/api/workspaces/:ws`. Extension routes answer `404 extension_inactive
 
 Every change is audited (`access.update`, `access.grant`, `access.revoke`, `access.role_create`, `access.role_update`, `access.role_delete`, `group.create`, `group.update`, `group.delete`, `group.add`, `group.remove`) and followed by an `access` event.
 
-Errors: `403 printer_access_denied` when a permission is missing, while a printer or job the caller can't see answers `404 not_found` (a device's job for a printer it can't see: `404 printer_access_denied`); `409 role_in_use`; `409 name_taken` for a group or role name already in use, built-in role names included.
+Errors:
+- `403 printer_access_denied`: a permission is missing.
+- `404 not_found`: a printer or job the caller can't see. A device's job for a printer it can't see gets `404 printer_access_denied`.
+- `409 role_in_use`: deleting a role that's still in use.
+- `409 name_taken`: a group or role name already in use, built-in role names included.
 
 ## MCP
 
-Listed when the extension is available on the instance; each call fails with a clear message while it is inactive in the workspace: `list_groups`, `create_group`, `update_group`, `delete_group`, `set_group_member`, `list_printer_roles`, `create_printer_role`, `update_printer_role`, `delete_printer_role`, `get_printer_access`, `set_printer_everyone_role`, `grant_printer_access`, `revoke_printer_access`, `explain_printer_access`. Existing printer and job tools follow the same rules as the REST API.
+These tools are listed when the extension is available on the instance. While it is inactive in the workspace, each call fails with a message that says how to turn it on.
+
+- `list_groups`
+- `create_group`, `update_group`, `delete_group`
+- `set_group_member`
+- `list_printer_roles`
+- `create_printer_role`, `update_printer_role`, `delete_printer_role`
+- `get_printer_access`
+- `set_printer_everyone_role`
+- `grant_printer_access`
+- `revoke_printer_access`
+- `explain_printer_access`
+
+Existing printer and job tools follow the same rules as the REST API.

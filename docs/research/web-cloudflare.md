@@ -1,6 +1,8 @@
 # Print Better: web + Cloudflare platform research
 
-Verified 2026-11-18 (npm registry `latest` tags, vendor docs, MDN BCD 8.1.9 / web-features 3.46.0). UNVERIFIED = not confirmed from a primary source this session.
+The Print Better server is a React web app and a Cloudflare Worker in one project, using D1, R2, Durable Objects, email, Cron Triggers and passkey sign-in. These notes check the current version, API and limits of each piece. Section 0 lists where they differ from common assumptions.
+
+Verified 2026-11-18 against npm registry `latest` tags, vendor docs, and MDN BCD 8.1.9 / web-features 3.46.0. UNVERIFIED marks a claim not confirmed from a primary source this session.
 
 ## 0. Surprises vs common assumptions
 - TypeScript 7.0.2 (native Go `tsc`) is `latest`; `baseUrl` is now a hard error, which breaks the shadcn manual-install tsconfig step.
@@ -63,6 +65,8 @@ export default defineConfig({ plugins: [react(), tailwindcss(), cloudflare()], r
 - Icons: Lucide is default (`iconLibrary: "lucide"`); create also offers Tabler, Hugeicons, Phosphor, Remix. Switch later with `shadcn migrate icons`.
 
 ## 3. One project: SPA + Worker via @cloudflare/vite-plugin
+The React app and the Worker build from one Vite project. Cloudflare serves the built SPA as static assets, and `run_worker_first` plus the navigation rules under Gotchas decide which requests reach the Worker.
+
 Sources: https://developers.cloudflare.com/workers/vite-plugin/tutorial/ ; /workers/framework-guides/web-apps/react/ ; /workers/static-assets/routing/single-page-application/ ; /workers/static-assets/binding/ ; https://github.com/cloudflare/templates/tree/main/react-starter-template
 - Scaffold: `npm create cloudflare@latest -- print-better --framework=react`.
 - Layout: `public/`, `src/` (App.tsx), `worker/index.ts`, `index.html`, `vite.config.ts`, `wrangler.json` (docs say `.jsonc`), `worker-configuration.d.ts` (committed), `tsconfig.json` referencing `tsconfig.app.json` / `.node.json` / `.worker.json` (worker: extends node, `types: ["./worker-configuration.d.ts","vite/client"]`, `include: ["worker"]`). `.gitignore` adds `.wrangler`, `.dev.vars*`.
@@ -106,13 +110,15 @@ Sources: https://developers.cloudflare.com/r2/api/workers/workers-api-reference/
 "r2_buckets": [{ "binding": "FILES", "bucket_name": "print-better-files" }]
 ```
 - `put(key, value, opts?)`: value `ReadableStream | ArrayBuffer | ArrayBufferView | string | null | Blob`; opts `httpMetadata`, `customMetadata`, `onlyIf`; returns `R2Object | null` (null when precondition fails).
-- Known length: `request.body` with Content-Length, or readable side of `new FixedLengthStream(n)`; just `req.body.pipeTo(fixed.writable)` then `put(key, fixed.readable)`. Unknown length (chunked body, TransformStream): `put` throws TypeError. Options: buffer (`await request.arrayBuffer()`, bounded by 128 MB isolate memory), or `createMultipartUpload` (parts, `resumeMultipartUpload`, auto-abort after 7 days, max 10,000 parts).
+- Known length: `request.body` with Content-Length, or readable side of `new FixedLengthStream(n)`; `req.body.pipeTo(fixed.writable)` then `put(key, fixed.readable)`. Unknown length (chunked body, TransformStream): `put` throws TypeError. Options: buffer (`await request.arrayBuffer()`, bounded by 128 MB isolate memory), or `createMultipartUpload` (parts, `resumeMultipartUpload`, auto-abort after 7 days, max 10,000 parts).
 - `get(key, {range, onlyIf})`: null if missing; `R2ObjectBody` with `.body` stream, `.arrayBuffer()/.text()/.json()/.blob()`; failed precondition returns object without body. Stream out: `const h = new Headers(); obj.writeHttpMetadata(h); h.set("etag", obj.httpEtag); return new Response(obj.body, { headers: h });`
 - `head`, `delete(key|keys[<=1000])`, `list` (<=1000, check `truncated`/`cursor`).
 - Limits: object 5 TiB (4.995), single PUT 5 GiB (S3 API; via Worker bounded by request body limit), key 1,024 B, metadata 8,192 B, same-key writes 1/s (429), bucket mgmt ops 50/s.
 - Worker request body limit follows the zone's Cloudflare plan, not the Workers plan: Free 100 MB, Pro 100 MB, Business 200 MB, Enterprise up to 5 GB self-serve (higher via account team). Outbound body from DO/Container: 100 MiB default.
 
 ## 6. Durable Objects
+A Durable Object (`PrinterHub` in the samples below) holds the client WebSocket connections. It can hibernate between messages without closing them.
+
 Sources: https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/ ; /durable-objects/api/state/ ; /api/base/ ; /api/alarms/ ; /best-practices/websockets/ ; /platform/limits/ ; https://developers.cloudflare.com/changelog/post/2026-07-09-restrict-new-kv-backed-namespaces/
 ```jsonc
 "durable_objects": { "bindings": [{ "name": "HUB", "class_name": "PrinterHub" }] },
@@ -171,7 +177,7 @@ Sources: https://developers.cloudflare.com/workers/configuration/cron-triggers/ 
 export default { async scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext) {
   switch (controller.cron) { case "0 3 * * *": ctx.waitUntil(purge(env)); } } } satisfies ExportedHandler<Env>;
 ```
-- `controller`: `cron`, `type` ("scheduled"), `scheduledTime` (ms), `noRetry()`. UTC. 5 fields; supports `L`, `W`, `#`; weekdays 1=Sun..7=Sat. Changes take up to 15 min to propagate. Empty `crons: []` removes; omitting key leaves existing triggers. Config file is the source of truth.
+- `controller`: `cron`, `type` ("scheduled"), `scheduledTime` (ms), `noRetry()`. UTC. 5 fields; supports `L`, `W`, `#`; weekdays 1=Sun..7=Sat. Changes take up to 15 min to propagate. Empty `crons: []` removes; omitting key leaves existing triggers. The `crons` list in the config file defines the triggers.
 - Local: not auto-run. `curl "http://localhost:8787/cdn-cgi/local/scheduled?cron=*/15+*+*+*+*"` (`time`, `format=json` params; Local Explorer needs wrangler >= 4.139.0 / plugin >= 1.60.0).
 - Free vs Paid: CPU per request 10 ms vs default 30 s (configurable to 5 min; key `limits.cpu_ms`, per changelog, UNVERIFIED in config docs); cron CPU 10 ms vs 30 s (interval < 1 h) or 15 min (>= 1 h); wall time cron/alarm/queue 15 min both; subrequests 50 vs 10,000 (configurable to 10M); internal-service subrequests 1,000 vs matches config; memory 128 MB; script 64 MiB uncompressed; startup 1 s; 6 simultaneous open connections; env vars 64 vs 128 (5 KB each); Workers 100 vs 500; Cron Triggers 5 vs 1,000 per account; requests 100k/day on Free; `waitUntil` adds 30 s after response.
 
