@@ -61,7 +61,7 @@ Usage by **member, group, device, printer, cost center, or source** for any rang
 ## Alerts
 
 - An email at **80%** and at **100%** of a limit or budget. A limit that counts one person (each member, a member, or each member of a group) emails that person, and every limit and budget emails the admin recipients. Each alert goes out at most once per threshold, per count, per cycle.
-- Limits are checked when a job is queued. Budgets are also checked when printers report what they printed.
+- Counts are checked when a job is queued, with its estimate, and again when its printer reports what it printed.
 - While personal alerts are on, people also see an alert on Home when they are at or over 80% of a limit.
 - Admins choose whether personal and admin alerts go out, and who gets admin alerts (default: every owner and admin).
 
@@ -70,7 +70,7 @@ Usage by **member, group, device, printer, cost center, or source** for any rang
 Only owners change these.
 
 - **Delete documents as soon as a job finishes**, overriding the workspace's keep-documents time. Finished jobs can't be retried then.
-- **Show document names only to the person who printed them.** Everyone else, including in events, emails, the API, and MCP, sees the title "Document" and no file name. Owners and admins see names only if **Owners and admins can see document names** is on. The computer that sent a job sees its names.
+- **Show document names only to the person who printed them.** Everyone else, including in events, emails, the API, and MCP, sees the title "Document" and no file name. Their downloads are named `document.pdf`, `document.txt` and so on, and the computer that prints the job gets the title "Document" too. Owners and admins see names only if **Owners and admins can see document names** is on. The computer that sent a job sees its names.
 
 ## Emails
 
@@ -79,7 +79,7 @@ Sent with the existing outbound email (`sendMail` in `server/worker/email/outbou
 | Email | To | When |
 |---|---|---|
 | Approval request | Each approver of the job with an email address | A job starts waiting for approval: who, what, which printer, why, and until when, with a link to Approvals |
-| Usage alert | The person and the admin recipients | Usage crosses 80% or 100% |
+| Usage alert | The person and the admin recipients | Recorded or reported usage crosses 80% or 100% |
 | Scheduled report | The schedule's members | 08:00 local on the first day of each week or month, covering the one that ended |
 
 ## Turning It Off

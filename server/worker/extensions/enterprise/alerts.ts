@@ -12,6 +12,7 @@ import { loadLimits } from '../print-policies/store'
 import { usageSettings } from '../usage/settings'
 import { amountOf, budgetMeter, budgetRows, toBudget } from './meters'
 import { formatMoney } from './csv'
+import { settledLimitCounts } from './limit-alerts'
 import { settingsOf } from './store'
 import { cycleWord } from './values'
 
@@ -25,8 +26,8 @@ export interface Count {
   person: string | null
 }
 
-/** Whose count of a limit the job landed in; personal limits count one member. */
-function limitCount(scope: LimitScope | undefined, job: JobDraft): Pick<Count, 'subject' | 'person'> {
+/** Whose count of a limit a job from this sender landed in; personal limits count one member. */
+export function limitCount(scope: LimitScope | undefined, job: { userId: string | null; clientId: string | null }): Pick<Count, 'subject' | 'person'> {
   const user = job.userId ? `user:${job.userId}` : null
   const client = job.clientId ? `client:${job.clientId}` : null
   switch (scope?.type) {
@@ -55,11 +56,15 @@ export async function alertAfterJob(ctx: Ctx, job: JobDraft, meters: readonly Us
   await sendAlerts(ctx, job.workspaceId, counts)
 }
 
-/** After jobs end: what the printers reported may take a budget over a threshold. */
+/** After jobs end: what the printers reported may take a limit or budget over a threshold. */
 export async function alertSettled(ctx: Ctx, workspaceId: string, rows: readonly JobViewRow[]): Promise<void> {
   if (!(await settingsOf(ctx, workspaceId)).alerts.enabled) return
+  await sendAlerts(ctx, workspaceId, [...(await settledLimitCounts(ctx, workspaceId, rows)), ...(await budgetCounts(ctx, workspaceId, rows))])
+}
+
+async function budgetCounts(ctx: Ctx, workspaceId: string, rows: readonly JobViewRow[]): Promise<Count[]> {
   const centers = [...new Set(rows.flatMap((r) => (r.cost_center_id && r.usage ? [r.cost_center_id] : [])))]
-  if (centers.length === 0) return
+  if (centers.length === 0) return []
   const { timeZone } = await usageSettings(ctx, workspaceId)
   const counts: Count[] = []
   for (const centerId of centers) {
@@ -69,7 +74,7 @@ export async function alertSettled(ctx: Ctx, workspaceId: string, rows: readonly
       counts.push({ meter: { ...meter, kind: 'budget', id: budget.id, name: `${name} ${cycleWord(budget.cycle)} budget` }, used: meter.used, subject: '', person: null })
     }
   }
-  await sendAlerts(ctx, workspaceId, counts)
+  return counts
 }
 
 /** Records the highest threshold each count reached for the first time this cycle, then emails it. */

@@ -8,7 +8,7 @@ import { connectPrinter, eventually } from './helpers/device'
 import { code, giveEmail, job, outbox, quietPrinter, setEnterprise, turnOnEnterprise, type SentMail } from './helpers/enterprise'
 import { EventSocket, freshWorkspace, jobRow } from './helpers/jobs'
 import { callTool } from './helpers/mcp'
-import { pdfJob } from './helpers/usage'
+import { pdfJob, switchExtension } from './helpers/usage'
 import { addMember, createPat, setupOwner, type Owner, type Person } from './helpers/world'
 
 let owner: Owner
@@ -112,6 +112,26 @@ describe('usage alerts', () => {
       await station.device.next('job')
       station.device.send({ type: 'job_status', jobId: id, status: 'completed', pages: 9 })
       await eventually(async () => expect(mail.map((m) => m.subject)).toContain('Studio monthly budget: 80% used'))
+    } finally {
+      station.device.close()
+    }
+  })
+
+  it('alert on a limit once a printer reports more than the estimate', async () => {
+    const live = await freshWorkspace(owner, 'Reported limits')
+    await turnOnEnterprise(owner, live, { alerts: { enabled: true } })
+    await switchExtension(owner, 'print-policies', live, true)
+    const station = await connectPrinter(owner, 'usb:ent:limits', live)
+    try {
+      const limit = { name: 'Studio pages', scope: { type: 'each-member' }, unit: 'pages', amount: 10, cycle: { kind: 'month', startDay: 1 }, action: 'warn' }
+      ok(await owner.agent.post(wsPath(live, '/policies/limits'), limit), 'limit')
+      const id = ok(await job(owner.agent, live, station.printerId), 'job').job.id
+      await station.device.next('job')
+      expect(mail.map((m) => m.subject)).not.toContain('Studio pages: 80% used')
+      station.device.send({ type: 'job_status', jobId: id, status: 'completed', pages: 9 })
+      await eventually(async () => expect(mail.filter((m) => m.subject === 'Studio pages: 80% used').map((m) => m.to)).toEqual([['owner@example.com']]))
+      const row = await env.DB.prepare('SELECT subject, threshold FROM usage_alerts WHERE workspace_id = ?').bind(live).first()
+      expect(row).toEqual({ subject: `user:${owner.user.id}`, threshold: 80 })
     } finally {
       station.device.close()
     }

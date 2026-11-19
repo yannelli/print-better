@@ -103,7 +103,7 @@ Every job charged to the cost center counts, on every printer. **Require approva
 
 ## Alerts
 
-With **Alerts** on, Print Better emails at 80% and again at 100% of a limit or budget, once per cycle:
+With **Alerts** on, Print Better emails at 80% and again at 100% of a limit or budget, once per cycle. It checks when a job is queued and again when the printer reports what it printed:
 
 - The person a limit counts, when **Email people about their own limits** is on. They also see the alert on **Home**.
 - Owners and admins, or the people you choose under **Admin alerts go to**, when **Email admins** is on. Budget alerts go only to them.
@@ -115,7 +115,7 @@ Alerts need [outbound email](/docs/self-hosting/email).
 Only owners change these:
 
 - **Delete documents as soon as a job finishes** overrides **Keep documents for** in [Workspace Settings](/docs/workspaces/settings). Finished jobs can't be retried.
-- **Show document names only to the person who printed them** shows everyone else "Document", in the app, emails, the API, and AI assistants. Turn on **Owners and admins can see document names** to make an exception for them.
+- **Show document names only to the person who printed them** shows everyone else "Document", in the app, emails, the API, and AI assistants. Their downloads are named `document.pdf` and so on, and the printing computer's queue shows "Document" too. Turn on **Owners and admins can see document names** to make an exception for them.
 
 ## Turn It Off
 
