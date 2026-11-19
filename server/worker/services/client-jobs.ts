@@ -59,6 +59,8 @@ export async function createClientJob(ctx: Ctx, client: ClientRow, body: Json): 
     maxBytes,
     sourceClientId: client.id,
     requestedBy: clipped(body, 'requestedBy', 100),
+    access: await deviceAccess(ctx, client),
+    role: null,
   })
   if (!uploadUrl) throw new Error('queueJob opened no upload slot')
   return { job, uploadUrl }

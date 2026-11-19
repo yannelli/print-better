@@ -23,8 +23,8 @@ function contentDisposition(fileName: string): string {
   return `attachment; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
 }
 
-/** User-supplied documents are served inert: sandboxed, never sniffed, and as downloads for browsers. */
-export function documentResponse(job: JobViewRow, object: R2ObjectBody, download: boolean): Response {
+/** User-supplied documents are served inert: sandboxed, never sniffed, and as downloads (named `download`) for browsers. */
+export function documentResponse(job: JobViewRow, object: R2ObjectBody, download: string | null): Response {
   const headers = new Headers({
     'Content-Type': job.content_type,
     'Content-Length': String(object.size),
@@ -33,6 +33,6 @@ export function documentResponse(job: JobViewRow, object: R2ObjectBody, download
     'X-Content-Type-Options': 'nosniff',
     'Content-Security-Policy': 'sandbox',
   })
-  if (download) headers.set('Content-Disposition', contentDisposition(job.file_name ?? job.title))
+  if (download !== null) headers.set('Content-Disposition', contentDisposition(download))
   return new Response(object.body, { headers })
 }

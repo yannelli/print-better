@@ -2,6 +2,7 @@ import type { CommandName, UiEvent } from '../../shared/protocol'
 import { DEFAULT_CLIENT_SETTINGS, type Client, type Os } from '../../shared/types'
 import { clientSettings, JOB_VIEW, toClient, toJob, workspaceSettings } from '../db/map'
 import type { ClientRow, JobViewRow, WorkspaceRow } from '../db/rows'
+import { jobsEnded } from '../extensions/finish'
 import type { Json } from '../http/body'
 import { conflict, notFound } from '../http/errors'
 import { NAME, oneOf, optObj, optStr } from '../http/validate'
@@ -12,6 +13,7 @@ import { audit } from './audit'
 import { mergeClientSettings } from './client-settings'
 import type { Ctx } from './context'
 import { hubFor, notifyHub } from './hub'
+import { OPEN } from './jobs'
 
 export interface DeviceInfo {
   name: string
@@ -112,12 +114,16 @@ export async function deleteClient(ctx: Ctx, workspaceId: string, id: string): P
   await run(
     ctx.env.DB,
     `UPDATE jobs SET status = 'canceled', status_message = 'Device removed', completed_at = ?, updated_at = ?
-     WHERE printer_id IN (SELECT id FROM printers WHERE client_id = ?) AND status IN ('uploading', 'queued', 'dispatched', 'printing')`,
+     WHERE printer_id IN (SELECT id FROM printers WHERE client_id = ?) AND status IN ${OPEN}`,
     now,
     now,
     id,
   )
-  const jobs = await all<JobViewRow>(ctx.env.DB, `${JOB_VIEW} WHERE p.client_id = ? AND j.updated_at = ? AND j.status = 'canceled'`, id, now)
+  const { rows: jobs, events: usage } = await jobsEnded(
+    ctx,
+    workspaceId,
+    await all<JobViewRow>(ctx.env.DB, `${JOB_VIEW} WHERE p.client_id = ? AND j.updated_at = ? AND j.status = 'canceled'`, id, now),
+  )
   const printers = await all<{ id: string }>(ctx.env.DB, 'SELECT id FROM printers WHERE client_id = ?', id)
   await hubFor(ctx.env, workspaceId)
     .disconnect({ clientId: id, unpair: true }, 4401, 'Device removed')
@@ -126,6 +132,7 @@ export async function deleteClient(ctx: Ctx, workspaceId: string, id: string): P
   await audit(ctx, workspaceId, 'client.delete', id, { name: row.name })
   const events: UiEvent[] = [
     ...jobs.map((j) => ({ type: 'job' as const, job: { ...toJob(j), printerId: null, printerName: null } })),
+    ...usage,
     ...printers.map((p) => ({ type: 'printer_removed' as const, id: p.id })),
     { type: 'client_removed', id },
   ]

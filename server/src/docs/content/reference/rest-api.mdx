@@ -60,11 +60,11 @@ Errors use the HTTP status and a JSON body:
 
 | Status | Common codes |
 | --- | --- |
-| `400` | `invalid_request`, `printer_required`, `size_mismatch`, `email_disabled` |
+| `400` | `invalid_request`, `printer_required`, `size_mismatch`, `email_disabled`, `cost_center_invalid` |
 | `401` | `unauthorized`, `invalid_token`, `invalid_credentials` |
-| `403` | `forbidden`, `insufficient_scope`, `session_required`, `bad_origin`, `printer_access_denied` |
+| `403` | `forbidden`, `insufficient_scope`, `session_required`, `bad_origin`, `printer_access_denied`, `policy_blocked` |
 | `404` | `not_found`, `extension_inactive` |
-| `409` | `conflict`, `client_offline`, `printer_not_added`, `job_finished`, `job_not_retryable`, `file_purged`, `last_owner` |
+| `409` | `conflict`, `client_offline`, `printer_not_added`, `job_finished`, `job_not_retryable`, `file_purged`, `last_owner`, `job_not_held`, `part_off`, `cost_center_in_use`, `name_taken` |
 | `413` | `too_large` |
 | `415` | `unsupported_type` |
 | `429` | `rate_limited` |
@@ -267,6 +267,64 @@ These endpoints need the [Printer Access](/docs/extensions/printer-access) exten
 | GET | `/printers/:id/access` | `read` | A printer's Everyone setting and grants. Needs `access` on it. |
 | PATCH | `/printers/:id/access` | `write` | Sets a printer's Everyone role. Needs `access` on it. |
 | POST | `/printers/:id/access/grants` | `write` | Grants a role on one printer. Needs `access` on it. |
+
+## Print Rules and Limits
+
+These endpoints need the [Print Rules and Limits](/docs/extensions/print-rules-and-limits) extension turned on. While it is off, they return `404 extension_inactive`. All paths start with `/workspaces/:ws`.
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/policies/rules` | `read` | Admins: rules, top to bottom. |
+| POST | `/policies/rules` | `write` | Admins: adds a rule at the bottom. |
+| PATCH | `/policies/rules/:id` | `write` | Admins: changes a rule. |
+| DELETE | `/policies/rules/:id` | `write` | Admins: deletes a rule. |
+| PUT | `/policies/rules/order` | `write` | Admins: sets the order, with every rule id once. |
+| GET | `/policies/limits` | `read` | Admins: limits with this cycle's counts. |
+| POST | `/policies/limits` | `write` | Admins: adds a limit. |
+| PATCH | `/policies/limits/:id` | `write` | Admins: changes a limit. |
+| DELETE | `/policies/limits/:id` | `write` | Admins: deletes a limit and its extra allowances. |
+| GET | `/policies/limits/:id/adjustments` | `read` | Admins: this cycle's extra allowances. |
+| POST | `/policies/limits/:id/adjustments` | `write` | Admins: gives an extra amount for this cycle. |
+| GET | `/usage/me` | `read` | The limits that count your jobs, with what's left. |
+| GET | `/usage?cycle=current` | `read` | Admins: every limit's counts. `cycle=previous` for the cycle before. |
+| POST | `/jobs/preview` | `print` | What would happen to a job sent now. Nothing is printed. |
+| GET | `/prices` | `read` | The currency, time zone, and prices. |
+| PUT | `/prices` | `write` | Admins: changes them. |
+
+A rule or limit that refuses a job returns `403 policy_blocked` with its message. Jobs it checked carry `policy` (what changed, and what the sender asked for) and `usage` (pages, sheets, and cost).
+
+## Enterprise Controls
+
+These endpoints need the [Enterprise Controls](/docs/extensions/enterprise) extension turned on. While it is off, they return `404 extension_inactive`, and while their part is off, `409 part_off`. All paths start with `/workspaces/:ws`.
+
+| Method | Path | Scope | Purpose |
+| --- | --- | --- | --- |
+| GET | `/enterprise` | `read` | Each part's settings, and printers with approval or release on. |
+| PATCH | `/enterprise` | `write` | Admins: changes parts. Owners for `privacy`. |
+| PATCH | `/printers/:id/enterprise` | `write` | Sets `approval` and `secureRelease` on a printer. Admins, or `settings` on it. |
+| GET | `/approvals` | `read` | Jobs waiting for your approval. |
+| POST | `/jobs/:id/approve` | `print` | Approves a job. Takes an optional `note`. |
+| POST | `/jobs/:id/deny` | `print` | Cancels a job waiting for approval. Takes a `reason`. |
+| GET | `/release` | `read` | Your jobs waiting to be released. Admins add `?everyone=true`. |
+| POST | `/jobs/:id/release` | `print` | Releases a job. The sender, owners, and admins. |
+| POST | `/release/all` | `print` | Releases all of your jobs. |
+| GET | `/cost-centers` | `read` | Cost centers, and your default. |
+| POST | `/cost-centers` | `write` | Admins: adds a cost center. |
+| PATCH | `/cost-centers/:id` | `write` | Admins: changes one. |
+| DELETE | `/cost-centers/:id` | `write` | Admins: deletes one no job was charged to, else `409 cost_center_in_use`. |
+| GET | `/cost-centers/defaults` | `read` | Admins: defaults for members, groups, and devices. |
+| PUT | `/cost-centers/defaults` | `write` | Admins: sets defaults. `null` removes one. |
+| GET | `/budgets` | `read` | Admins: budgets with this cycle's usage. |
+| POST | `/budgets` | `write` | Admins: adds a budget. |
+| PATCH | `/budgets/:id` | `write` | Admins: changes a budget. |
+| DELETE | `/budgets/:id` | `write` | Admins: deletes a budget. |
+| GET | `/reports/usage?by=&from=&to=` | `read` | Admins: a usage report. `format=csv` downloads it. |
+| GET | `/reports/schedules` | `read` | Admins: scheduled report emails. |
+| POST | `/reports/schedules` | `write` | Admins: schedules a weekly or monthly report. |
+| DELETE | `/reports/schedules/:id` | `write` | Admins: stops one. |
+| GET | `/audit/export?from=&to=` | `read` | Admins: the audit log as CSV. |
+
+While it is on, `POST /jobs` takes `costCenter` (an id or a code) and `GET /jobs` takes `status=held`. A job that waits has the status `held`, with `held.kind` set to `approval` or `release`.
 
 ## Other Endpoints
 

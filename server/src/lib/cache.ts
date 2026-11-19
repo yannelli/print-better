@@ -16,6 +16,8 @@ function upsert<T extends WithId>(list: T[] | undefined, item: T, prepend = fals
 
 const without = <T extends WithId>(list: T[] | undefined, id: string) => list?.filter((x) => x.id !== id)
 
+export const refreshUsage = (qc: QueryClient, ws: string) => qc.invalidateQueries({ queryKey: qk.usage(ws) })
+
 export function putPrinter(qc: QueryClient, ws: string, printer: Printer) {
   qc.setQueryData<Printer[]>(qk.printers(ws), (list) => upsert(list, printer))
   qc.setQueryData(qk.printer(ws, printer.id), printer)
@@ -82,7 +84,7 @@ export function putWorkspace(qc: QueryClient, workspace: Workspace) {
 
 /** After any access or extension change: what people can see, print to, and manage may all differ. */
 export function refreshAccess(qc: QueryClient, ws: string) {
-  for (const key of [qk.printers(ws), ['ws', ws, 'printer'], qk.jobsAll(ws), ['ws', ws, 'job'], qk.extensions(ws), qk.access(ws), qk.groups(ws)]) {
+  for (const key of [qk.printers(ws), ['ws', ws, 'printer'], qk.jobsAll(ws), ['ws', ws, 'job'], qk.extensions(ws), qk.access(ws), qk.groups(ws), qk.enterprise(ws)]) {
     qc.invalidateQueries({ queryKey: key })
   }
 }

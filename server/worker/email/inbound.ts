@@ -2,6 +2,7 @@ import type { Role } from '../../shared/types'
 import { printerSettings, workspaceSettings } from '../db/map'
 import type { PrinterViewRow } from '../db/rows'
 import { MB } from '../http/body'
+import { ApiError } from '../http/errors'
 import { first } from '../lib/db'
 import { utf8 } from '../lib/encoding'
 import { systemCtx } from '../services/context'
@@ -97,18 +98,26 @@ export async function processInbound(env: Env, mail: InboundMail, channel: 'clou
       continue
     }
     for (const doc of docs) {
-      await queueJob(ctx, {
-        workspaceId: printer.workspace_id,
-        printer,
-        userId: member?.id ?? null,
-        source: 'email',
-        title: (doc.fileName ?? mail.subject) || 'Email',
-        options: {},
-        document: { kind: 'bytes', ...doc },
-        maxBytes,
-      })
+      try {
+        await queueJob(ctx, {
+          workspaceId: printer.workspace_id,
+          printer,
+          userId: member?.id ?? null,
+          source: 'email',
+          title: (doc.fileName ?? mail.subject) || 'Email',
+          options: {},
+          document: { kind: 'bytes', ...doc },
+          maxBytes,
+          access,
+          role: member?.role ?? null,
+        })
+        accepted += 1
+      } catch (e) {
+        // Each attachment is checked as its own job; a refusal becomes the rejection reason.
+        if (!(e instanceof ApiError) || e.code !== 'policy_blocked') throw e
+        reason = e.message
+      }
     }
-    accepted += docs.length
   }
   return { accepted, rejected: accepted > 0 ? null : reason }
 }

@@ -167,6 +167,57 @@ These tools need the [Printer Access](/docs/extensions/printer-access) extension
 | `revoke_printer_access` | `write` | Removes a grant. |
 | `explain_printer_access` | `read` | Explains why someone has their permissions on a printer. |
 
+### Print Rules and Limits
+
+These tools need the [Print Rules and Limits](/docs/extensions/print-rules-and-limits) extension. They are listed once a server admin makes it available. Until a workspace owner turns it on, each call fails with a message that says how to turn it on.
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `list_print_rules` | `read` | Admins: rules, top to bottom. |
+| `create_print_rule` | `write` | Admins: adds a rule at the bottom. |
+| `update_print_rule` | `write` | Admins: changes a rule. |
+| `delete_print_rule` | `write` | Admins: deletes a rule. |
+| `reorder_print_rules` | `write` | Admins: sets the order, with every rule id once. |
+| `list_print_limits` | `read` | Admins: limits with this cycle's counts. |
+| `create_print_limit` | `write` | Admins: adds a limit. |
+| `update_print_limit` | `write` | Admins: changes a limit. |
+| `delete_print_limit` | `write` | Admins: deletes a limit. |
+| `add_limit_allowance` | `write` | Admins: gives an extra amount for this cycle. |
+| `get_my_usage` | `read` | The limits that count your jobs, with what's left. |
+| `get_usage` | `read` | Admins: every limit's counts, this cycle or the last. |
+| `get_prices` | `read` | The currency, time zone, and prices. |
+| `set_prices` | `write` | Admins: changes them. |
+| `preview_print_job` | `print` | What would happen to a job sent now. Nothing is printed. |
+
+A job a rule or limit refuses fails with its message, from `print` too.
+
+### Enterprise Controls
+
+These tools need the [Enterprise Controls](/docs/extensions/enterprise) extension, and most need their part turned on too. They are listed once a server admin makes it available.
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `get_enterprise_settings` | `read` | Each part's settings, and printers with approval or release on. |
+| `update_enterprise_settings` | `write` | Admins: turns parts on or off and changes their settings. Owners for retention and privacy. |
+| `set_printer_controls` | `write` | Turns **Every job needs approval** or **Hold jobs until released** on or off for a printer. |
+| `list_approvals` | `read` | Jobs waiting for your approval, oldest first. |
+| `approve_job` | `print` | Approves a job, with an optional note. |
+| `deny_job` | `print` | Cancels a job waiting for approval, with a reason the sender sees. |
+| `list_ready_to_release` | `read` | Your jobs waiting to be released. Admins can ask for everyone's. |
+| `release_job` | `print` | Releases a held job so it prints. Without `jobId`, releases all of yours. |
+| `list_cost_centers` | `read` | Cost centers, and your default. |
+| `create_cost_center` | `write` | Admins: adds a cost center. |
+| `update_cost_center` | `write` | Admins: renames, recodes, or deactivates one. |
+| `delete_cost_center` | `write` | Admins: deletes one no job was charged to. |
+| `set_cost_center_defaults` | `write` | Admins: sets or removes the default for members, groups, and devices. |
+| `list_budgets` | `read` | Admins: budgets with this cycle's usage. |
+| `create_budget` | `write` | Admins: adds a budget to a cost center. |
+| `update_budget` | `write` | Admins: changes a budget. |
+| `delete_budget` | `write` | Admins: deletes a budget. |
+| `usage_report` | `read` | Admins: usage by member, group, device, printer, cost center, or source for a range of dates. |
+
+While it is available, `print` and `preview_print_job` also take `costCenter` (an id or a code), and `list_jobs` takes `status: held`.
+
 ## Results and Errors
 
 Each result has structured content and 2 text blocks: a short summary, then the same data as JSON.

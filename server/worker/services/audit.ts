@@ -1,5 +1,6 @@
 import type { AuditEntry } from '../../shared/types'
 import { toAudit } from '../db/map'
+import { auditViewer } from '../extensions/audit-view'
 import type { AuditRow } from '../db/rows'
 import { all, run } from '../lib/db'
 import { decodeCursor, pageLimit, toPage, type Page } from '../lib/pagination'
@@ -47,5 +48,6 @@ export async function listAudit(ctx: Ctx, workspaceId: string, cursor?: string |
     c ? Number(c.id) : null,
     n + 1,
   )
-  return toPage(rows, n, (r) => ({ createdAt: r.created_at, id: String(r.id) }), toAudit)
+  const view = await auditViewer(ctx, workspaceId)
+  return toPage(rows, n, (r) => ({ createdAt: r.created_at, id: String(r.id) }), (r) => view(toAudit(r)))
 }

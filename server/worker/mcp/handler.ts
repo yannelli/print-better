@@ -1,4 +1,4 @@
-import { extensionTools } from '../extensions/tools'
+import { availableTools, needsExtensions } from '../extensions/tools'
 import { MB, readText } from '../http/body'
 import { ApiError } from '../http/errors'
 import { HOUR } from '../lib/time'
@@ -19,13 +19,15 @@ const isObject = (v: unknown): v is Params => typeof v === 'object' && v !== nul
 const isId = (v: unknown): v is string | number => typeof v === 'string' || (typeof v === 'number' && Number.isFinite(v))
 
 const listed = ({ name, title, description, inputSchema, annotations }: Tool) => ({ name, title, description, inputSchema, annotations: { title, ...annotations } })
-const TOOL_LIST = TOOLS.map(listed)
 
 /** The core tools, then those of extensions a server admin made available. */
-const toolList = async (env: Env) => [...TOOL_LIST, ...(await extensionTools(env)).map(listed)]
+const toolList = async (env: Env) => (await availableTools(env, TOOLS)).map(listed)
 
-const findTool = async (env: Env, name: unknown): Promise<Tool | undefined> =>
-  typeof name !== 'string' ? undefined : (TOOL_BY_NAME.get(name) ?? (await extensionTools(env)).find((t) => t.name === name))
+async function findTool(env: Env, name: unknown): Promise<Tool | undefined> {
+  if (typeof name !== 'string') return undefined
+  if (!needsExtensions(name, TOOL_BY_NAME)) return TOOL_BY_NAME.get(name)
+  return (await availableTools(env, TOOLS)).find((t) => t.name === name)
+}
 
 const toolError = (message: string): Params => ({ content: [{ type: 'text', text: message }], isError: true })
 

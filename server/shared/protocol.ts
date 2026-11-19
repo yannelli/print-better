@@ -53,7 +53,7 @@ export interface PrinterStatusMsg {
 export interface JobStatusMsg {
   type: 'job_status'
   jobId: string
-  status: Exclude<JobStatus, 'uploading' | 'queued'>
+  status: Exclude<JobStatus, 'uploading' | 'held' | 'queued'>
   message?: string | null
   pages?: number | null
   /** `JobOffer.attempt` this report belongs to; omitted means the current attempt. */
@@ -215,3 +215,7 @@ export type UiEvent =
   | { type: 'workspace'; workspace: Workspace }
   /** Printer access or an extension switch changed: refetch printers, jobs, and `/access/me`. */
   | { type: 'access' }
+  /** Enterprise controls: a job started waiting for approval. Reaches whoever can see the job; approvers get a notice. */
+  | { type: 'approval'; job: Job }
+  /** Usage, limits, budgets or prices changed: refetch whatever shows them. */
+  | { type: 'usage' }

@@ -1,9 +1,12 @@
 import type { UiEvent } from '../shared/protocol'
 import { DEFAULT_WORKSPACE_SETTINGS } from '../shared/types'
 import { SOURCE_CLIENT_NAME, toClient, toJob } from './db/map'
+import { jobsEnded } from './extensions/finish'
+import { CRON_HOOKS } from './extensions/hooks'
 import type { ClientRow, JobViewRow } from './db/rows'
 import { all, chunk, placeholders, run, stmt } from './lib/db'
 import { DAY, HOUR } from './lib/time'
+import { systemCtx } from './services/context'
 import { hubFor } from './services/hub'
 
 const TERMINAL = "('completed', 'failed', 'canceled')"
@@ -66,7 +69,7 @@ async function failStaleJobs(env: Env): Promise<void> {
     DEFAULT_WORKSPACE_SETTINGS.jobTimeoutHours,
     HOUR,
   )
-  const events = new Map<string, UiEvent[]>()
+  const failed = new Map<string, JobViewRow[]>()
   for (const job of stale) {
     const message = job.status === 'uploading' ? 'The upload never finished' : `Gave up after ${job.timeout_hours} hours without finishing`
     const changed = await run(
@@ -81,11 +84,16 @@ async function failStaleJobs(env: Env): Promise<void> {
     if (changed === 0) continue
     const hub = hubFor(env, job.workspace_id)
     if (job.status === 'dispatched' || job.status === 'printing') await hub.cancelJob(job.workspace_id, job.id).catch(() => false)
-    const list = events.get(job.workspace_id) ?? []
-    list.push({ type: 'job', job: { ...toJob(job), status: 'failed', statusMessage: message, completedAt: now, updatedAt: now } })
-    events.set(job.workspace_id, list)
+    const list = failed.get(job.workspace_id) ?? []
+    list.push({ ...job, status: 'failed', status_message: message, completed_at: now, updated_at: now })
+    failed.set(job.workspace_id, list)
   }
-  for (const [workspaceId, list] of events) await hubFor(env, workspaceId).broadcast(list)
+  const ctx = systemCtx(env, '', (p) => void p.catch(() => undefined))
+  for (const [workspaceId, list] of failed) {
+    const ended = await jobsEnded(ctx, workspaceId, list)
+    const events: UiEvent[] = [...ended.rows.map((job) => ({ type: 'job' as const, job: toJob(job) })), ...ended.events]
+    await hubFor(env, workspaceId).broadcast(events)
+  }
 }
 
 /** Clients marked online whose hub no longer holds a socket (e.g. after an eviction) are marked offline. */
@@ -109,7 +117,7 @@ async function syncOnline(env: Env): Promise<void> {
 }
 
 export async function runCron(env: Env): Promise<void> {
-  const tasks = { purgeDocuments, purgeExpired, failStaleJobs, syncOnline }
+  const tasks = { purgeDocuments, purgeExpired, failStaleJobs, syncOnline, ...Object.fromEntries(CRON_HOOKS.map((h) => [h.name, h.run])) }
   const results = await Promise.allSettled(Object.values(tasks).map((task) => task(env)))
   results.forEach((r, i) => {
     if (r.status === 'rejected') console.error(`cron ${Object.keys(tasks)[i]} failed`, r.reason)

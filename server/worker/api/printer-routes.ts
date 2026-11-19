@@ -33,8 +33,8 @@ export function jobRoutes(r: Router): void {
   r.put('/api/workspaces/:ws/jobs/:id/file', async (h) => ({ job: await uploadJobFile(await ctxOf(h), h.params.ws, h.params.id, h.req) }))
   r.get('/api/workspaces/:ws/jobs/:id', async (h) => getJob(await ctxOf(h), h.params.ws, h.params.id))
   r.get('/api/workspaces/:ws/jobs/:id/file', async (h) => {
-    const { job, object } = await jobDocument(await ctxOf(h), h.params.ws, h.params.id)
-    return documentResponse(job, object, true)
+    const { job, object, fileName } = await jobDocument(await ctxOf(h), h.params.ws, h.params.id)
+    return documentResponse(job, object, fileName)
   })
   r.post('/api/workspaces/:ws/jobs/:id/cancel', async (h) => cancelJob(await ctxOf(h), h.params.ws, h.params.id))
   r.post('/api/workspaces/:ws/jobs/:id/retry', async (h) => retryJob(await ctxOf(h), h.params.ws, h.params.id))

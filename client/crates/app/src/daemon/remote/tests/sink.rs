@@ -120,6 +120,19 @@ async fn a_job_that_printed_with_a_problem_keeps_the_warning() {
 }
 
 #[tokio::test]
+async fn a_held_job_ends_the_local_job_with_the_hold_message() {
+    let server = server(&[("held", Some("Waiting for approval")), ("queued", None)]).await;
+    let dir = TempDir::new();
+    let sink = RemoteSink::new(daemon(&dir, &server.origin));
+    let id = sink.submit(job(&dir)).unwrap();
+    until("the hold", || state(&sink, id).0 == SharedJobState::Completed).await;
+    let seen = server.requests().len();
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    assert_eq!(server.requests().len(), seen, "it stops checking on the job");
+    assert_eq!(state(&sink, id), (SharedJobState::Completed, Some("Waiting for approval".into())));
+}
+
+#[tokio::test]
 async fn failures_carry_the_servers_message() {
     let server = server(&[("failed", Some("Out of paper"))]).await;
     let dir = TempDir::new();
@@ -149,6 +162,29 @@ async fn a_printer_this_computer_may_not_use_fails_the_job_with_a_plain_reason()
         assert_eq!(state(&sink, id).1.as_deref(), Some("You can't print to this printer from this computer"), "{status}");
         assert_eq!(refusing.requests(), ["POST /api/client/jobs"]);
     }
+}
+
+#[tokio::test]
+async fn a_job_a_rule_or_limit_refuses_fails_with_its_message() {
+    let refusing = FakeServer::start(|_| (403, json!({ "error": { "code": "policy_blocked", "message": "Color printing is off on weekends" } }))).await;
+    let dir = TempDir::new();
+    let sink = RemoteSink::new(daemon(&dir, &refusing.origin));
+    let id = sink.submit(job(&dir)).unwrap();
+    until("refusal", || state(&sink, id).0 == SharedJobState::Aborted).await;
+    assert_eq!(state(&sink, id).1.as_deref(), Some("Color printing is off on weekends"));
+    assert_eq!(refusing.requests(), ["POST /api/client/jobs"]);
+
+    // Counted once the file arrives: the server refuses the upload and cancels the job itself.
+    let server = FakeServer::start(|seen| match seen.method.as_str() {
+        "PUT" => (403, json!({ "error": { "code": "policy_blocked", "message": "Over the limit Monthly pages" } })),
+        _ => (201, json!({ "job": { "id": "jb_1", "status": "uploading" }, "uploadUrl": "/api/client/jobs/jb_1/file" })),
+    })
+    .await;
+    let dir = TempDir::new();
+    let sink = RemoteSink::new(daemon(&dir, &server.origin));
+    let id = sink.submit(job(&dir)).unwrap();
+    until("the refused upload", || state(&sink, id).0 == SharedJobState::Aborted && server.requests().len() == 3).await;
+    assert_eq!(state(&sink, id).1.as_deref(), Some("Over the limit Monthly pages"));
 }
 
 #[tokio::test]
@@ -185,4 +221,6 @@ fn server_states_map_to_ipp_states() {
     assert_eq!(ipp_state(&job("failed", Some("Jammed")), None), (SharedJobState::Aborted, Some("Jammed".into())));
     assert_eq!(ipp_state(&job("failed", None), None), (SharedJobState::Aborted, Some("The job failed.".into())));
     assert_eq!(ipp_state(&job("canceled", None), Some(&online)), (SharedJobState::Canceled, None));
+    let held = Some("Waiting to be released at the printer".to_string());
+    assert_eq!(ipp_state(&job("held", held.as_deref()), Some(&offline)), (SharedJobState::Completed, held), "held");
 }

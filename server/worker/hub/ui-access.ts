@@ -5,6 +5,7 @@ import { extensionActive } from '../extensions/state'
 import { all } from '../lib/db'
 import { canSeeJob } from '../services/job-access'
 import { accessFrom, type Access } from '../services/permissions'
+import type { HubJobViews } from './job-views'
 import { attachment, isOpen, send, UI_TAG } from './sockets'
 
 /** A safety net for a missed invalidation; access changes clear the cache at once. */
@@ -25,9 +26,9 @@ export class HubAccess {
     return accessFrom(this.policy, { kind: 'device', clientId })
   }
 
-  /** Printer and job events reach only people who may see them; every other event reaches everyone. */
+  /** Printer, job and approval events reach only people who may see them; every other event reaches everyone. */
   allows(userId: string, event: UiEvent): boolean {
-    if (event.type !== 'printer' && event.type !== 'job') return true
+    if (event.type !== 'printer' && event.type !== 'job' && event.type !== 'approval') return true
     const role = this.roles.get(userId)
     if (!role) return false
     const access = accessFrom(this.policy, { kind: 'member', userId, role })
@@ -76,6 +77,7 @@ export class UiFanOut {
   constructor(
     private readonly state: DurableObjectState,
     private readonly access: HubAccessCache,
+    private readonly jobViews: HubJobViews,
   ) {}
 
   send(events: UiEvent[]): void {
@@ -85,12 +87,14 @@ export class UiFanOut {
   private async deliver(events: UiEvent[]): Promise<void> {
     const sockets = this.state.getWebSockets(UI_TAG).filter(isOpen)
     const users = sockets.map((ws) => attachment(ws)).flatMap((att) => (att?.kind === 'ui' ? [att] : []))
-    const scoped = users.length > 0 && events.some((e) => e.type === 'printer' || e.type === 'job')
+    const scoped = users.length > 0 && events.some((e) => e.type === 'printer' || e.type === 'job' || e.type === 'approval')
     const view = scoped ? await this.access.get(users[0].workspaceId, users.map((u) => u.userId)) : null
+    const show = scoped ? await this.jobViews.get(users[0].workspaceId) : null
     for (const event of events) {
       for (const ws of sockets) {
         const att = attachment(ws)
-        if (!view || (att?.kind === 'ui' && view.allows(att.userId, event))) send(ws, event)
+        if (view && !(att?.kind === 'ui' && view.allows(att.userId, event))) continue
+        send(ws, show && att?.kind === 'ui' ? show(event, att.userId) : event)
       }
     }
   }

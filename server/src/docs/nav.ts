@@ -74,6 +74,8 @@ export const DOC_SECTIONS: DocSection[] = [
     pages: [
       { slug: 'extensions', title: 'Extensions', description: 'Optional features that stay off until you turn them on.' },
       { slug: 'extensions/printer-access', title: 'Printer Access', description: 'Choose who can see, print to, and manage each printer.' },
+      { slug: 'extensions/print-rules-and-limits', title: 'Print Rules and Limits', description: 'Check every job before it prints, and cap how much people print.' },
+      { slug: 'extensions/enterprise', title: 'Enterprise Controls', description: 'Approvals, secure release, cost centers and budgets, reports, alerts, and stricter privacy.' },
     ],
   },
   {

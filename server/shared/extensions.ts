@@ -1,5 +1,5 @@
 /** Optional modules (docs/extensions.md). An instance admin makes one available, then a workspace owner turns it on. */
-export type ExtensionId = 'printer-access'
+export type ExtensionId = 'printer-access' | 'print-policies' | 'enterprise'
 
 export interface ExtensionInfo {
   id: ExtensionId
@@ -16,6 +16,18 @@ export const EXTENSIONS: readonly ExtensionInfo[] = [
     name: 'Printer access',
     summary: 'Choose who can see, print to, and manage each printer, with groups, device rules, and custom roles.',
     docs: 'docs/printer-access.md',
+  },
+  {
+    id: 'print-policies',
+    name: 'Print rules and limits',
+    summary: 'Check every job before it prints: rules that change, redirect, or stop jobs, and page, job, and cost limits per cycle.',
+    docs: 'docs/print-policies.md',
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise controls',
+    summary: 'Oversight for organizations: approvals, secure release, cost centers and budgets, reports, alerts, and stricter retention and privacy.',
+    docs: 'docs/enterprise.md',
   },
 ]
 

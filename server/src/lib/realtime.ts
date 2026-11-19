@@ -1,7 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { PING, PING_INTERVAL_MS, PONG, type UiEvent } from '@shared/protocol'
+import type { Job } from '@shared/types'
+import { approvalNotice } from './approval-notice'
 import { eventsUrl } from './api/workspaces'
-import { dropClient, dropPrinter, putClient, putJob, putPrinter, putWorkspace, refreshAccess } from './cache'
+import { dropClient, dropPrinter, putClient, putJob, putPrinter, putWorkspace, refreshAccess, refreshUsage } from './cache'
 import { qk } from './query'
 
 export type LiveStatus = 'connecting' | 'live' | 'retrying' | 'off'
@@ -23,6 +25,11 @@ export const liveStatus = {
   },
 }
 
+/** A held job, or one that was held a moment ago, changes the approval and release lists. */
+function touchesHolds(qc: QueryClient, ws: string, job: Job): boolean {
+  return job.status === 'held' || qc.getQueriesData<Job[]>({ queryKey: qk.holds(ws) }).some(([, list]) => list?.some((j) => j.id === job.id))
+}
+
 export function applyEvent(qc: QueryClient, ws: string, event: UiEvent) {
   switch (event.type) {
     case 'printer':
@@ -30,6 +37,7 @@ export function applyEvent(qc: QueryClient, ws: string, event: UiEvent) {
     case 'printer_removed':
       return dropPrinter(qc, ws, event.id)
     case 'job':
+      if (touchesHolds(qc, ws, event.job)) qc.invalidateQueries({ queryKey: qk.holds(ws) })
       return putJob(qc, ws, event.job)
     case 'client':
       return putClient(qc, ws, event.client)
@@ -39,6 +47,12 @@ export function applyEvent(qc: QueryClient, ws: string, event: UiEvent) {
       return putWorkspace(qc, event.workspace)
     case 'access':
       return refreshAccess(qc, ws)
+    case 'usage':
+      return refreshUsage(qc, ws)
+    case 'approval':
+      putJob(qc, ws, event.job)
+      qc.invalidateQueries({ queryKey: qk.holds(ws) })
+      return approvalNotice(qc, ws, event.job)
   }
 }
 

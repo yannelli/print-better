@@ -95,6 +95,7 @@ export function printerStatus(printer: Printer): StatusWords {
 
 const JOB: Record<JobStatus, StatusWords> = {
   uploading: { label: 'Uploading', tone: 'info' },
+  held: { label: 'On hold', tone: 'warn' },
   queued: { label: 'Waiting', tone: 'neutral' },
   dispatched: { label: 'Sending to printer', tone: 'info' },
   printing: { label: 'Printing', tone: 'info' },

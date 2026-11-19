@@ -3,6 +3,7 @@ import { type Job, TERMINAL_JOB_STATUSES } from '@shared/types'
 import { Confirm } from '@/components/confirm'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { Slot } from '@/extensions/slot'
 import { usePrinterRights } from '@/hooks/access'
 import { useUser } from '@/hooks/auth'
 import { useDeleteJob, useJobAction } from '@/hooks/jobs'
@@ -21,6 +22,7 @@ export function JobActions({ ws, job }: { ws: string; job: Job }) {
 
   return (
     <div className="flex flex-wrap items-center gap-2">
+      <Slot name="jobActions" props={{ ws, job }} />
       {may.cancel && !isTerminal(job) && (
         <Button variant="outline" size="sm" onClick={() => cancel.mutate(job.id)} disabled={cancel.isPending} aria-label={`Cancel ${name}`}>
           {cancel.isPending ? <Spinner data-icon="inline-start" /> : <X data-icon="inline-start" />}

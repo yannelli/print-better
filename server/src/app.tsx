@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Route, Switch } from 'wouter'
+import { extensionRoutes } from '@/extensions/pages'
 import { FullPageLoading, RequireAuth, RootRedirect, UserRoute, WorkspaceRoute, WorkspaceScreenRedirect } from '@/routes/guards'
 import { Loading } from '@/components/states'
 import { ACCOUNT_ROUTE, WORKSPACE_FREE_ROUTE } from '@/lib/app-links'
@@ -39,12 +40,13 @@ function WorkspacePages() {
         <Route path="/" component={Home} />
         <Route path="/printers" component={Printers} />
         <Route path="/printers/:id/:tab?" component={PrinterDetail} />
-        <Route path="/jobs" component={Jobs} />
+        <Route path="/jobs/:tab?" component={Jobs} />
         <Route path="/devices" component={Devices} />
         <Route path="/devices/add" component={AddDevice} />
         <Route path="/devices/:id" component={DeviceDetail} />
         <Route path="/members/:tab?" component={Members} />
         <Route path="/settings/:tab?" component={WorkspaceSettings} />
+        {extensionRoutes()}
         <Route component={NotFound} />
       </Switch>
     </Suspense>

@@ -98,7 +98,8 @@ export interface Printer extends PrinterReport {
   updatedAt: number
 }
 
-export type JobStatus = 'uploading' | 'queued' | 'dispatched' | 'printing' | 'completed' | 'failed' | 'canceled'
+/** `held` exists only with Enterprise controls: waiting for approval or release (docs/enterprise.md). */
+export type JobStatus = 'uploading' | 'held' | 'queued' | 'dispatched' | 'printing' | 'completed' | 'failed' | 'canceled'
 export type JobSource = 'web' | 'api' | 'mcp' | 'email' | 'lan' | 'test' | 'device'
 
 export const TERMINAL_JOB_STATUSES: readonly JobStatus[] = ['completed', 'failed', 'canceled']
@@ -106,6 +107,48 @@ export const TERMINAL_JOB_STATUSES: readonly JobStatus[] = ['completed', 'failed
 /** Formats accepted for upload in phase 1. */
 export const DOC_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'text/plain'] as const
 export type DocType = (typeof DOC_TYPES)[number]
+
+/** Something that checked or changed a job before it printed (docs/usage.md). */
+export interface JobNote {
+  source: 'rule' | 'limit' | 'budget' | 'cost-center' | 'approval' | 'release'
+  /** The rule, limit, budget or cost center; null for approvals and releases. */
+  id: string | null
+  /** Its name, or the approver's, when the note was written. */
+  name: string
+  /** One plain sentence, e.g. "Printed two-sided". */
+  message: string
+}
+
+export interface JobPolicy {
+  /** In the order they happened. */
+  notes: JobNote[]
+  /** What the sender asked for, kept when a rule changed the printer or options. */
+  requested?: { printerId: string; options: JobOptions }
+}
+
+/** Why a `held` job waits, and when it is canceled if nobody acts. */
+export interface JobHold {
+  kind: 'approval' | 'release'
+  until: number
+  /** Approval: why the job needs one, e.g. "Over the limit Monthly pages". */
+  reasons?: string[]
+  /** Approval: once approved, the job waits for its sender to release it. */
+  release?: boolean
+}
+
+/** The current attempt's usage: estimated when it is queued, then what printed. */
+export interface JobUsage {
+  /** Pages in the document, before page ranges and copies; null when they couldn't be counted. */
+  documentPages: number | null
+  /** Printed sides, times copies. */
+  pages: number
+  sheets: number
+  colorPages: number
+  /** Millionths of the workspace currency. */
+  costMicros: number
+  /** False once the job ended and its printed pages are known. */
+  estimated: boolean
+}
 
 export interface Job {
   id: string
@@ -132,4 +175,10 @@ export interface Job {
   sourceClientName: string | null
   /** Source `device`: the computer account that printed, e.g. from IPP requesting-user-name. */
   requestedBy: string | null
+  /** The fields below are absent until Print rules and limits or Enterprise controls set them (docs/usage.md). */
+  policy?: JobPolicy
+  /** Present exactly while `status` is `held`. */
+  held?: JobHold
+  costCenterId?: string
+  usage?: JobUsage
 }

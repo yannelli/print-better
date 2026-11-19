@@ -10,6 +10,11 @@ const BY_EXTENSION: Record<string, DocType> = {
 
 const ALIASES: Record<string, DocType> = { 'application/x-pdf': 'application/pdf', 'image/jpg': 'image/jpeg', 'image/pjpeg': 'image/jpeg' }
 
+const EXTENSION_OF: Record<DocType, string> = { 'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'text/plain': 'txt' }
+
+/** A file name that says nothing about the document, e.g. "document.pdf". */
+export const genericFileName = (contentType: string): string => `document.${isDocType(contentType) ? EXTENSION_OF[contentType] : 'bin'}`
+
 export const isDocType = (t: string): t is DocType => (DOC_TYPES as readonly string[]).includes(t)
 
 /** Maps a declared MIME type (or, for generic/missing ones, the file extension) to an accepted document type. */

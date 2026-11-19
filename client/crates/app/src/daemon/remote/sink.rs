@@ -14,7 +14,7 @@ use tokio::time::sleep;
 const POLL: Duration = if cfg!(test) { Duration::from_millis(20) } else { Duration::from_secs(2) };
 const KEEP: usize = 200;
 pub const NOT_READY: &str = "Not ready: Print Better is not connected to its server.";
-const TERMINAL: [&str; 3] = ["completed", "failed", "canceled"];
+const TERMINAL: [&str; 4] = ["completed", "failed", "canceled", "held"];
 
 #[derive(Clone)]
 pub struct RemoteSink(Arc<Inner>);
@@ -42,10 +42,11 @@ fn active(state: SharedJobState) -> bool {
     matches!(state, SharedJobState::Pending | SharedJobState::Processing)
 }
 
-/// Printer access refuses with 403, or 404 when the printer is hidden from this computer.
+/// Printer access refuses with 403, or 404 when the printer is hidden from this computer. A rule or limit refuses with its own message.
 fn not_sent(e: NetError) -> String {
     match e {
         NetError::Api { status: 403 | 404, code, .. } if code == "printer_access_denied" => "You can't print to this printer from this computer".into(),
+        NetError::Api { status: 403, code, message } if code == "policy_blocked" => message,
         e => format!("Couldn't send the job to Print Better: {e}"),
     }
 }
