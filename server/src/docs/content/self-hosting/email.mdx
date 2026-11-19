@@ -21,7 +21,7 @@ The server works without email. Without it:
 | Email verification | The account's email | After sign-up with an email, after an email change, or from **Send verification email**. The link works for 24 hours. |
 | Printer alert | Workspace owners and admins who have an email | An added printer needs a person, for example it is out of paper, jammed, or out of toner. At most once per printer every 12 hours. |
 
-## Set up Sending
+## Set Up Sending
 
 1. Open **Server admin**, then **Email**.
 2. Under **Sending email**, choose a provider in **How to send email**.
@@ -63,7 +63,7 @@ Choose **Cloudflare Email**. Enter **Send from** and select **Save changes**. Th
 
 </Steps>
 
-## Set up Email to Print
+## Set Up Email to Print
 
 Email to print needs 3 things turned on:
 
@@ -93,7 +93,7 @@ In **Server admin**, then **Email**, go to **Receiving email**. Under **How emai
 
 Resend receiving uses the API key from sending. Under **Sending email**, choose **Resend** and enter the **Resend API key**.
 
-### Set up a Receiving Domain in Resend
+### Set Up a Receiving Domain in Resend
 
 Add Resend's MX records for the domain that will receive mail. Add a webhook for the `email.received` event with this address:
 

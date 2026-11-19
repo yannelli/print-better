@@ -61,7 +61,7 @@ A limit has a name, **who** it applies to, **what it counts**, an **amount**, a 
 
 | Setting | Choices |
 |---|---|
-| Who (`scope`) | Each member (`each-member`); a member (`member`); a group, sharing one count (`group`) or with a count for each member and device (`group-each`), both needing Printer access; each device (`each-device`); a device (`device`); a printer (`printer`); the whole workspace (`workspace`) |
+| Who (`scope`) | Each member (`each-member`); a member (`member`); a group, sharing 1 count (`group`) or with a count for each member and device (`group-each`), both needing Printer access; each device (`each-device`); a device (`device`); a printer (`printer`); the whole workspace (`workspace`) |
 | Counts (`unit`) | Pages (printed sides, times copies), sheets of paper, jobs, or cost (see [Prices](usage.md#prices)) |
 | Cycle | Every day, week (choose the first day), month (choose the day it starts, 1 to 28), quarter, or year (choose the month). Cycles reset at midnight in the workspace time zone |
 | When reached (`action`) | Block (default), warn and allow, or require approval. Require approval needs Enterprise controls with approvals on; otherwise the limit blocks |
@@ -70,7 +70,7 @@ A limit set to **Doesn't apply to owners and admins** never blocks, warns about,
 
 ### How Usage Is Counted
 
-1. When a job is sent, its usage is **estimated**: PDFs are counted page by page, images count as one page, and text is laid out the way the device prints it. Page ranges, copies, and two-sided printing are applied.
+1. When a job is sent, its usage is **estimated**: PDFs are counted page by page, images count as 1 page, and text is laid out the way the device prints it. Page ranges, copies, and two-sided printing are applied.
 2. The estimate counts against every matching limit right away, together with everything already printed or waiting in the current cycle. A job that would go over a limit gets that limit's action.
 3. When the job ends, the estimate is replaced by the pages the printer reported. A canceled or failed job counts only the pages actually printed.
 
@@ -78,7 +78,7 @@ Details are in [Usage and Job Checks](usage.md#usage).
 
 ### Extra Allowance and Visibility
 
-- Admins can give a **one-off extra amount** for the current cycle, for example 100 more pages for one person this month. It is recorded and audited, and it ends with the cycle.
+- Admins can give a **one-off extra amount** for the current cycle, for example 100 more pages for 1 person this month. It is recorded and audited, and it ends with the cycle.
 - Everyone sees the limits that count their jobs and what is left, on **Usage**, on **Home** and in the print dialog, for example "84 of 500 pages left this month, resets Dec 1".
 
 ## Prices

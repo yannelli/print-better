@@ -34,7 +34,7 @@ A role is a named set of permissions.
 |---|---|
 | **Viewer** | `view` |
 | **User** | `view`, `print`, `jobs.read` |
-| **Manager** | all six |
+| **Manager** | all 6 |
 
 Admins can create **custom roles** from any combination of the 6 permissions, for example "Prints, sees only own jobs" (`view`, `print`).
 

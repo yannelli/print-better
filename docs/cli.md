@@ -81,7 +81,7 @@ Only newer versions install, never a downgrade.
 | OS | user mode (default) | `--system` |
 |---|---|---|
 | macOS | LaunchAgent `~/Library/LaunchAgents/dev.yannelli.printbetter.plist` (RunAtLoad, KeepAlive on crash) running `<binary> run` | LaunchDaemon, implies `--no-tray` |
-| Linux | `systemd --user` unit `printbetter.service` (hint `loginctl enable-linger` for headless) | `/etc/systemd/system/printbetter.service`, system user `printbetter` in group `lp`, udev rule `/etc/udev/rules.d/60-printbetter.rules` for USB printer-class access, root update helper `printbetter-update.service` + `printbetter-update.path` (see Updates), implies `--no-tray` |
+| Linux | `systemd --user` unit `printbetter.service` (hint `loginctl enable-linger` for headless) | `/etc/systemd/system/printbetter.service`, system user `printbetter` in groups `lp` and `lpadmin` (where the system has it, so it can manage its CUPS queues), udev rule `/etc/udev/rules.d/60-printbetter.rules` for USB printer-class access, root update helper `printbetter-update.service` + `printbetter-update.path` (see Updates), implies `--no-tray` |
 | Windows | `HKCU\Software\Microsoft\Windows\CurrentVersion\Run\PrintBetter` → `"<exe>" run` | scheduled task at startup as SYSTEM, implies `--no-tray` |
 
 The Windows exe uses the GUI subsystem and attaches to the parent console for CLI output, so login autostart never flashes a console window.
