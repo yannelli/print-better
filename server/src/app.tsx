@@ -35,12 +35,12 @@ function WorkspacePages() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/printers" component={Printers} />
-        <Route path="/printers/:id" component={PrinterDetail} />
+        <Route path="/printers/:id/:tab?" component={PrinterDetail} />
         <Route path="/jobs" component={Jobs} />
         <Route path="/devices" component={Devices} />
         <Route path="/devices/add" component={AddDevice} />
         <Route path="/devices/:id" component={DeviceDetail} />
-        <Route path="/members" component={Members} />
+        <Route path="/members/:tab?" component={Members} />
         <Route path="/settings" component={WorkspaceSettings} />
         <Route component={NotFound} />
       </Switch>

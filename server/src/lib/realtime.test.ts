@@ -88,3 +88,18 @@ it('workspace events update the name and my role in the session', () => {
   expect(qc.getQueryData<SessionState>(qk.session)?.workspaces).toEqual([{ id: WS, name: 'Grandma’s house', role: 'admin' }])
   expect(qc.getQueryData(qk.workspace(WS))).toEqual(workspace)
 })
+
+it('access events refetch printers, jobs, extensions, and access, and leave the rest alone', () => {
+  const qc = seeded()
+  qc.setQueryData(qk.printer(WS, 'p1'), printer('p1'))
+  qc.setQueryData(qk.extensions(WS), [])
+  qc.setQueryData(qk.myAccess(WS), { managed: true, all: false, printers: {} })
+  qc.setQueryData([...qk.access(WS), 'printers'], [])
+  qc.setQueryData(qk.groups(WS), [])
+  applyEvent(qc, WS, { type: 'access' })
+  const stale = (key: readonly unknown[]) => qc.getQueryState(key)?.isInvalidated
+  for (const key of [qk.printers(WS), qk.printer(WS, 'p1'), qk.jobs(WS), qk.extensions(WS), qk.myAccess(WS), [...qk.access(WS), 'printers'], qk.groups(WS)]) {
+    expect(stale(key), JSON.stringify(key)).toBe(true)
+  }
+  expect(stale(qk.clients(WS))).toBe(false)
+})

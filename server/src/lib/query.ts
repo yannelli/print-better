@@ -13,6 +13,7 @@ export const qk = {
   identities: ['me', 'identities'] as const,
   adminSettings: ['admin', 'settings'] as const,
   adminUsers: ['admin', 'users'] as const,
+  adminExtensions: ['admin', 'extensions'] as const,
   downloads: ['downloads'] as const,
   ws: (ws: string) => ['ws', ws] as const,
   workspace: (ws: string) => ['ws', ws, 'workspace'] as const,
@@ -26,6 +27,11 @@ export const qk = {
   invites: (ws: string) => ['ws', ws, 'invites'] as const,
   enrollments: (ws: string) => ['ws', ws, 'enrollments'] as const,
   audit: (ws: string) => ['ws', ws, 'audit'] as const,
+  extensions: (ws: string) => ['ws', ws, 'extensions'] as const,
+  /** Prefix of every printer access query, including `myAccess`. */
+  access: (ws: string) => ['ws', ws, 'access'] as const,
+  myAccess: (ws: string) => ['ws', ws, 'access', 'me'] as const,
+  groups: (ws: string) => ['ws', ws, 'groups'] as const,
 }
 
 declare module '@tanstack/react-query' {

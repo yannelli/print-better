@@ -21,7 +21,7 @@ function ActionButton({ busy, icon, children, ...props }: React.ComponentProps<t
   )
 }
 
-export function PrinterActions({ ws, printer, canManage }: { ws: string; printer: Printer; canManage: boolean }) {
+export function PrinterActions({ ws, printer, canManage, canPrint }: { ws: string; printer: Printer; canManage: boolean; canPrint: boolean }) {
   const [, navigate] = useLocation()
   const [renaming, setRenaming] = useState(false)
   const identify = usePrinterAction(ws, 'identify')
@@ -44,16 +44,20 @@ export function PrinterActions({ ws, printer, canManage }: { ws: string; printer
 
   return (
     <Section title="Tools" id="tools" flush>
-      <Row label="Find this printer" description={offlineHint ?? 'Makes the printer beep or flash its lights, if it can.'}>
-        <ActionButton icon={<Lightbulb data-icon="inline-start" />} busy={identify.isPending} disabled={offline} onClick={() => identify.mutate(printer.id)}>
-          Beep or flash
-        </ActionButton>
-      </Row>
-      <Row label="Test page" description="Prints one page to check that everything works.">
-        <ActionButton icon={<FileCheck2 data-icon="inline-start" />} busy={testPage.isPending} onClick={() => testPage.mutate(printer.id)}>
-          Print a test page
-        </ActionButton>
-      </Row>
+      {canPrint && (
+        <>
+          <Row label="Find this printer" description={offlineHint ?? 'Makes the printer beep or flash its lights, if it can.'}>
+            <ActionButton icon={<Lightbulb data-icon="inline-start" />} busy={identify.isPending} disabled={offline} onClick={() => identify.mutate(printer.id)}>
+              Beep or flash
+            </ActionButton>
+          </Row>
+          <Row label="Test page" description="Prints one page to check that everything works.">
+            <ActionButton icon={<FileCheck2 data-icon="inline-start" />} busy={testPage.isPending} onClick={() => testPage.mutate(printer.id)}>
+              Print a test page
+            </ActionButton>
+          </Row>
+        </>
+      )}
       <Row label="Check status now" description={offlineHint ?? 'Asks the printer for its latest status and ink levels.'}>
         <ActionButton icon={<RefreshCw data-icon="inline-start" />} busy={refresh.isPending} disabled={offline} onClick={() => refresh.mutate(printer.id)}>
           Check again

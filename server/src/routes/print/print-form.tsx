@@ -8,10 +8,10 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/co
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
-import { useAddedPrinters } from '@/hooks/printers'
+import { usePrintablePrinters } from '@/hooks/access'
 import { useWorkspace } from '@/hooks/workspace'
 import { errorMessage } from '@/lib/api/http'
-import { printerStatus } from '@/lib/words'
+import { NO_PRINT_ACCESS, printerStatus } from '@/lib/words'
 import { ChoiceSelect } from './choice-select'
 import { changedOptions, startingOptions } from './job-options'
 import { JobOptionsFields, pageRangesValid } from './job-options-fields'
@@ -40,7 +40,7 @@ export function PrintForm({
   onClose: () => void
 }) {
   const id = useId()
-  const printers = useAddedPrinters(ws)
+  const printers = usePrintablePrinters(ws)
   const workspace = useWorkspace(ws).data
   const submit = usePrintSubmit(ws)
   const [printerId, setPrinterId] = useState<string | null>(request.printerId ?? null)
@@ -54,6 +54,20 @@ export function PrintForm({
   if (printers.isPending) return <Loading label="Loading printers" />
   const list = printers.data ?? []
   const printer = pickPrinter(list, printerId, workspace?.settings.defaultPrinterId)
+
+  if (!printer && (printers.added?.length ?? 0) > 0) {
+    return (
+      <div className="flex flex-col gap-6">
+        <DialogHeader>
+          <DialogTitle>No printer you can print to</DialogTitle>
+          <DialogDescription>{NO_PRINT_ACCESS}</DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button onClick={onClose}>Close</Button>
+        </DialogFooter>
+      </div>
+    )
+  }
 
   if (!printer) {
     return (

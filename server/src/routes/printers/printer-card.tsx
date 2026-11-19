@@ -4,6 +4,8 @@ import type { Printer } from '@shared/types'
 import { useAppActions, wsHref } from '@/components/shell/app-actions'
 import { StatusPill } from '@/components/status'
 import { Button } from '@/components/ui/button'
+import { Slot } from '@/extensions/slot'
+import { usePrinterRights } from '@/hooks/access'
 import { printerStatus } from '@/lib/words'
 import { Supplies } from './supplies'
 
@@ -14,6 +16,7 @@ export function printerPlace(printer: Printer) {
 /** The whole card opens the printer; the Print button sits above the stretched link. */
 export function PrinterCard({ ws, printer }: { ws: string; printer: Printer }) {
   const { openPrint } = useAppActions()
+  const canPrint = usePrinterRights(ws).can(printer.id, 'print')
   const status = printerStatus(printer)
   return (
     <article className="relative flex flex-col gap-4 rounded-3xl border bg-card p-5 transition-colors hover:border-input">
@@ -31,15 +34,20 @@ export function PrinterCard({ ws, printer }: { ws: string; printer: Printer }) {
         </div>
       </div>
       <div className="flex flex-col gap-1.5">
-        <StatusPill status={status} />
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusPill status={status} />
+          <Slot name="printerBadge" props={{ ws, printer }} />
+        </div>
         {status.detail && <p className="text-sm text-muted-foreground">{status.detail}</p>}
       </div>
       <Supplies supplies={printer.status.supplies} compact limit={4} />
-      <div className="relative z-10 mt-auto flex">
-        <Button variant="tonal" onClick={() => openPrint({ printerId: printer.id })} aria-label={`Print on ${printer.name}`}>
-          Print
-        </Button>
-      </div>
+      {canPrint && (
+        <div className="relative z-10 mt-auto flex">
+          <Button variant="tonal" onClick={() => openPrint({ printerId: printer.id })} aria-label={`Print on ${printer.name}`}>
+            Print
+          </Button>
+        </div>
+      )}
     </article>
   )
 }

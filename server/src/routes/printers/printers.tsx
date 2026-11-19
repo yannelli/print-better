@@ -7,6 +7,7 @@ import { useAppActions, wsHref } from '@/components/shell/app-actions'
 import { EmptyState, QueryState } from '@/components/states'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { usePrinterRights } from '@/hooks/access'
 import { useClients } from '@/hooks/devices'
 import { usePrinters, useUpdatePrinter } from '@/hooks/printers'
 import { useCanManage, useWs } from '@/hooks/workspace'
@@ -73,16 +74,17 @@ export default function Printers() {
   const printers = usePrinters(ws)
   const clients = useClients(ws)
   const canManage = useCanManage()
+  const rights = usePrinterRights(ws)
   const { openPrint } = useAppActions()
   const sorted = (list: Printer[]) => list.slice().sort((a, b) => a.name.localeCompare(b.name))
-  const anyAdded = printers.data?.some((p) => p.added) ?? false
+  const anyPrintable = printers.data?.some((p) => p.added && rights.can(p.id, 'print')) ?? false
 
   return (
     <>
       <PageHeader
         title="Printers"
         description="Every printer your devices can reach. Added printers are the ones people can print to."
-        actions={anyAdded && <Button onClick={() => openPrint()}>Print something</Button>}
+        actions={anyPrintable && <Button onClick={() => openPrint()}>Print something</Button>}
       />
       <QueryState query={printers}>
         {(list) => {
@@ -112,7 +114,7 @@ export default function Printers() {
                 >
                   <ul>
                     {found.map((p) => (
-                      <FoundRow key={p.id} ws={ws} printer={p} canManage={canManage} />
+                      <FoundRow key={p.id} ws={ws} printer={p} canManage={rights.can(p.id, 'settings')} />
                     ))}
                   </ul>
                 </Section>

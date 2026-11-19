@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Switch } from '@/components/ui/switch'
+import { Slot } from '@/extensions/slot'
 import { useUpdatePrinter } from '@/hooks/printers'
 import type { PrinterPatch } from '@/lib/api/printers'
 
@@ -41,6 +42,7 @@ export function PrinterSharing({ ws, printer, canManage }: { ws: string; printer
           onCheckedChange={(on) => patch({ lanShare: on }, on ? 'Sharing on the local network' : 'No longer shared on the local network')}
         />
       </Row>
+      <Slot name="printerSharingNote" props={{ ws, printer }} />
       <Row
         label="Print by email"
         htmlFor={`${id}-email`}

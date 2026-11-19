@@ -79,3 +79,10 @@ export function putWorkspace(qc: QueryClient, workspace: Workspace) {
     },
   )
 }
+
+/** After any access or extension change: what people can see, print to, and manage may all differ. */
+export function refreshAccess(qc: QueryClient, ws: string) {
+  for (const key of [qk.printers(ws), ['ws', ws, 'printer'], qk.jobsAll(ws), ['ws', ws, 'job'], qk.extensions(ws), qk.access(ws), qk.groups(ws)]) {
+    qc.invalidateQueries({ queryKey: key })
+  }
+}

@@ -7,6 +7,7 @@ import { EmptyState, ErrorState, SkeletonRows } from '@/components/states'
 import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { Spinner } from '@/components/ui/spinner'
+import { usePrintablePrinters, usePrinterRights } from '@/hooks/access'
 import { useJobs } from '@/hooks/jobs'
 import { usePrinters } from '@/hooks/printers'
 import { useWs } from '@/hooks/workspace'
@@ -48,6 +49,8 @@ function Filters({ ws, filters, onChange }: { ws: string; filters: JobFilters; o
 export default function Jobs() {
   const ws = useWs()
   const { openPrint } = useAppActions()
+  const { managed } = usePrinterRights(ws)
+  const canPrint = !managed || (usePrintablePrinters(ws).data?.length ?? 0) > 0
   const [filters, setFilters] = useState<JobFilters>({})
   const jobs = useJobs(ws, filters)
   const filtered = !!(filters.printerId || filters.status)
@@ -58,7 +61,7 @@ export default function Jobs() {
       <PageHeader
         title="Print jobs"
         description="Everything sent to your printers, newest first. This list updates by itself."
-        actions={<Button onClick={() => openPrint()}>Print something</Button>}
+        actions={canPrint && <Button onClick={() => openPrint()}>Print something</Button>}
       />
       <Filters ws={ws} filters={filters} onChange={setFilters} />
       {jobs.error && !jobs.data ? (

@@ -8,6 +8,7 @@ import { wsHref } from '@/components/shell/app-actions'
 import { EmptyState, QueryState } from '@/components/states'
 import { StatusPill } from '@/components/status'
 import { Button, buttonVariants } from '@/components/ui/button'
+import { Slot } from '@/extensions/slot'
 import { useClient, useDownloads, useRemoveClient } from '@/hooks/devices'
 import { usePrinters } from '@/hooks/printers'
 import { useCanManage, useWs } from '@/hooks/workspace'
@@ -126,6 +127,7 @@ function Detail({ ws, client }: { ws: string; client: Client }) {
       <div className="flex flex-col gap-10">
         <Printers ws={ws} printers={printers} />
         {client.os && <ComputerPrinters client={client} canManage={canManage} />}
+        <Slot name="deviceSection" props={{ ws, client }} />
         <DeviceTools ws={ws} client={client} canManage={canManage} update={update} />
         <DeviceSettings ws={ws} client={client} canManage={canManage} />
         <About client={client} update={update} />
