@@ -28,7 +28,7 @@ Open the setup link to create the owner account and the first workspace.
 | `APP_SECRET` | Encrypts stored secrets (SSO client secrets, Resend key, webhook secret) | Re-enter those secrets in Server admin |
 | `AUTH_PEPPER` | Mixed into every password hash | Every password stops working; people sign in with a passkey or SSO, or an admin sends reset links |
 
-Back up `APP_SECRET` and `AUTH_PEPPER` somewhere safe. Cloudflare won't show them again.
+Cloudflare won't show a secret again. When `scripts/deploy.sh` creates `APP_SECRET` or `AUTH_PEPPER`, it saves a copy to `~/.config/print-better/secrets.env` (readable only by you). Copy both to a password manager.
 
 ## Publish client downloads
 The install commands and the web app's **Add a device** page download clients from your own R2 bucket. Publish a release once after deploying and again for each update:
@@ -37,7 +37,7 @@ scripts/release.sh --publish remote
 ```
 See [Releasing the client](release.md) for signing, notarization, and platform options.
 
-Devices update when you re-run their install command (it keeps the pairing) or install the new macOS pkg.
+Macs and Linux devices check your server for a new version about every 6 hours and install it on their own, unless someone turned off **Install updates automatically**. To update one sooner, select **Update now** on its page in the web app, re-run its install command (it keeps the pairing), or install the new macOS pkg.
 
 ## Custom domain
 Add one in the Cloudflare dashboard under **Workers & Pages > print-better > Settings > Domains & Routes**, or in `server/wrangler.jsonc`:
@@ -85,7 +85,9 @@ Attachments (PDF, JPEG, PNG, text) print. If a message has no attachments, its b
 ## AI assistants (MCP)
 The MCP server is at `https://<your-domain>/mcp`. The web app's **Connect AI** page (`/connect`) has step-by-step instructions.
 
-Claude, ChatGPT, and Claude Code connect with OAuth: Add the URL as a custom connector and approve access in the browser.
+Claude and ChatGPT connect with OAuth: add the URL as a custom connector and approve access in the browser.
+
+Claude Code connects with OAuth too. Run `claude mcp add --transport http print-better https://<your-domain>/mcp`, then type `/mcp` in Claude Code, pick print-better, and sign in when the browser opens.
 
 Other tools can send a personal token from **Your account > Apps and tokens** as a Bearer token.
 
