@@ -1,7 +1,7 @@
 {
   "name": "print-better-server",
   "private": true,
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Self-hosted print server on Cloudflare Workers: web app, REST API, MCP server, and the relay for Print Better clients.",
   "keywords": [
     "printing",

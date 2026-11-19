@@ -4,6 +4,8 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-11-19
+
 ### Added
 
 - **print rules and limits:** Adds the Print rules and limits extension, which checks every job before it's queued: from the web app, the API, MCP, email to print, test pages, and a computer's print window. Rules match who sent a job, where from, the printer, pages, copies, color, sides, file type, size, and time, then refuse it, print it two-sided or in black and white, limit copies, send it to another printer, or add a note. Turning it on changes nothing by itself (docs/print-policies.md).
