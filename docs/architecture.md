@@ -131,7 +131,7 @@ Everything else stays `discovered` for one-click adding.
 - Tokens carry scopes (`read`, `write`, `print`; PATs hold all three), checked in the service layer. OAuth access tokens are bound to `<origin>/mcp` and refused by the REST API. Refresh tokens rotate, and reusing one revokes the whole connection.
 - Instance secrets (SSO client secrets, email API key, webhook secret) are encrypted with AES-GCM under a key derived from `APP_SECRET`.
 - Cookie auth: `HttpOnly; Secure; SameSite=Lax`. Non-GET requests must carry a matching `Origin`.
-- Client tokens can only read jobs for that client's printers and only connect to their own workspace hub.
+- Client tokens download documents only for jobs on that client's own printers, read only the jobs that client submitted from its print window, and connect only to their own workspace hub.
 - Email-to-print: per-workspace allowlist (default: verified emails of members), DMARC pass required when the header is present, per-printer alias.
 - The local client API binds to loopback. Mutating requests need `Content-Type: application/json` and a loopback/absent `Origin`.
 - Audit log records every mutation with actor type (user, token, client, email, system).

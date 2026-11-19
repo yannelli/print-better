@@ -13,7 +13,7 @@ Print Better makes printing reliable and easy for people who should never have t
 - A self-hosted **print server** that runs on the owner's Cloudflare account
 - A small **client** (`printbetter`) that runs on any computer next to a printer
 
-Anyone in a workspace can print to any of its printers from the web, from any app's print window, from scripts, or through an AI assistant, at home or away.
+By default, anyone in a workspace can print to any of its printers from the web, from any app's print window, from scripts, or through an AI assistant, at home or away.
 
 ## 2. Problem
 
@@ -66,7 +66,7 @@ Printing is one of the least reliable parts of everyday computing:
 
 ## 6. Scope and requirements
 
-Status key: **Shipped** (in 0.1.x), **Next** (0.1.5), **Later** (phase 2).
+Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 
 ### 6.1 Server
 
@@ -209,6 +209,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.5), **Later** (phase 2).
 - **0.1.0 to 0.1.2 (shipped):** server, web app, accounts, MCP, client for macOS, Linux, and Windows, remote printers on macOS and Linux, automatic updates, and unattended updates for the Linux system service.
 - **0.1.3 (shipped):** supply levels and full options in native print dialogs, per-computer printer control and default printer from the web app.
 - **0.1.4 (shipped):** extensions and the printer access extension.
+- **0.1.5 (shipped):** the docs site every server serves at `/docs`, workspace settings in tabs, and warnings for jobs a printer only partly printed.
 - **Phase 2:** microcontroller bridge firmware, remote printers on Windows, signed Windows builds, a container build for non-Cloudflare hosts, and a public IPP endpoint on the server.
 
 ## 12. Open questions

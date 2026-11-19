@@ -8,23 +8,23 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ### Added
 
-- **docs:** every server serves its own docs site at `/docs`, public with no sign-in. It has 36 pages covering setup, devices, printers, printing, workspaces, extensions and reference, plus search, an "On this page" list and copy buttons on code. Code examples show the reader's own server address. The app links to it from the sidebar, the command menu and the sign-in screens.
-- **web:** `/printers`, `/jobs`, `/devices`, `/members` and `/settings/<tab>` open that screen in your current workspace, so docs and bookmarks can link to them.
+- **docs:** Adds a docs site that every server serves at `/docs`, public with no sign-in. It has 36 pages covering setup, devices, printers, printing, workspaces, extensions, and reference, with search, an "On this page" list, and copy buttons on code. Code examples show the reader's own server address. The app links to it from the sidebar, the command menu, and the sign-in screens.
+- **web:** Adds the links `/printers`, `/jobs`, `/devices`, `/devices/add`, `/members`, and `/settings/<tab>`, which open that screen in your current workspace, so docs and bookmarks can point to them.
 
 ### Changed
 
-- **web:** workspace settings are split into tabs (General, Printing, Email to print, Extensions, Activity, and one tab per active extension), each at its own address. Extensions add a settings tab instead of more sections on one page.
+- **web:** Splits workspace settings into tabs (General, Printing, Email to print, Extensions, Activity, and a tab for each turned-on extension that has settings), each at its own address. An extension adds a tab instead of more sections on one page.
 
 ### Fixed
 
-- **printing:** a job the printer only partly printed no longer shows as a clean success. The client counts the pages it sends (PDFs, images, and text it lays out) and compares them with what a network printer reports, so a short print finishes as completed with a warning: "The printer stopped after 4 of 11 pages. It didn't report an error." Jobs sent through a CUPS queue skip the comparison, since CUPS counts pages from its own filters.
-- **printing:** a completed job with reasons such as `job-completed-with-errors` or `document-format-error` finishes with a warning in plain words. A job the client lost track of, or stopped checking after 2 hours, says so instead of claiming it printed.
-- **printing:** a job the printer aborts for a document error names it ("The printer couldn't read the document.") instead of a general message.
-- **web:** a completed job with a warning shows as "Printed with a problem" in amber with the message, in print jobs, recent jobs, and the print window. MCP job text includes the warning, and so do `printbetter print` and the client's status page.
-- **remote printers:** a job that ends with a warning finishes in the computer's print queue as completed with `job-completed-with-warnings` and the message.
-- **web:** job origins keep proper names, for example "From the API" and "From an AI assistant".
-- **printing:** a job the printer drops from its history after every page was counted finishes cleanly, without a lost-track warning.
-- **web:** the largest-file setting accepts 1 to 100 MB, matching what the server allows.
+- **printing:** Flags a job the printer only partly printed instead of showing it as a clean success. The client counts the pages it sends (PDFs, images, and the text it lays out) and compares them with what a network printer reports, so a short print finishes as completed with a warning: "The printer stopped after 4 of 11 pages. It didn't report an error." Jobs sent through a CUPS queue skip the comparison, since CUPS counts pages with its own filters.
+- **printing:** Turns reasons such as `job-completed-with-errors` or `document-format-error` on a completed job into a warning in plain words. A job the client lost track of, or stopped checking after 2 hours, says so instead of claiming it printed.
+- **printing:** Names the document error when a printer aborts a job for one ("The printer couldn't read the document.") instead of showing a general message.
+- **printing:** Finishes a job cleanly, without a lost-track warning, when the printer drops it from its history after every page was counted.
+- **web:** Shows a completed job with a warning as "Printed with a problem" in amber, with the message, in print jobs, recent jobs, and the print window. MCP job text, `printbetter print`, and the client's status page show the warning too.
+- **remote printers:** Finishes a job that ended with a warning in the computer's print queue as completed, with `job-completed-with-warnings` and the message.
+- **web:** Keeps proper names in job origins, for example "From the API" and "From an AI assistant".
+- **web:** Limits the largest-file setting to 1 to 100 MB, which is what the server allows.
 
 ## [0.1.4] - 2026-11-19
 

@@ -60,7 +60,7 @@ export async function requireActive(ctx: Ctx, workspaceId: string, id: Extension
   if (await isActive(ctx, workspaceId, id)) return
   const { name } = extensionInfo(id)
   throw notFound(
-    `${name} is turned off for this workspace. A server admin makes it available under Admin > Extensions, then a workspace owner turns it on under Workspace settings > Extensions.`,
+    `${name} is turned off for this workspace. A server admin makes it available under Server admin > Extensions, then a workspace owner turns it on under Workspace settings > Extensions.`,
     'extension_inactive',
   )
 }

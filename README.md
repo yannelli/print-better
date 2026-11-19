@@ -165,6 +165,8 @@ Every Print Better deployment serves its user docs at `/docs`, for example `http
 | [Client CLI](docs/cli.md) | `printbetter` commands, service install, install scripts, and Raspberry Pi first boot |
 | [REST API](docs/api.md) | Every route, auth, token scopes, and errors |
 | [MCP server](docs/mcp.md) | Protocol versions, OAuth 2.1, scopes, and the tool list |
+| [Extensions](docs/extensions.md) | Optional modules that stay off until a server admin and a workspace owner turn them on |
+| [Printer access](docs/printer-access.md) | The extension that decides who can see, print to, and manage each printer |
 | [Client protocol](docs/protocol.md) | The WebSocket messages between the server and the client |
 | [Architecture](docs/architecture.md) | How the Worker, the Durable Object, D1, R2, and the client fit together |
 | [Product requirements](docs/prd.md) | Goals, users, requirements, metrics, and the roadmap |
