@@ -51,6 +51,7 @@ pub(crate) async fn follow(
     let mut errors = 0;
     let mut delay = FIRST_POLL;
     let mut pages = None;
+    let mut seen: Option<IppJobState> = None;
     let mut last: Option<PrintEvent> = None;
     let mut printer: Option<(Instant, PrinterStatus)> = None;
     let mut emit = |event: PrintEvent| {
@@ -73,6 +74,10 @@ pub(crate) async fn follow(
                 errors = if transport(&e) { errors } else { errors + 1 };
                 if errors >= GONE_AFTER || answered.elapsed() > SILENCE_LIMIT {
                     log::info!("job {job} at {uri}: lost track ({e}); treating as done");
+                    // Printers that drop finished jobs at once are fine when the last count covered everything.
+                    if expected.zip(seen.as_ref()).is_some_and(|(e, s)| e.covered_by(s)) {
+                        return Ok(PrintOutcome { route, pages, warning: None });
+                    }
                     return finished(pages, LOST_TRACK);
                 }
                 continue;
@@ -81,6 +86,7 @@ pub(crate) async fn follow(
         answered = Instant::now();
         errors = 0;
         pages = state.pages().or(pages);
+        seen = Some(state.clone());
         match state.state {
             JobStateKind::Completed => return Ok(PrintOutcome { pages, ..completed(&state, route, expected) }),
             JobStateKind::Canceled => return Err(Error::Canceled),

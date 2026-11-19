@@ -66,6 +66,18 @@ async fn losing_track_never_claims_it_printed() {
 }
 
 #[tokio::test]
+async fn a_job_dropped_after_every_page_printed_is_clean() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    let polls = std::sync::Arc::new(AtomicUsize::new(0));
+    let script = move |req: &Message| match polls.fetch_add(1, Ordering::SeqCst) {
+        0 => job(req, 5, &["job-printing"], &[("job-impressions-completed", 11)]),
+        _ => reply(req, 0x0406, Vec::new()),
+    };
+    let outcome = followed(script, eleven()).await;
+    assert_eq!((outcome.pages, outcome.warning), (Some(11), None));
+}
+
+#[tokio::test]
 async fn the_follow_limit_says_the_printer_was_still_going() {
     let outcome = followed(|req| job(req, 5, &["job-printing"], &[("job-impressions-completed", 2)]), eleven()).await;
     assert_eq!((outcome.pages, outcome.warning.as_deref()), (Some(2), Some(STILL_PRINTING)));

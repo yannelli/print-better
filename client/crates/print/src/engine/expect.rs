@@ -24,6 +24,11 @@ impl Expected {
         (selected > 0).then_some(Expected { impressions: selected.checked_mul(copies)?, sheets: sheets.checked_mul(copies)? })
     }
 
+    /// Whether the counts in `job` show every expected page or sheet printed.
+    pub fn covered_by(&self, job: &IppJobState) -> bool {
+        job.impressions.is_some_and(|n| n >= self.impressions) || job.sheets.is_some_and(|n| n >= self.sheets)
+    }
+
     /// "The printer stopped after 4 of 11 pages." when a completed job reports less than expected.
     /// A count of 0 is taken as a printer that doesn't count, not one that printed nothing.
     pub fn shortfall(&self, job: &IppJobState) -> Option<String> {
