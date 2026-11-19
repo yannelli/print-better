@@ -18,21 +18,27 @@
   </picture>
 </p>
 
-Print Better is a print server you run on your own Cloudflare account, plus a small program (`printbetter`) that runs on a computer next to your printers. You send a document from the web app, from any app's print window, from a script, or from an AI assistant. The client next to the printer prints it.
+Print Better is a print server you run on your own Cloudflare account, plus a small program (`printbetter`) that runs on a computer next to your printers. You send a document from the web app, from any app's print window, from a script, or from an AI assistant, and the client next to the printer prints it.
 
-- **Print from anywhere.** Upload a file in the web app, call the REST API, ask Claude or ChatGPT, or send an email (optional). Jobs wait on the server while a printer's computer is off and print when it comes back.
-- **Your printers in every print window.** On a Mac or Linux desktop, printers that live on your other devices show up in System Settings and in every app's Cmd+P dialog. Nothing to set up; it is on by default.
-- **Finds printers on its own.** The client looks on the network (Bonjour, SNMP for older office printers), on USB, and in the computer's own printer list. You pick whether new printers are added for you or wait for your OK.
-- **Works with the printers you have.** Driverless IPP and IPPS (AirPrint, IPP Everywhere), raw port 9100, LPD, USB, and the operating system's print system (CUPS, the Windows spooler). For printers that can't read PDF, the client converts pages to PWG, Apple, PCL, or PostScript raster.
-- **Built to keep going.** Jobs survive restarts and network drops, retry with backoff, and switch to another route to the same printer. Printer problems (out of paper, low toner) show up in plain language.
-- **Simple sign-in.** Username and password, passkeys, and optional Google or any OpenID Connect provider. Workspaces have owners, admins, and members, with invite links and recovery codes.
-- **Easy device setup.** Adding a computer is one copy-paste command or one double-click on the signed macOS installer. For a Raspberry Pi, the web app writes the first-boot files for the SD card, and the Pi installs and connects on its first start.
-- **A signed Mac app.** The macOS app and installer are signed with a Developer ID, notarized, and stapled, with a small menu bar icon that shows whether printing works.
-- **AI assistants can do the setup.** The built-in MCP server lets Claude, ChatGPT, Claude Code, and other MCP clients do everything the web app can, with the same permissions.
+To run your own, follow [Quick start](#quick-start): deploy the server, publish the client downloads, then add a device.
+
+- **Ways to print:** Upload a file in the web app, call the REST API, ask Claude or ChatGPT, or send an email (optional). Jobs wait on the server while a printer's computer is off and print when it comes back.
+- **Print windows:** On a Mac or Linux desktop, printers on your other devices show up in System Settings and in every app's Cmd+P dialog. It's on by default, with nothing to set up.
+- **Discovery:** The client looks on the network (Bonjour, SNMP for older office printers), on USB, and in the computer's own printer list. You pick whether new printers are added for you or wait for your OK.
+- **Printer support:** Driverless IPP and IPPS (AirPrint, IPP Everywhere), raw port 9100, LPD, USB, and the operating system's print system (CUPS, the Windows spooler). For printers that can't read PDF, the client converts pages to PWG, Apple, PCL, or PostScript raster.
+- **Reliability:** Jobs survive restarts and network drops, retry with backoff, and switch to another route to the same printer. Printer problems (out of paper, low toner) show up in plain language.
+- **Sign-in:** Username and password, passkeys, and optional Google or any OpenID Connect provider. Workspaces have owners, admins, and members, with invite links and recovery codes.
+- **Device setup:** Adding a computer takes one copy-paste command or one double-click on the signed macOS installer. For a Raspberry Pi, the web app writes the first-boot files for the SD card, and the Pi installs and connects on its first start.
+- **Mac app:** The macOS app and installer are signed with a Developer ID, notarized, and stapled. A small menu bar icon shows whether printing works.
+- **AI assistants:** The built-in MCP server lets Claude, ChatGPT, Claude Code, and other MCP clients do everything the web app can, with the same permissions.
 
 ## Why
 
-Printing at home or in a small office still breaks in the same old ways. A laptop can't see the printer, a driver won't install, or someone has to ask for help to print a boarding pass. Print Better keeps the printers where they are, puts one small program next to them, and gives everyone else a simple web app and a normal print window. The client only makes outgoing connections, so you never open a port on your network.
+Printing at home or in a small office still breaks in the same ways: A laptop can't see the printer, a driver won't install, or someone has to ask for help to print a boarding pass.
+
+Print Better leaves the printers where they are and puts one small program on a computer next to them. Everyone else prints from the web app or a normal print window.
+
+The client only makes outgoing connections, so you never open a port on your network.
 
 ## How it works
 
@@ -54,7 +60,12 @@ Details: [Architecture](docs/architecture.md), [client protocol](docs/protocol.m
 
 ## Quick start
 
-You need a Cloudflare account on the **Workers Paid** plan (password hashing needs more CPU time than the Free plan gives), Node.js 22.12 or later, pnpm, `jq`, and `openssl`. To build the clients you also need a Mac with Rust 1.92 or later, `zig`, and `cargo-zigbuild`. A Developer ID is optional and only needed for signed macOS builds.
+Before you start:
+
+- A Cloudflare account on the **Workers Paid** plan (password hashing needs more CPU time than the Free plan gives)
+- Node.js 22.12 or later, pnpm, `jq`, and `openssl`
+- To build the clients: a Mac with Rust 1.92 or later, `zig`, and `cargo-zigbuild`
+- For signed macOS builds only: a Developer ID
 
 ### 1. Deploy the server
 
@@ -72,21 +83,27 @@ scripts/deploy.sh
 3. Creates the secrets `SETUP_TOKEN`, `APP_SECRET`, and `AUTH_PEPPER` if they are missing.
 4. Prints a one-time setup link.
 
-Back up `APP_SECRET` and `AUTH_PEPPER`. Cloudflare does not show them again. To pick a custom domain, do it before anyone registers a passkey; see [Self-hosting](docs/self-hosting.md).
+Back up `APP_SECRET` and `AUTH_PEPPER`. Cloudflare doesn't show them again.
+
+If you want a custom domain, set it up before anyone registers a passkey. See [Self-hosting](docs/self-hosting.md).
 
 ### 2. Publish the client downloads
 
-The install commands and the **Add a device** page download clients from your own R2 bucket. Publish once after the first deploy, and again for each update:
+The install commands and the **Add a device** page download clients from your own R2 bucket. Publish once after the first deploy and again for each update:
 
 ```sh
 scripts/release.sh --publish remote
 ```
 
-The script builds every platform on your Mac, signs and notarizes the macOS app and installer, and uploads the files. Use `--no-notarize` for a faster local check, or `--platforms "macos"` to build a subset. See [Releasing the client](docs/release.md).
+The script builds every platform on your Mac, signs and notarizes the macOS app and installer, and uploads the files. Add `--no-notarize` for a faster local check, or `--platforms "macos"` to build a subset. See [Releasing the client](docs/release.md).
 
 ### 3. Create your account and add a device
 
-Open the setup link, create the owner account and the first workspace, and choose **Devices > Add a device**. The page walks you through 5 steps: choose, install, connect, printers, and a test page.
+1. Open the setup link.
+2. Create the owner account and the first workspace.
+3. Go to **Devices > Add a device**. The page walks you through 5 steps: choose, install, connect, printers, and a test page.
+
+How each device installs:
 
 | Device | How it installs |
 | --- | --- |
@@ -95,7 +112,7 @@ Open the setup link, create the owner account and the first workspace, and choos
 | Windows | `$env:PB_TOKEN='pbe_…'; irm https://<your-server>/install.ps1 \| iex` |
 | Raspberry Pi | The web app writes the first-boot files for the SD card in your browser, so your Wi-Fi password never reaches the server. The Pi installs and connects on its first start. |
 
-Each command already holds a single-use pairing code. Run it again later to update the client; it keeps the pairing.
+Each command already holds a single-use pairing code. Run the same command later to update the client; it keeps the pairing.
 
 ## Use it with AI assistants
 
@@ -108,7 +125,13 @@ The MCP server lives at `https://<your-server>/mcp`. The **Connect AI** page in 
 | ChatGPT | Turn on Developer mode, create a connector with the address, and pick OAuth. |
 | Scripts and other tools | Create a personal API token under **Your account > Apps and tokens** and send it as a Bearer token. |
 
-Things you can ask: "Set up the printer in my office", "Print this PDF on the kitchen printer, both sides", or "Why isn't my printer working?". The tools are listed in [MCP server](docs/mcp.md).
+Things you can ask:
+
+- "Set up the printer in my office"
+- "Print this PDF on the kitchen printer, both sides"
+- "Why isn't my printer working?"
+
+The tools are listed in [MCP server](docs/mcp.md).
 
 The same token works with the REST API:
 
@@ -182,27 +205,31 @@ docs/               The docs above, plus research notes
 ## Security
 
 - The client only makes outgoing connections. Nothing on your network needs an open port.
-- Passwords are hashed with scrypt and a server-wide pepper (`AUTH_PEPPER`). Stored secrets, such as SSO client secrets and email keys, are encrypted with `APP_SECRET`.
+- Passwords are hashed with scrypt and a server-wide pepper (`AUTH_PEPPER`). Stored secrets (SSO client secrets, email keys) are encrypted with `APP_SECRET`.
 - API, device, and OAuth tokens are stored as hashes. OAuth uses PKCE (S256), short-lived access tokens bound to `/mcp`, and refresh tokens that rotate on every use.
 - Every token has scopes (`read`, `write`, `print`), and REST and MCP share the same permission checks.
 - Documents are deleted from R2 after the workspace's retention time (24 hours by default).
 - Raspberry Pi first-boot files are made in your browser. Wi-Fi passwords never reach the server.
-- Email to print is off by default. When it is on, mail that fails DMARC or comes from a sender who is not allowed is dropped.
+- Email to print is off by default. When it's on, the server drops mail that fails DMARC or comes from a sender who isn't allowed.
 
 Report security problems privately as described in [SECURITY.md](SECURITY.md).
 
 ## Status
 
-Phase 1, version 0.1. These items are known limits today:
+Phase 1, version 0.1.x. Known limits today:
 
-- Remote printers in the print window work on macOS and Linux. Windows support is not built yet.
+- Remote printers in the print window work on macOS and Linux, not on Windows yet.
 - Windows builds are not signed.
-- The armv6 build (Raspberry Pi Zero and Pi 1) compiles but is best effort.
+- The armv6 build (Raspberry Pi Zero and Pi 1) compiles, but support is best effort.
 - Microcontroller (ESP32) bridges and a server-side IPP endpoint are planned for a later phase.
 
 ## Contributing
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the commit format, and how releases work. Releases follow [Semantic Versioning](https://semver.org/); see [CHANGELOG.md](CHANGELOG.md). This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
+[CONTRIBUTING.md](CONTRIBUTING.md) covers setup, the commit format, and how releases work.
+
+Releases follow [Semantic Versioning](https://semver.org/). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+
+This project follows the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Maintainer
 
