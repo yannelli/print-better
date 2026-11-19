@@ -2,7 +2,7 @@
 export const WORKSPACE_FREE_PATHS = ['/printers', '/jobs', '/devices', '/devices/add', '/members', '/settings'] as const
 
 /** Workspace settings tabs, so `/settings/<tab>` opens that tab. */
-export const SETTINGS_TABS = ['general', 'printing', 'email', 'printer-access', 'extensions', 'activity'] as const
+export const SETTINGS_TABS = ['general', 'printing', 'email', 'printer-access', 'enterprise', 'extensions', 'activity'] as const
 
 /** Screens outside any workspace, with or without a tab after them. */
 export const ACCOUNT_PATHS = ['/account', '/admin', '/connect'] as const

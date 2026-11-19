@@ -1,0 +1,144 @@
+Enterprise controls adds 6 parts, each with its own switch:
+
+| Part | What it does |
+| --- | --- |
+| **Approvals** | Jobs wait until an owner, an admin, or a manager of the printer approves them. |
+| **Secure release** | Jobs wait until the person who sent them releases them at the printer. |
+| **Cost centers** | Charge printing to departments, projects, or clients, with budgets per cycle. |
+| **Reports** | Usage by member, group, device, printer, cost center, or source, plus scheduled emails and the audit export. |
+| **Alerts** | Emails at 80% and 100% of every limit and budget. |
+| **Retention and privacy** | Delete documents as soon as jobs finish, and hide document names. |
+
+## Turn on Enterprise Controls
+
+Enterprise controls is an [extension](/docs/extensions). A server admin makes it available under **Server admin** > **Extensions**, then a workspace owner turns it on in **Settings** > [**Extensions**](/settings/extensions). See [Turn on an Extension](/docs/extensions#turn-on-an-extension).
+
+Then open **Settings** > [**Enterprise**](/settings/enterprise), pick a part, and turn it on. Owners and admins change these. Only owners change **Retention and privacy**.
+
+<Callout type="note" title="Turning It on Changes Nothing by Itself">
+
+Every part starts off, and nothing changes until you turn one on.
+
+</Callout>
+
+With Print rules and limits, rules and limits can require approval or hold jobs for release, and alerts cover limits too. With [Printer Access](/docs/extensions/printer-access), people who can manage a printer's jobs can approve them, and groups can have a default cost center.
+
+## Approvals
+
+A job that needs approval shows **On hold** with **Waiting for approval**, and doesn't print until someone approves it.
+
+Jobs need approval when:
+
+- The printer has **Every job needs approval** on
+- A budget is set to **Require approval** and the job would go over it
+- A rule or limit requires approval (with Print rules and limits)
+
+To make every job on a printer need approval, open it from [**Printers**](/printers), select **Approval and release**, and turn on **Every job needs approval**. Printers with it on show a **Needs approval** badge.
+
+### Approve or Deny a Job
+
+Owners and admins approve any job. With Printer Access, so does anyone who can manage everyone's jobs on that printer, except for their own jobs.
+
+1. Open [**Print jobs**](/jobs) and select **Approvals**. Approvers also get a notice in the web app, an email when [outbound email](/docs/self-hosting/email) is set up, and a count on **Home**.
+2. Select **Approve** to print the job, or **Deny** and give a reason.
+
+The sender sees "Not approved: " and your reason. A job nobody answers is canceled with "Not approved in time" after **Cancel unanswered requests after** (24 hours unless you change it, up to 7 days).
+
+When the printer also holds jobs for release, an approved job waits for its sender to release it.
+
+## Secure Release
+
+A printer with **Hold jobs until released** on keeps each job until the person who sent it is at the printer. Turn it on from the printer's **Approval and release** tab. Printers with it on show a **Release at printer** badge.
+
+### Release Your Jobs
+
+1. Open [**Print jobs**](/jobs) on your phone and select **Ready to release**. **Home** shows your waiting jobs too.
+2. Select **Release** on a job, or **Release all**.
+
+Only the sender, owners, and admins can release a job. Owners and admins can turn on **Everyone’s jobs** to see all of them. Jobs from a computer's print window have no sender in the workspace, so an owner or admin releases them.
+
+A job nobody releases is canceled with "Not released in time" after **Cancel unreleased jobs after** (4 hours unless you change it, up to 72), and its document is deleted.
+
+<Callout type="tip" title="Print Window Jobs">
+
+When the server holds a job from a computer's print window, that print queue shows the hold message, such as "Waiting for approval", and moves on to the next job. Approve or release the held job in the web app.
+
+</Callout>
+
+## Cost Centers
+
+Add cost centers in **Usage** > **Cost centers**. Each one has a name and an optional code, such as "MKT-100". Make one inactive with **Edit** to stop people from choosing it and keep its history. A cost center can be deleted only until a job is charged to it.
+
+When you print, **Charge to** in the print dialog picks the cost center, starting at your default. The API and AI assistants take `costCenter`, a cost center's id or code.
+
+### Defaults
+
+Under **Defaults**, give a person, a group, or a device a default cost center. A device's page also has it under **Cost center**. A job without a cost center is charged to:
+
+1. The sender's default
+2. Else the default of their first group by name
+3. Else the device's default
+
+Turn on **Every job needs a cost center** in **Settings** > [**Enterprise**](/settings/enterprise) to refuse jobs that end up without one. Test pages always print.
+
+### Budgets
+
+In **Usage** > **Budgets**, select **New budget** and choose:
+
+- The cost center
+- **Count**: cost or pages
+- **Budget**: the amount
+- **Starts over**: every day, week, month, quarter, or year, at midnight in the workspace time zone
+- **When a job would go over**: **Block**, **Warn and allow**, or **Require approval**
+
+Every job charged to the cost center counts, on every printer. **Require approval** blocks while **Approvals** is off.
+
+## Reports
+
+**Usage** > **Reports** shows jobs, pages, sheets, color pages, and cost by member, group, device, printer, cost center, or source, for up to 366 days. It has totals, a chart of pages per day, and a row for each member, group, and so on. Someone in 2 groups counts in both. Reports never show document names.
+
+- **Export CSV** downloads the report. Cost is a plain number in the workspace currency.
+- **Scheduled reports** email a weekly or monthly report to the people you choose, at 8:00 on the first day of each week or month, with every row in a CSV file. They need [outbound email](/docs/self-hosting/email).
+- **Audit log** downloads the workspace's [Activity](/docs/workspaces/activity) for a range of dates as a CSV file, with times in UTC.
+
+## Alerts
+
+With **Alerts** on, Print Better emails at 80% and again at 100% of a limit or budget, once per cycle:
+
+- The person a limit counts, when **Email people about their own limits** is on. They also see the alert on **Home**.
+- Owners and admins, or the people you choose under **Admin alerts go to**, when **Email admins** is on. Budget alerts go only to them.
+
+Alerts need [outbound email](/docs/self-hosting/email).
+
+## Retention and Privacy
+
+Only owners change these:
+
+- **Delete documents as soon as a job finishes** overrides **Keep documents for** in [Workspace Settings](/docs/workspaces/settings). Finished jobs can't be retried.
+- **Show document names only to the person who printed them** shows everyone else "Document", in the app, emails, the API, and AI assistants. Turn on **Owners and admins can see document names** to make an exception for them.
+
+## Turn It Off
+
+A workspace owner turns off the extension in **Settings** > [**Extensions**](/settings/extensions). Jobs waiting for approval or release are canceled with "Enterprise controls were turned off", so nothing prints without the checks that held it.
+
+Turning off only **Approvals** or **Secure release** cancels the jobs waiting for it, with "Approvals were turned off" or "Secure release was turned off".
+
+Settings, cost centers, budgets, and history are kept for when you turn it back on.
+
+## Next Steps
+
+<Cards>
+
+<Card href="/docs/printing/jobs" title="Print Jobs">
+
+Follow, cancel, and retry jobs, including held ones.
+
+</Card>
+
+<Card href="/docs/reference/rest-api" title="REST API">
+
+Approve, release, and report from your own tools.
+
+</Card>
+
+</Cards>

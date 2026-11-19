@@ -4,6 +4,10 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ## [Unreleased]
 
+### Added
+
+- **extensions:** Adds the **Enterprise controls** extension, off by default, with a switch for each part: approvals, secure release, cost centers and budgets, reports, alerts, and retention and privacy. Jobs can wait for an approver or for their sender to release them at the printer, from **Print jobs > Approvals** and **Print jobs > Ready to release**, which work on a phone. Jobs are charged to a cost center picked in the print dialog or by default, and budgets per cycle can block, warn, or require approval. Admins get usage reports with CSV export, weekly or monthly report emails, and an audit log export under **Usage**. Alerts email at 80% and 100% of limits and budgets. Owners can delete documents as soon as jobs finish and hide document names. The REST API and 18 MCP tools cover all of it. See [Enterprise Controls](docs/enterprise.md).
+
 ### Fixed
 
 - **deploy:** Saves the `APP_SECRET` and `AUTH_PEPPER` that `scripts/deploy.sh` creates to `~/.config/print-better/secrets.env` (readable only by you), since Cloudflare never shows a secret again.
