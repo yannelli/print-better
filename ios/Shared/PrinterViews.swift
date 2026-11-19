@@ -2,30 +2,42 @@ import PrintBetterKit
 import SwiftUI
 
 /// A printer in a list: name, where it is, its state, and how much toner or ink is left.
+/// The state has its own line, so the name and place keep the full width.
 struct PrinterRow: View {
     let printer: Printer
     var showsSupplies = true
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        let layout = typeSize.isAccessibilitySize ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8)) : AnyLayout(HStackLayout(spacing: 12))
-        layout {
-            Image(systemName: "printer.fill")
-                .font(.title2)
-                .foregroundStyle(printer.online ? Color.accentColor : .secondary)
-                .frame(minWidth: 32)
-                .accessibilityHidden(true)
+        HStack(alignment: .firstTextBaseline, spacing: 12) {
+            if !typeSize.isAccessibilitySize {
+                Image(systemName: "printer.fill")
+                    .foregroundStyle(printer.online ? Color.accentColor : .secondary)
+                    .frame(minWidth: 28)
+                    .accessibilityHidden(true)
+            }
             VStack(alignment: .leading, spacing: 4) {
                 Text(printer.name).font(.body.weight(.medium))
                 Text(printer.whereabouts).font(.subheadline).foregroundStyle(.secondary)
+                StatusLine(words: printer.status)
                 if showsSupplies, !printer.supplies.isEmpty {
-                    SupplyStrip(supplies: printer.supplies)
+                    SupplyStrip(supplies: printer.supplies).padding(.top, 2)
                 }
             }
-            Spacer(minLength: 8)
-            StatusBadge(words: printer.status)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// A state as its icon and word in the state's color, such as "Ready" under a printer's name.
+struct StatusLine: View {
+    let words: StatusWords
+
+    var body: some View {
+        Label(words.label, systemImage: words.tone.symbol)
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(words.tone.color)
     }
 }
 

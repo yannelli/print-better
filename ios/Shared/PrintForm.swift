@@ -26,7 +26,13 @@ struct PrintForm<DocumentRows: View>: View {
             }
         }
         .disabled(isSending)
-        .safeAreaBar(edge: .bottom) { bar }
+        // The bar keeps its own space, so the last setting scrolls fully above the button.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            bar
+                .padding(.horizontal)
+                .padding(.vertical, 12)
+                .background(Color(uiColor: .systemGroupedBackground))
+        }
         .jobFeedback(sentJob)
         .refreshable { await session.loadPrinters() }
     }
@@ -65,7 +71,5 @@ struct PrintForm<DocumentRows: View>: View {
             }
         }
         .controlSize(.large)
-        .padding(.horizontal)
-        .padding(.bottom, 8)
     }
 }
