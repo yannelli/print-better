@@ -4,7 +4,8 @@ import type { ClientRow, JobViewRow, PrinterViewRow } from '../db/rows'
 import { MB, type Json } from '../http/body'
 import { badRequest, forbidden, notFound, tooLarge } from '../http/errors'
 import { int, str } from '../http/validate'
-import { first } from '../lib/db'
+import { all, first } from '../lib/db'
+import { decodeCursor, pageLimit, toPage, type Page } from '../lib/pagination'
 import type { Ctx } from './context'
 import { docType } from './doc-types'
 import { queueJob, workspaceLimits } from './job-create'
@@ -69,6 +70,24 @@ async function ownJob(env: Env, client: ClientRow, id: string): Promise<JobViewR
   const job = await first<JobViewRow>(env.DB, `${JOB_VIEW} WHERE j.id = ? AND j.source_client_id = ?`, id, client.id)
   if (!job) throw notFound('Job not found')
   return job
+}
+
+/** `GET /api/client/jobs`: the jobs this device created, newest first. */
+export async function listClientJobs(env: Env, client: ClientRow, q: { limit?: string | null; cursor?: string | null }): Promise<Page<Job>> {
+  const n = pageLimit(q.limit)
+  const c = decodeCursor(q.cursor)
+  const rows = await all<JobViewRow>(
+    env.DB,
+    `${JOB_VIEW} WHERE j.source_client_id = ? AND (? IS NULL OR j.created_at < ? OR (j.created_at = ? AND j.id < ?))
+     ORDER BY j.created_at DESC, j.id DESC LIMIT ?`,
+    client.id,
+    c?.createdAt ?? null,
+    c?.createdAt ?? null,
+    c?.createdAt ?? null,
+    c?.id ?? null,
+    n + 1,
+  )
+  return toPage(rows, n, (r) => ({ createdAt: r.created_at, id: r.id }), toJob)
 }
 
 export const getClientJob = async (env: Env, client: ClientRow, id: string): Promise<Job> => toJob(await ownJob(env, client, id))

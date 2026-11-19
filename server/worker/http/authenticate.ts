@@ -1,6 +1,8 @@
 import { lookupSession, SESSION_TTL } from '../auth/sessions'
 import { bearerToken, lookupApiToken, lookupClient } from '../auth/tokens'
 import type { ClientRow } from '../db/rows'
+import { run } from '../lib/db'
+import { MINUTE } from '../lib/time'
 import type { Actor, Ctx } from '../services/context'
 import { clearSessionCookie, readCookie, SESSION_COOKIE, sessionCookie } from './cookies'
 import { forbidden, unauthorized } from './errors'
@@ -72,7 +74,15 @@ export async function requireClient(h: Http): Promise<ClientRow> {
   const token = bearerToken(h.req)
   const client = token ? await lookupClient(h.env, token) : null
   if (!client) throw unauthorized('Unknown or revoked device token', 'invalid_token')
+  touchLastSeen(h, client)
   return client
+}
+
+/** Devices without a socket (phones) show when they were last used; the hub keeps connected ones current. */
+function touchLastSeen(h: Http, client: ClientRow): void {
+  const now = Date.now()
+  if (client.online === 1 || (client.last_seen_at !== null && now - client.last_seen_at < MINUTE)) return
+  h.exec.waitUntil(run(h.env.DB, 'UPDATE clients SET last_seen_at = ? WHERE id = ? AND online = 0', now, client.id))
 }
 
 export const clientCtx = (h: Http, client: ClientRow): Ctx => buildCtx(h, { type: 'client', client })

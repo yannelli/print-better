@@ -5,7 +5,8 @@ export * from './printing'
 
 export type Role = 'owner' | 'admin' | 'member'
 export type AutoAdd = 'smart' | 'all' | 'none'
-export type Os = 'macos' | 'windows' | 'linux'
+/** `ios`: the iPhone app, which prints but never connects printers or keeps a socket open. */
+export type Os = 'macos' | 'windows' | 'linux' | 'ios'
 
 export interface User {
   id: string
