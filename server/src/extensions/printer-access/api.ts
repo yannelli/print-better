@@ -9,6 +9,7 @@ import type {
   PrinterRole,
   WorkspaceAccess,
 } from '@shared/access'
+import { subjectParam } from '@/lib/api/access'
 import { enc, http, items, qs } from '@/lib/api/http'
 
 export interface RoleInput {
@@ -16,9 +17,6 @@ export interface RoleInput {
   description?: string | null
   permissions: PrinterPermission[]
 }
-
-/** `user:abc`, or `everyone`, as `/access/explain` expects. */
-export const subjectParam = (subject: AccessSubject) => (subject.type === 'everyone' ? 'everyone' : `${subject.type}:${subject.id}`)
 
 const base = (ws: string) => `/workspaces/${enc(ws)}`
 type List<T> = T[] | { items: T[] }

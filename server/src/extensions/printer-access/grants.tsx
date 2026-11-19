@@ -4,13 +4,16 @@ import type { PrinterGrant, WorkspaceAccess } from '@shared/access'
 import { Confirm } from '@/components/confirm'
 import { Button } from '@/components/ui/button'
 import { Spinner } from '@/components/ui/spinner'
+import { subjectParam } from '@/lib/api/access'
 import { roleName, SUBJECT_KINDS } from '@/lib/words'
 import { ChoiceSelect } from '@/routes/settings/fields'
-import { subjectParam } from './api'
 import { useGrant, useRevoke, useSubjectSources } from './hooks'
 import { roleChoices } from './roles'
 import { SubjectIcon, SubjectPicker } from './subject-picker'
 import type { SubjectKind, SubjectOption } from './subjects'
+
+/** Everyone is never granted: a printer's Everyone setting and the workspace default role cover it. */
+const KINDS: SubjectKind[] = ['user', 'group', 'client']
 
 type Access = Pick<WorkspaceAccess, 'roles' | 'defaultRole'>
 
@@ -75,7 +78,7 @@ export function InheritedRow({ grant, access }: { grant: PrinterGrant; access: A
   )
 }
 
-function AddGrant({ ws, printerId, access, kinds, taken }: { ws: string; printerId: string | null; access: Access; kinds: SubjectKind[]; taken: Set<string> }) {
+function AddGrant({ ws, printerId, access, taken }: { ws: string; printerId: string | null; access: Access; taken: Set<string> }) {
   const id = useId()
   const sources = useSubjectSources(ws)
   const grant = useGrant(ws, printerId)
@@ -91,7 +94,7 @@ function AddGrant({ ws, printerId, access, kinds, taken }: { ws: string; printer
         Give access
       </label>
       <div className="flex flex-col gap-2 lg:flex-row">
-        <SubjectPicker id={`${id}-who`} sources={sources} kinds={kinds} exclude={taken} value={who} onChange={setWho} className="lg:flex-1" />
+        <SubjectPicker id={`${id}-who`} sources={sources} kinds={KINDS} exclude={taken} value={who} onChange={setWho} className="lg:flex-1" />
         <ChoiceSelect ariaLabel="Role" value={role} onChange={setRole} options={roleChoices(access)} className="lg:w-48" />
         <Button type="submit" disabled={!who || grant.isPending}>
           {grant.isPending ? <Spinner data-icon="inline-start" /> : <Plus data-icon="inline-start" />}
@@ -118,7 +121,6 @@ export function GrantList({
   canEdit: boolean
   empty: string
 }) {
-  const kinds: SubjectKind[] = printerId ? ['user', 'group', 'client'] : ['everyone', 'user', 'group', 'client']
   const taken = new Set(grants.map((g) => subjectParam(g.subject)))
   return (
     <>
@@ -131,7 +133,7 @@ export function GrantList({
           ))}
         </ul>
       )}
-      {canEdit && <AddGrant ws={ws} printerId={printerId} access={access} kinds={kinds} taken={taken} />}
+      {canEdit && <AddGrant ws={ws} printerId={printerId} access={access} taken={taken} />}
     </>
   )
 }

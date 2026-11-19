@@ -52,7 +52,7 @@ export default function PrinterAccessSettings({ ws }: SlotProps['settingsSection
           <Section
             id="every-printer"
             title="Access to every printer"
-            description="Give a person, group, or device a role on every printer in this workspace, including ones added later."
+            description="Give a person, group, or device a role on every printer in this workspace, including ones added later. To change what everyone gets, use Everyone gets above."
             flush
           >
             <GrantList

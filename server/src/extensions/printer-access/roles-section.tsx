@@ -34,7 +34,7 @@ function RoleRow({ ws, role, canEdit, onEdit }: { ws: string; role: PrinterRole;
               </Button>
             }
             title={`Delete the ${role.name} role?`}
-            description="You can only delete a role nobody has. Change anyone who has it to another role first."
+            description="A role can only be deleted when nothing uses it: no one has it, and no printer or the workspace default gives it to Everyone."
             confirmLabel="Delete role"
             destructive
             onConfirm={() => remove.mutateAsync(role.id)}

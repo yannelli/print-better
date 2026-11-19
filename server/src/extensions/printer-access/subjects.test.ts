@@ -25,8 +25,7 @@ describe('subjectGroups', () => {
     expect(groups[1].items[0]).toMatchObject({ label: 'Office', detail: '1 person', subject: { type: 'group', id: 'g1' } })
   })
 
-  it('offers Everyone only when asked, and leaves out subjects already chosen', () => {
-    expect(subjectGroups(sources, ['everyone', 'user'])[0].items[0].key).toBe('everyone')
+  it('leaves out subjects already chosen', () => {
     const groups = subjectGroups(sources, ['user', 'client'], new Set(['user:u1', 'client:c1']))
     expect(groups.map((g) => [g.value, g.items.map((o) => o.label)])).toEqual([['People', ['Robin']]])
   })
@@ -60,7 +59,7 @@ describe('role choices', () => {
   })
 
   it('knows which grants cover every printer', () => {
-    const names = reasonNames({ ...access, grants: [{ id: 'gw', printerId: null, subject: { type: 'everyone' }, subjectName: 'Everyone', role: 'user', createdAt: 0 }] }, sources)
+    const names = reasonNames({ ...access, grants: [{ id: 'gw', printerId: null, subject: { type: 'group', id: 'g1' }, subjectName: 'Office', role: 'user', createdAt: 0 }] }, sources)
     expect([names.everyPrinter('gw'), names.everyPrinter('other'), names.everyPrinter(undefined)]).toEqual([true, false, false])
     expect(names.role('r1')).toBe('Prints only')
     expect(names.subject({ type: 'group', id: 'g1' })).toBe('Office')

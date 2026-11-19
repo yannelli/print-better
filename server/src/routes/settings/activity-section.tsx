@@ -23,6 +23,9 @@ const NOUNS: Record<string, string> = {
   user: 'Account',
   reset: 'Password reset link',
   app: 'Connected app',
+  access: 'Printer access',
+  group: 'Group',
+  extension: 'Extension',
 }
 
 const VERBS: Record<string, string> = {
@@ -44,6 +47,11 @@ const VERBS: Record<string, string> = {
   upload: 'uploaded',
   link: 'linked',
   reset: 'reset',
+  grant: 'given',
+  revoke: 'removed',
+  'role create': 'role created',
+  'role update': 'role changed',
+  'role delete': 'role deleted',
 }
 
 const ACTORS: Record<AuditEntry['actorType'], string> = {

@@ -94,9 +94,11 @@ export function accessReason(source: AccessExplanation['sources'][number], names
   }
 }
 
+export const VIEW_ONLY = 'You can see this printer but not print to it.'
+
 export const NO_PRINT_ACCESS = 'You can see printers here but not print to them yet. Ask an admin of this workspace to give you access.'
 
-/** How a printer looks to a device: in its print window or not. */
-export function devicePrintWords(permissions: readonly PrinterPermission[]): { label: string; tone: 'ok' | 'neutral' } {
-  return permissions.includes('print') ? { label: 'Can print', tone: 'ok' } : { label: 'Can’t print', tone: 'neutral' }
+/** Whether a device may print to a printer, e.g. "Not allowed on this Mac" (`where` from `thisComputer`). */
+export function devicePrintWords(allowed: boolean, where: string): { label: string; tone: 'ok' | 'neutral' } {
+  return allowed ? { label: 'Can print', tone: 'ok' } : { label: `Not allowed on ${where}`, tone: 'neutral' }
 }
