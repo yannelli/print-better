@@ -8,37 +8,42 @@
 
 ## 1. Summary
 
-Print Better makes printing reliable and easy for people who should never have to think about it. It has two parts: a self-hosted **print server** that runs on the owner's Cloudflare account, and a small **client** (`printbetter`) that runs on any computer next to a printer. Anyone in a workspace can print to any of its printers from the web, from any app's print window, from scripts, or through an AI assistant, whether they are at home or away.
+Print Better makes printing reliable and easy for people who should never have to think about it. It has two parts:
+
+- A self-hosted **print server** that runs on the owner's Cloudflare account
+- A small **client** (`printbetter`) that runs on any computer next to a printer
+
+Anyone in a workspace can print to any of its printers from the web, from any app's print window, from scripts, or through an AI assistant, at home or away.
 
 ## 2. Problem
 
 Printing is one of the least reliable parts of everyday computing:
 
-- **Setup is fragile.** Drivers, ports, and vendor apps fail in ways newcomers and older users cannot diagnose. The family "IT person" ends up fixing the same printer over and over.
-- **Printers are tied to one network.** AirPrint and IPP Everywhere only work on the local network. Printing from work, a phone on cellular, or a laptop at a café usually means a cloud service tied to one vendor.
+- **Setup is fragile.** Drivers, ports, and vendor apps fail in ways newcomers and older users can't diagnose. The family "IT person" fixes the same printer over and over.
+- **Printers are tied to one network.** AirPrint and IPP Everywhere only work on the local network. Printing from work, from a phone on cellular, or from a laptop at a café usually means a cloud service tied to one vendor.
 - **Jobs get lost.** When a computer sleeps, a printer is offline, or Wi-Fi drops, jobs disappear or hang without a clear reason.
-- **Discovery is slow and duplicated.** Print dialogs list the same printer more than once, or take a long time to find it.
+- **Discovery is slow and duplicated.** Print dialogs list the same printer more than once or take a long time to find it.
 - **Nothing is scriptable or assistant-friendly.** There is no simple, permissioned API to print, check toner, or set up a new printer from code or an AI assistant.
 
 ## 3. Goals and non-goals
 
 ### Goals
 
-1. **Minimal clicks.** Someone who has never set up a printer can go from nothing to a printed page with one command or one installer, plus one approval in the browser.
-2. **Reliable by default.** A submitted job prints or fails with a reason a person can understand. It never silently disappears.
+1. **Minimal clicks.** Someone who has never set up a printer goes from nothing to a printed page with one command or one installer, plus one approval in the browser.
+2. **Reliable by default.** A submitted job prints, or fails with a reason a person can understand. It never disappears silently.
 3. **Works with the printers people already own.** Driverless IPP, raw sockets, LPD, USB, and the operating system's print system, with conversion for printers that cannot read PDF.
-4. **Native everywhere.** Printers on other devices appear as ordinary printers in macOS and Linux print dialogs, with no duplicates.
-5. **Customizable anywhere.** Every automatic behavior (discovery, auto-add, defaults, sharing, updates) can be changed per workspace, per device, or per printer.
-6. **Fully operable by AI assistants.** Everything the web app can do is available over MCP, with the same permissions.
+4. **Native print dialogs.** Printers on other devices appear as ordinary printers in macOS and Linux print dialogs, with no duplicates.
+5. **Adjustable at every level.** Every automatic behavior (discovery, auto-add, defaults, sharing, updates) can be changed per workspace, per device, or per printer.
+6. **Fully operable by AI assistants.** MCP can do everything the web app can, with the same permissions.
 7. **Self-hosted and small.** One Worker deployment on the owner's account, few dependencies, and no third-party print cloud.
 
 ### Non-goals (phase 1)
 
-- Replacing CUPS or the Windows spooler as the local print system.
-- Vendor-specific driver features (custom finishing units, proprietary color profiles).
-- Billing, quotas, or print accounting for large organizations.
-- A hosted multi-tenant service run by the project.
-- A public IPP endpoint on the server (printing to the server directly from any OS).
+- Phase 1 does not replace CUPS or the Windows spooler as the local print system.
+- Phase 1 does not support vendor-specific driver features (custom finishing units, proprietary color profiles).
+- Phase 1 has no billing, quotas, or print accounting for large organizations.
+- Phase 1 has no hosted multi-tenant service run by the project.
+- Phase 1 has no public IPP endpoint on the server (printing to the server directly from any OS).
 
 ## 4. Users
 
@@ -53,9 +58,9 @@ Printing is one of the least reliable parts of everyday computing:
 ## 5. Principles
 
 - **Plain language.** Errors say what happened and what to do ("Tray 2 is out of paper"), never just a status code.
-- **Safe defaults, everything adjustable.** Smart defaults first, with an override at every level.
-- **Outbound only.** Clients dial out to the server; nothing on the printer's network is exposed.
-- **One source of truth.** The server database owns state; clients and browsers sync to it.
+- **Safe defaults, everything adjustable.** Smart defaults come first, with an override at every level.
+- **Outbound only.** Clients connect out to the server. Nothing on the printer's network is exposed.
+- **Server-owned state.** The server database holds the state, and clients and browsers sync to it.
 - **Few dependencies.** Small protocol pieces (IPP, MCP, OAuth, WebAuthn, OIDC, raster encoders) are written in-house when that avoids real bloat.
 - **Small files, clear code.** Files stay under 300 lines; comments explain why.
 
@@ -153,7 +158,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.5), **Later** (phase 2).
 | ID | Requirement | Status |
 |---|---|---|
 | W-1 | React and shadcn single-page app: home, printers, jobs, devices, members, settings, admin | Shipped |
-| W-2 | Visual design: crisp, dense, monochrome precision mixed with warm tonal surfaces and rounded, springy motion | Shipped |
+| W-2 | Visual design: crisp, dense, and monochrome, with warm tonal surfaces and rounded, springy motion | Shipped |
 | W-3 | Light, dark, and system themes; accent color, text size, and density settings | Shipped |
 | W-4 | Live updates over WebSocket; no manual refresh | Shipped |
 
@@ -201,12 +206,13 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.5), **Later** (phase 2).
 
 ## 11. Release plan
 
-- **0.1.x (shipped):** server, web app, accounts, MCP, client for macOS, Linux, and Windows, remote printers on macOS and Linux, automatic updates.
-- **0.1.3 (next):** supply levels and full options in native print dialogs, per-computer printer control and default printer from the web app, unattended updates for the Linux system service.
+- **0.1.0 to 0.1.2 (shipped):** server, web app, accounts, MCP, client for macOS, Linux, and Windows, remote printers on macOS and Linux, automatic updates, and unattended updates for the Linux system service.
+- **0.1.3 (shipped):** supply levels and full options in native print dialogs, per-computer printer control and default printer from the web app.
+- **0.1.4 (shipped):** extensions and the printer access extension.
 - **Phase 2:** microcontroller bridge firmware, remote printers on Windows, signed Windows builds, a container build for non-Cloudflare hosts, and a public IPP endpoint on the server.
 
 ## 12. Open questions
 
-- Should a computer's default printer set in the web app win over one changed locally, or should the last change win?
-- Is a public IPP endpoint worth the extra attack surface, or do native remote printers cover the need?
-- Which microcontroller boards to support first, and over which transport (Wi-Fi only, or Ethernet too)?
+- Should a computer's default printer set in the web app win over one changed locally, or should the last change win? Resolved in 0.1.3: The local change wins, and picking the printer again in the web app applies it again ([Remote printers](remote-printers.md)).
+- Is a public IPP endpoint worth the extra attack surface, or do native remote printers cover the need? Currently unknown.
+- Which microcontroller boards should be supported first, and over which transport (Wi-Fi only, or Ethernet too)? Currently unknown.
