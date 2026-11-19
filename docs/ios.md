@@ -7,6 +7,7 @@ scripts/build-ios.sh                                  # generate the project, bu
 scripts/build-ios.sh test                             # also run the PrintBetterKit and app unit tests
 SIMULATOR="iPad Air 11-inch (M4)" scripts/build-ios.sh
 scripts/release-ios.sh                                # signed archive and IPA in build/ios/release/
+scripts/release-ios.sh --upload                       # signed archive, uploaded to App Store Connect
 scripts/make-ios-icon.sh                              # re-renders the app icon, copies the brand mark from docs/assets
 ```
 
@@ -45,22 +46,23 @@ The app version comes from `client/Cargo.toml`, like the other clients.
 - The app pairs with `os: ios` on an iPhone and `os: ipados` on an iPad, so the web app names, and shows an icon for, the right one. Its own text names the device the same way, from `UIDevice.current.model`.
 
 ## Signing
-Signing is automatic and uses an App Store Connect API key with access to Certificates, Identifiers & Profiles. `scripts/release-ios.sh` passes the key with `-allowProvisioningUpdates`, so Xcode registers the two bundle IDs and the App Group and makes the profiles. The key file goes in `~/.appstoreconnect/private_keys/`, named `AuthKey_<key ID>.p8` as App Store Connect downloads it.
+Signing is automatic and uses an App Store Connect API key with access to Certificates, Identifiers & Profiles. `scripts/release-ios.sh` passes the key with `-allowProvisioningUpdates`, so Xcode registers the two bundle IDs and the App Group, makes the profiles, and uploads with `--upload`. The key file goes in `~/.appstoreconnect/private_keys/`, named `AuthKey_<key ID>.p8` as App Store Connect downloads it.
 
 | Variable | Use |
 |---|---|
 | `APPLE_TEAM_ID` | Team for signing; XcodeGen writes it into the project |
-| `ASC_KEY_ID` | The key ID, the part of the key's file name after `AuthKey_` |
-| `ASC_ISSUER_ID` | The issuer ID shown above the keys under **Users and Access > Integrations** in App Store Connect |
-| `BUILD_NUMBER` | `CFBundleVersion` (defaults to the UTC date and time, such as `20261119.1530`) |
+| `ASC_KEY_ID` | The key ID. Optional while `~/.appstoreconnect/private_keys/` holds one key: the script reads it from the file name |
+| `ASC_ISSUER_ID` | The issuer ID. Optional: the script looks it up with `altool --list-providers`, as the Public ID of the team's provider |
+| `APPLE_ID`, `APPLE_PASSWORD` | Your Apple Account and an app-specific password, for that lookup. altool reads the password from the environment, so it's never on the command line |
+| `BUILD_NUMBER` | `CFBundleVersion`. Defaults to the UTC date and time, such as `20261119.153012`, so each upload has a higher number |
 | `SIMULATOR` | Simulator for `build-ios.sh` (default `iPhone 17 Pro`) |
 
 ## Releasing to TestFlight
-NOTE: You need the App Manager or Admin role in App Store Connect, and `APPLE_TEAM_ID`, `ASC_KEY_ID` and `ASC_ISSUER_ID` exported.
+NOTE: You need the App Manager or Admin role in App Store Connect, and `APPLE_TEAM_ID`, `APPLE_ID` and `APPLE_PASSWORD` exported, or `ASC_ISSUER_ID` instead of the last two.
 
 1. Run `scripts/release-ios.sh`. The first run registers the two bundle IDs and the App Group, then it writes `build/ios/release/PrintBetter.ipa`.
 2. In App Store Connect, open **Apps**, click **+**, then **New App**. Choose iOS, name it Print Better, pick the bundle ID `dev.yannelli.printbetter.ios`, and enter any SKU. The bundle ID is only in the list once step 1 has registered it.
-3. Upload the IPA with the Transporter app, or double-click `build/ios/release/PrintBetter.xcarchive` to open it in the Xcode Organizer and click **Distribute App**.
-4. In App Store Connect, open the app's **TestFlight** tab, wait for the build to finish processing, and add testers. The app declares that it uses no non-exempt encryption, so there is no export compliance question.
+3. Run `scripts/release-ios.sh --upload`. It archives a new build and uploads it to the app.
+4. In App Store Connect, open the app's **TestFlight** tab, wait for the build to finish processing, and add testers. The app and the share extension declare that they use no non-exempt encryption, so there is no export compliance question.
 
 Testers get the build in the TestFlight app. Internal testers get it as soon as it's processed; the first build for external testers goes through Beta App Review.

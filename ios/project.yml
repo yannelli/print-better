@@ -100,6 +100,7 @@ targets:
         CFBundleDisplayName: Print Better
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        ITSAppUsesNonExemptEncryption: false
         PBAppGroup: $(PB_APP_GROUP)
         NSAppTransportSecurity:
           NSAllowsLocalNetworking: true
