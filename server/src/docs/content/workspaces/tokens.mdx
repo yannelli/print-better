@@ -1,0 +1,97 @@
+A personal API token lets a script or tool use Print Better as you, without signing in. Create one for each script, limit it to the workspace it needs, and choose when it expires.
+
+Tokens belong to your account, not to a workspace. Manage them in [**Your account**](/account/tokens), on the **Apps and tokens** tab.
+
+## What a token can do
+
+A token acts as you. It has your role in each workspace it works in, and the same printer permissions you have.
+
+Every token can read, print, and change settings, like you can in the web app. You limit a token in two ways:
+
+- **Works in**: one workspace, or all of your workspaces.
+- **Stops working after**: a date when the token expires.
+
+A token can't change your password, passkeys, sessions, or recovery codes. It can't create other tokens either. Those need you to sign in.
+
+Tokens work with the [REST API](/docs/printing/api) and with [MCP clients](/docs/printing/ai-assistants#connect-other-mcp-clients) that can't sign in.
+
+## Create a token
+
+<Steps>
+
+### Open Apps and tokens
+
+Open [**Your account**](/account/tokens) and select the **Apps and tokens** tab.
+
+### Start a token
+
+Under **Personal API tokens**, select **Create a token**.
+
+### Name it
+
+Enter a **Name** that says where you use it, such as "Kitchen tablet" or "Backup script".
+
+### Choose a workspace
+
+Under **Works in**, pick one workspace, or **All my workspaces**.
+
+### Choose when it expires
+
+Under **Stops working after**, pick **30 days**, **90 days**, **1 year**, or **Never**. **90 days** is the starting choice.
+
+### Create and copy it
+
+Select **Create token**. Copy the token and paste it into the tool that needs it.
+
+</Steps>
+
+<Callout type="warning">
+
+Print Better shows a token only once. It keeps a scrambled copy that can't be turned back into the token. If you lose a token, remove it and create a new one.
+
+</Callout>
+
+Tokens start with `pbt_`. Send one in the `Authorization` header of each request:
+
+```sh
+curl https://your-print-better.example/api/workspaces \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN"
+```
+
+A token limited to one workspace sees only that workspace. It can't create new workspaces.
+
+## Check your tokens
+
+**Personal API tokens** lists each token with:
+
+- the workspace it works in, or **All workspaces**;
+- when it was last used, or **not used yet**;
+- when it expires, or **never expires**.
+
+Expired tokens stop working and disappear from the list.
+
+## Remove a token
+
+Select **Remove** next to the token, then confirm with **Remove token**. Anything using it stops working right away.
+
+## Connected apps
+
+AI assistants that you allowed to use Print Better appear under **Connected apps**, on the same tab. They sign in with their own connection instead of a token. Select **Disconnect** to remove one. See [AI assistants](/docs/printing/ai-assistants).
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/printing/api" title="Print with the API">
+
+Print text, URLs, and files with your new token.
+
+</Card>
+
+<Card href="/docs/reference/rest-api" title="REST API">
+
+Every route, with authentication, errors, and pagination.
+
+</Card>
+
+</Cards>

@@ -1,0 +1,91 @@
+Print Better has two parts: a server you run on Cloudflare, and a small program called `printbetter` that runs on a computer next to your printers. This page explains how they fit together and what happens to a document on its way to paper.
+
+## The pieces
+
+| Piece | What it is |
+| --- | --- |
+| Server | One Cloudflare Worker. It serves the web app, the REST API, the MCP server for AI assistants, and the install scripts. |
+| Database | A Cloudflare D1 database with accounts, workspaces, devices, printers, jobs, and settings. |
+| Storage | A Cloudflare R2 bucket with print documents and the client downloads. |
+| Workspace hub | One Durable Object per workspace. It holds the live connection to each device and sends jobs to them. |
+| Device | A Mac, Linux computer, or Raspberry Pi running `printbetter`. It finds printers and prints jobs. |
+| Printer | Any printer a device can reach over the network, over USB, or through the computer's own print system. |
+
+A **workspace** groups printers, devices, and people. Most people start with one, such as "Home" or "Office". Each person has a role in it: owner, admin, or member.
+
+```text
+ web app, API, AI assistant,     HTTPS     Worker     WorkspaceHub     WSS      printbetter     IPP, USB,
+ email, print window          ─────────▶   + D1  ───▶  (Durable    ◀──────────  on a device ──────────▶ printer
+                                           + R2         Object)
+```
+
+## Devices connect out
+
+A device opens one WebSocket connection to your server and keeps it open. The server never connects in to the device. You don't open any port on your network, and the device works behind a home router.
+
+The device sends a short message every 25 seconds to keep the connection alive. If the connection drops, the device reconnects on its own and waits longer between tries, up to one minute. The web app shows a device as **Online** while this connection is open.
+
+## How a job prints
+
+1. You send a document from the web app, the API, an AI assistant, an email, or a computer's print window.
+2. The server checks who you are and whether you may print to that printer.
+3. The server stores the document in R2 and records the job in D1.
+4. The workspace hub sends the job to the device that owns the printer.
+5. The device downloads the document, checks its SHA-256 checksum, and prints it.
+6. The device reports progress, printer status, and supply levels back to the server.
+
+The device picks the best way to reach the printer, such as IPPS, IPP, raw port 9100, LPD, USB, or the system print queue. If one way fails to connect, it tries the next. For printers that can't read PDF, it converts pages to a format the printer understands.
+
+## Job status
+
+| Status | Meaning |
+| --- | --- |
+| **Uploading** | The document is still on its way to the server. |
+| **Waiting** | The job is on the server. The device hasn't taken it yet, for example because it is offline. |
+| **Sending to printer** | The device has the job. It may be waiting for the printer, with a message that says why. |
+| **Printing** | The printer accepted the job. |
+| **Printed** | The printer finished the job. |
+| **Didn't print** | The job failed. The message says why. |
+| **Canceled** | Someone canceled the job. |
+
+Jobs survive restarts and network drops. If the device is off, the job waits on the server and prints when the device comes back. If the printer is out of paper or turned off, the device keeps the job and tries again. It waits 5 seconds at first, then doubles the wait up to 5 minutes.
+
+A job that makes no progress for the **Keep trying for** time in workspace settings is marked **Didn't print**. The default is 24 hours. This includes jobs waiting for a device that stays off. You can retry a failed job while its document is still stored.
+
+## Printers: found and added
+
+A device looks for printers when it starts, every 10 minutes, and when you ask. Each printer it finds is **found**. Only **added** printers take jobs and appear in print windows.
+
+The **Add printers automatically** setting decides what happens to new printers. See [Printer discovery](/docs/devices/discovery).
+
+## The print window
+
+On a Mac or Linux desktop, Print Better adds every workspace printer on your other devices to the computer's own print system. They show up in every app's print window. When you print, the job goes through your server to the device that owns the printer. See [From your computer's print window](/docs/printing/print-window).
+
+## Documents are kept for a short time
+
+The server deletes a document from storage after the job finishes and the **Keep documents for** time passes. The default is 24 hours. The job stays in the list without its file. See [Security](/docs/reference/security#documents).
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/quickstart" title="Quickstart">
+
+Deploy Print Better and print your first page.
+
+</Card>
+
+<Card href="/docs/self-hosting/deploy" title="Deploy to Cloudflare">
+
+Create the database, storage, and Worker on your account.
+
+</Card>
+
+<Card href="/docs/reference/security" title="Security">
+
+See what is stored, where, and for how long.
+
+</Card>
+
+</Cards>

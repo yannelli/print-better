@@ -1,0 +1,110 @@
+Every document sent to a printer becomes a print job. Use the **Print jobs** page to follow your jobs, cancel or retry them, and download what was printed.
+
+## Find your jobs
+
+Open [**Print jobs**](/jobs) from the sidebar. Jobs are listed newest first, and the list updates by itself.
+
+To narrow the list, pick a **Printer** or a **Status** at the top. Select **Show more** at the bottom to load older jobs.
+
+**Home** also shows the five most recent jobs under **Recent print jobs**. Select **See all print jobs** to open the full list.
+
+Each job shows:
+
+- the document's title, size, and page count;
+- the printer;
+- its status, with a message when there is one;
+- when it was sent, and where it came from.
+
+The origin reads like **From website**, **From email**, or **From Front desk Mac (alex)**. Jobs from the API, AI assistants, the local network, and test pages say so the same way.
+
+Everyone in a workspace sees every job. With [Printer access](/docs/extensions/printer-access) turned on, you see your own jobs plus jobs on printers where you have **See everyone’s jobs**.
+
+## Job status
+
+| Status | What it means |
+| --- | --- |
+| **Uploading** | The document is still on its way to the server. |
+| **Waiting** | The server has the job. It waits for the device, the printer, or its turn. |
+| **Sending to printer** | The device next to the printer has the job. |
+| **Printing** | The printer is printing it. |
+| **Printed** | Done. The page count shows when the printer reports it. |
+| **Didn't print** | Something stopped it. The message under the status says what. |
+| **Canceled** | Someone canceled it. |
+
+A job waits while its device is offline or paused, and prints when the device is back. A job that has been tried more than once shows **Try 2**, **Try 3**, and so on.
+
+## Cancel a job
+
+Select **Cancel** next to a job that hasn't finished.
+
+- A job still on the server is canceled right away.
+- A job the device already has shows **Canceling…** until the device confirms.
+- If the device went offline, the job is canceled with **Canceled while the device was offline**.
+
+## Print a job again
+
+Select **Try again** next to a job that didn't print or was canceled. The job goes back to **Waiting** and prints again with the same document and settings.
+
+**Try again** appears only while the server still has the document.
+
+## Download the document
+
+Select the download button next to a job to get the document that was sent. It is available until the server deletes the document.
+
+## Remove a job from the list
+
+Select the trash button next to a finished job, then select **Remove**. The job disappears from the list, and its document is deleted.
+
+## Who can do what
+
+| Action | Members | Owners and admins |
+| --- | --- | --- |
+| See jobs | Every job | Every job |
+| Cancel | Their own jobs | Any job |
+| Try again | Their own jobs | Any job |
+| Download | Every job | Every job |
+| Remove from the list | No | Any finished job |
+
+With [Printer access](/docs/extensions/printer-access) turned on, permissions on each printer decide instead. You can always cancel your own jobs. Trying again also needs **Print** on the printer. Handling other people's jobs, and removing any job, needs **Manage everyone’s jobs**.
+
+## How long jobs and documents last
+
+Jobs stay in the list until someone removes them. Their documents are deleted sooner.
+
+| Setting | Default | What happens |
+| --- | --- | --- |
+| **Keep documents for** | 24 hours | After a job finishes, its document is deleted. You can no longer download it or try again. |
+| **Keep trying for** | 24 hours | A job that makes no progress for this long stops with **Didn't print**. |
+
+Owners and admins change both in [Workspace settings](/docs/workspaces/settings#print-jobs).
+
+An upload that doesn't finish within an hour stops with **The upload never finished**.
+
+## When a job doesn't print
+
+Read the message under **Didn't print**. It comes from the device or the server, for example:
+
+- **Gave up after 24 hours without finishing**: the printer or its device stayed unavailable.
+- **The upload never finished**: the file never reached the server.
+
+Fix the cause, then select **Try again**.
+
+A job canceled with **Printer removed** was waiting when someone forgot its printer. It can't print again. [Troubleshooting](/docs/reference/troubleshooting) covers more messages.
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/printers/status" title="Status and supplies">
+
+Check whether a printer is ready before you print.
+
+</Card>
+
+<Card href="/docs/reference/troubleshooting" title="Troubleshooting">
+
+Fix common problems with devices, printers, and jobs.
+
+</Card>
+
+</Cards>

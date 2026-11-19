@@ -1,0 +1,73 @@
+Let phones, tablets, and computers on the same network as a device print to its printers. They don't need Print Better or an account.
+
+## How sharing works
+
+The device announces each shared printer on its local network as an AirPrint and IPP Everywhere printer, under its Print Better name. Phones and computers that support either standard find it like any other network printer. iPhones, iPads, and Macs do.
+
+Jobs go straight to the device, which prints them. They appear in [**Print jobs**](/jobs) as **From local network**.
+
+Sharing is off until you turn it on for a device.
+
+<Callout type="warning" title="Anyone on the network can print">
+
+A shared printer accepts jobs from anyone on that network, without signing in. [Printer access](/docs/extensions/printer-access) rules don't apply to it.
+
+</Callout>
+
+## Turn on sharing
+
+Two switches must both be on: one for the device and one for the printer. Owners and admins can change them.
+
+<Steps>
+
+### Turn on sharing for the device
+
+Open [**Devices**](/devices) and select the device. Under **Settings**, turn on **Share printers on the local network**.
+
+### Check the printer's switch
+
+Open the printer from [**Printers**](/printers). Under **Sharing**, check that **Share on the local network** is on. It is on for every printer until you turn it off.
+
+</Steps>
+
+The device shares only printers that are added to the workspace and connected to that device. A printer on another device needs sharing turned on for that device.
+
+## Start new devices with sharing on
+
+Open [**Settings**](/settings). Under **New devices and printers**, turn on **Share printers on the local network** and select **Save changes**.
+
+This sets the starting value for devices you add later. It is off by default. Devices you already added keep their own setting.
+
+## Stop sharing one printer
+
+Open the printer. Under **Sharing**, turn off **Share on the local network**.
+
+To stop sharing every printer on a device, turn off **Share printers on the local network** in the device's **Settings**.
+
+## Restricted printers
+
+With [Printer access](/docs/extensions/printer-access), you can restrict a printer to some people. Sharing still lets anyone on the network print to it.
+
+When a restricted printer is also shared, its page warns you: **This printer is restricted, but it is also shared on the local network. Anyone on that network can still print to it without signing in.** Turn off **Share on the local network** for printers you restrict.
+
+## Firewalls
+
+The device accepts shared jobs on port 8631. If the computer runs a firewall, allow incoming connections to Print Better on that port.
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/extensions/printer-access" title="Printer access">
+
+Choose who can see, print to, and manage each printer.
+
+</Card>
+
+<Card href="/docs/printing/print-window" title="From your computer's print window">
+
+Print to any workspace printer from a Mac or Linux computer, from anywhere.
+
+</Card>
+
+</Cards>

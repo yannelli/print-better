@@ -1,0 +1,99 @@
+This page turns a Raspberry Pi into an always-on print server. The Pi sits next to your printers, connects them to Print Better, and prints the jobs sent to them. You can set up a new Pi from a blank memory card, or install on a Pi that already runs.
+
+## What you need
+
+- A Raspberry Pi and a memory card.
+- Another computer with a card reader and Raspberry Pi Imager.
+- A Wi-Fi network or a network cable.
+- An owner or admin role in the workspace.
+
+Raspberry Pi OS (64-bit) suits a Pi 3, 4, 5, or Zero 2 W. Use Raspberry Pi OS (32-bit) for a Pi Zero, Zero W, Pi 1, or Pi 2. The ARMv6 build for the Pi Zero, Zero W, and Pi 1 is best effort.
+
+## Set up a new Pi
+
+The web app writes three setup files for the memory card. It makes them in your browser, so your Wi-Fi and Pi passwords never reach the server.
+
+<Steps>
+
+### Fill in the form
+
+Open [Add a device](/devices/add). Choose **Raspberry Pi** and select **Continue**. Fill in **Set up your Raspberry Pi**:
+
+| Field | What to enter |
+| --- | --- |
+| **Name for the Pi** | Its name on your network and in Print Better, such as `kitchen-pi`. Lowercase letters, numbers, and dashes. |
+| **How will it connect to the internet?** | **Wi-Fi** or **Network cable**. |
+| **Wi-Fi network name**, **Wi-Fi password**, **Country** | Your Wi-Fi details. Check **This network is hidden** for a hidden network. |
+| **Username** and **Password** | An account for signing in to the Pi later. |
+| **SSH public key (optional)** | Your public key, if you sign in with SSH keys. |
+| **Time zone** | The Pi's time zone. |
+
+Select **Create setup files**.
+
+### Download the files
+
+Under **Prepare the memory card**, select **Download all three files**. You get `user-data`, `network-config`, and `meta-data`.
+
+### Write the memory card
+
+Open Raspberry Pi Imager on your computer. Choose your Pi model and the operating system above, then your memory card.
+
+When Imager asks about settings, select **Edit settings** and turn on at least one, such as the hostname. The Pi reads the setup files only when a setting is on. Write the card.
+
+### Copy the files
+
+Take the card out and put it back in. Open the drive called `bootfs`. Copy the three files onto it and replace the files already there.
+
+Keep the names exactly `user-data`, `network-config`, and `meta-data`, with nothing added to the end.
+
+### Start the Pi
+
+Put the card in the Pi and plug in the power. Select **I’ve started the Pi** on the web page.
+
+</Steps>
+
+The first start takes about 5 to 10 minutes. The Pi joins your network, installs Print Better, and connects to your workspace. The web page notices by itself and moves on to choosing printers.
+
+The setup code in the files works once, for 7 days. If the Pi doesn't connect, see [A device shows offline](/docs/reference/troubleshooting#a-device-shows-offline).
+
+## What the setup files do
+
+On its first start, the Pi:
+
+- Sets its name, time zone, and network from your answers.
+- Creates your user with `sudo` rights that don't ask for a password, and turns on SSH.
+- Runs the Linux install command with `--system --no-tray` and the Pi's name. It retries for about 10 minutes while the network comes up.
+
+To review the files before you copy them, open **See what’s inside the files**.
+
+## Install on a Pi that already runs
+
+Use the Linux steps on a Pi that runs Raspberry Pi OS or another Linux. Choose **Linux computer** in **Add a device** and run the command on the Pi. Without a desktop session, it installs the system service. See [Install on Linux](/docs/devices/linux).
+
+## How the Pi runs
+
+The Pi runs Print Better as a system service under the `printbetter` user, from startup. It can print to:
+
+- Network printers that announce themselves with Bonjour.
+- Older network printers it finds with SNMP.
+- USB printers plugged into the Pi. A udev rule lets the service open them.
+
+The web app lists the Pi as **Raspberry Pi or Linux**. Settings and pairing live in `/etc/printbetter/`, and the log is in `/var/lib/printbetter/logs/printbetter.log`. Read it with `journalctl -u printbetter` too.
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/printers/add" title="Add a printer">
+
+Choose which found printers people can print to.
+
+</Card>
+
+<Card href="/docs/printers/lan-sharing" title="Share on your network">
+
+Let phones on the same network print through the Pi.
+
+</Card>
+
+</Cards>
