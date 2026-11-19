@@ -11,6 +11,7 @@ import { printerConfigs } from './inventory'
 import { stuckOffers, toOffer, type OfferRow } from './jobs'
 import { remoteSnapshots } from './remote-printers'
 import { attachment, CLIENT_TAG, clientTag, HUB_HEADERS, isOpen, send, UI_TAG, userTag, type Attachment, type ClientAtt } from './sockets'
+import { HubJobViews } from './job-views'
 import { HubAccessCache, UiFanOut } from './ui-access'
 
 const SWEEP_MS = 30_000
@@ -25,7 +26,8 @@ export class WorkspaceHub extends DurableObject<Env> {
   private remoteRun: Promise<void> | null = null
   private remoteDirty = false
   private access = new HubAccessCache(this.env)
-  private ui = new UiFanOut(this.ctx, this.access)
+  private jobViews = new HubJobViews(this.env)
+  private ui = new UiFanOut(this.ctx, this.access, this.jobViews)
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env)
@@ -159,6 +161,7 @@ export class WorkspaceHub extends DurableObject<Env> {
   /** Printer access or an extension switch changed: pages refetch, devices get snapshots under the new rules. */
   async accessChanged(): Promise<void> {
     this.access.clear()
+    this.jobViews.clear()
     this.fanOut([{ type: 'access' }])
   }
 

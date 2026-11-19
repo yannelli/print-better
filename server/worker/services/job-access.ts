@@ -32,13 +32,13 @@ export function jobDenial(access: Access, role: Role, userId: string, job: Pick<
 }
 
 /** A job the caller may see (404 otherwise) and, with `action`, act on (403 otherwise). */
-export async function jobFor(ctx: Ctx, workspaceId: string, id: string, action?: JobAction): Promise<{ job: JobViewRow; user: UserRow; access: Access }> {
+export async function jobFor(ctx: Ctx, workspaceId: string, id: string, action?: JobAction): Promise<{ job: JobViewRow; user: UserRow; role: Role; access: Access }> {
   const { user, role, access } = await memberAccess(ctx, workspaceId, action === 'delete' ? 'jobs.manage' : undefined)
   const job = await loadJobView(ctx.env, workspaceId, id)
   if (!canSeeJob(access, user.id, job.user_id, job.printer_id)) throw notFound('Job not found')
   const denial = action ? jobDenial(access, role, user.id, job, action) : null
   if (denial) throw access.managed ? forbidden(denial, 'printer_access_denied') : forbidden(denial)
-  return { job, user, access }
+  return { job, user, role, access }
 }
 
 /** Extra WHERE clause for job lists, in SQL so every page is full and cursors stay valid. */

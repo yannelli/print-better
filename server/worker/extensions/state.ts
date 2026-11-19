@@ -39,21 +39,25 @@ export async function saveAvailable(env: Env, ids: Set<ExtensionId>): Promise<vo
 }
 
 /** Active means both switches are on: available on the instance and enabled in the workspace. */
-export async function extensionActive(env: Env, workspaceId: string, id: ExtensionId): Promise<boolean> {
-  const row = await first<{ available: string | null; enabled: number | null }>(
+export async function activeExtensionIds(env: Env, workspaceId: string): Promise<Set<ExtensionId>> {
+  const row = await first<{ available: string | null; enabled: string | null }>(
     env.DB,
     `SELECT (SELECT value FROM settings WHERE key = ?) AS available,
-            (SELECT enabled FROM workspace_extensions WHERE workspace_id = ? AND extension_id = ?) AS enabled`,
+            (SELECT json_group_array(extension_id) FROM workspace_extensions WHERE workspace_id = ? AND enabled = 1) AS enabled`,
     SETTINGS_KEY,
     workspaceId,
-    id,
   )
-  return row?.enabled === 1 && parseAvailable(row.available).has(id)
+  const available = parseAvailable(row?.available)
+  return new Set(parseJson<string[]>(row?.enabled, []).filter((id): id is ExtensionId => isExtensionId(id) && available.has(id)))
 }
 
-/** Asked on every printer and job call, so it is looked up once per request. */
-export const isActive = (ctx: Ctx, workspaceId: string, id: ExtensionId): Promise<boolean> =>
-  memo(ctx, `extension:${workspaceId}:${id}`, () => extensionActive(ctx.env, workspaceId, id))
+export const extensionActive = async (env: Env, workspaceId: string, id: ExtensionId): Promise<boolean> => (await activeExtensionIds(env, workspaceId)).has(id)
+
+/** Asked on every printer and job call, so one query per request answers for every extension. */
+export const activeExtensions = (ctx: Ctx, workspaceId: string): Promise<Set<ExtensionId>> =>
+  memo(ctx, `extensions:${workspaceId}`, () => activeExtensionIds(ctx.env, workspaceId))
+
+export const isActive = async (ctx: Ctx, workspaceId: string, id: ExtensionId): Promise<boolean> => (await activeExtensions(ctx, workspaceId)).has(id)
 
 /** Entry check for every extension route and MCP tool. */
 export async function requireActive(ctx: Ctx, workspaceId: string, id: ExtensionId): Promise<void> {

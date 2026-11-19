@@ -7,6 +7,8 @@ import type { JobViewRow, PrinterViewRow } from '../db/rows'
 import type { Ctx } from '../services/context'
 import type { Access } from '../services/permissions'
 import { printerAccessPolicy } from './printer-access/hook'
+import { settlement } from './usage/settle'
+import { settlementSweep } from './usage/sweep'
 
 /** Whoever wants to use a printer, as the core knows them. */
 export type AccessPrincipal =
@@ -109,7 +111,7 @@ export interface JobFinishHook {
 }
 
 /** Usage settlement first, then Enterprise controls' retention. */
-export const JOB_FINISH_HOOKS: JobFinishHook[] = []
+export const JOB_FINISH_HOOKS: JobFinishHook[] = [settlement]
 
 /** Who is looking at a job; `report` is anyone else, such as an email or an export. */
 export type JobViewer = { kind: 'member'; userId: string; role: Role } | { kind: 'device'; clientId: string } | { kind: 'report' }
@@ -141,4 +143,4 @@ export interface CronHook {
 }
 
 /** Usage settlement sweep, held job expiry, scheduled reports. */
-export const CRON_HOOKS: CronHook[] = []
+export const CRON_HOOKS: CronHook[] = [settlementSweep]

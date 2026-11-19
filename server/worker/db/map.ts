@@ -1,4 +1,4 @@
-import type { Capabilities, Job, JobOptions, JobSource, JobStatus, Printer, PrinterStatus, Route } from '../../shared/printing'
+import type { Capabilities, Job, JobHold, JobOptions, JobPolicy, JobSource, JobStatus, JobUsage, Printer, PrinterStatus, Route } from '../../shared/printing'
 import {
   DEFAULT_CLIENT_SETTINGS,
   DEFAULT_PRINTER_SETTINGS,
@@ -206,7 +206,19 @@ export const toJob = (r: JobViewRow): Job => ({
   sourceClientId: r.source_client_id,
   sourceClientName: r.source_client_name,
   requestedBy: r.requested_by,
+  ...checkedFields(r),
 })
+
+/** What the job check recorded (docs/usage.md). Each field is absent while its column is null, so older jobs keep their JSON;
+ *  the column keeps a job's last hold, shown only while the job is held. */
+function checkedFields(r: JobViewRow): Pick<Job, 'policy' | 'held' | 'costCenterId' | 'usage'> {
+  return {
+    ...(r.policy != null && { policy: parseJson<JobPolicy>(r.policy, { notes: [] }) }),
+    ...(r.held != null && r.status === 'held' && { held: parseJson<JobHold>(r.held, { kind: 'approval', until: 0 }) }),
+    ...(r.cost_center_id != null && { costCenterId: r.cost_center_id }),
+    ...(r.usage != null && { usage: parseJson<JobUsage | undefined>(r.usage, undefined) }),
+  }
+}
 
 export const toAudit = (r: AuditRow): AuditEntry => ({
   id: r.id,

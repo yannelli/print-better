@@ -30,7 +30,8 @@ export const jobTools: Tool[] = [
       options: JOB_OPTIONS,
     }),
     run: async (ctx, args) => {
-      const body = pick(args, ['printerId', 'title', 'text', 'url', 'base64', 'contentType', 'fileName', 'options'])
+      // costCenter is accepted only while an extension adds it to this tool (extensions/tools.ts).
+      const body = pick(args, ['printerId', 'title', 'text', 'url', 'base64', 'contentType', 'fileName', 'options', 'costCenter'])
       const { job } = await createJob(ctx, await workspaceOf(ctx, args), body)
       return output(`Queued ${describe(job)}. Job id ${job.id}; check progress with get_job.`, { job })
     },

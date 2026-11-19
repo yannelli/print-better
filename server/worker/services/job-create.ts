@@ -1,4 +1,5 @@
-import type { DocType, Job, JobOptions, JobSource } from '../../shared/printing'
+import type { DocType, Job, JobOptions, JobSource, JobStatus } from '../../shared/printing'
+import type { Role } from '../../shared/types'
 import { DOC_TYPES } from '../../shared/printing'
 import { JOB_VIEW, PRINTER_VIEW, toJob, workspaceSettings } from '../db/map'
 import type { JobViewRow, PrinterViewRow } from '../db/rows'
@@ -6,9 +7,13 @@ import { MB, readBytes, type Json } from '../http/body'
 import { badRequest, conflict, notFound } from '../http/errors'
 import { int, obj, optStr, str } from '../http/validate'
 import { newId, sha256Hex } from '../lib/crypto'
-import { first, run } from '../lib/db'
+import { first, stmt } from '../lib/db'
 import { fromB64, utf8 } from '../lib/encoding'
 import { VERSION } from '../version'
+import { jobViewer } from '../extensions/job-view'
+import { usageActive } from '../extensions/usage/active'
+import { checkInline, checkSlot, type NewJob } from '../extensions/usage/attempts'
+import { entryInsert, runAfter, type Accepted } from '../extensions/usage/outcome'
 import { requireScope } from './access'
 import { audit } from './audit'
 import type { Ctx } from './context'
@@ -36,6 +41,11 @@ export interface QueueInput {
   /** Source `device` only. */
   sourceClientId?: string
   requestedBy?: string | null
+  /** The sender's printer access and role, for the job check (a redirect needs `print`). */
+  access: Access
+  role: Role | null
+  /** The request's `costCenter`, passed on unchecked to Enterprise controls. */
+  costCenter?: unknown
 }
 
 export async function workspaceLimits(env: Env, workspaceId: string): Promise<{ maxBytes: number; defaultPrinterId: string | null }> {
@@ -87,11 +97,11 @@ function parseDocument(body: Json, maxBytes: number): DocumentInput {
 /** `POST /workspaces/:ws/jobs`: an upload slot (two-step), text, a URL the server fetches, or inline base64. */
 export async function createJob(ctx: Ctx, workspaceId: string, body: Json): Promise<{ job: Job; uploadUrl?: string }> {
   requireScope(ctx, 'print')
-  const { user, access } = await memberAccess(ctx, workspaceId)
+  const { user, role, access } = await memberAccess(ctx, workspaceId)
   const limits = await workspaceLimits(ctx.env, workspaceId)
   const document = parseDocument(body, limits.maxBytes)
   const printer = await resolvePrinter(ctx.env, workspaceId, optStr(body, 'printerId', { max: 64 }) ?? null, limits.defaultPrinterId, access)
-  return queueJob(ctx, {
+  const queued = await queueJob(ctx, {
     workspaceId,
     printer,
     userId: user.id,
@@ -100,7 +110,12 @@ export async function createJob(ctx: Ctx, workspaceId: string, body: Json): Prom
     options: body.options === undefined ? {} : parseJobOptions(body.options),
     document,
     maxBytes: limits.maxBytes,
+    access,
+    role,
+    costCenter: body.costCenter,
   })
+  const view = await jobViewer(ctx, workspaceId, { kind: 'member', userId: user.id, role })
+  return { ...queued, job: view(queued.job) }
 }
 
 async function fetchDocument(url: string, maxBytes: number): Promise<{ data: Uint8Array; contentType: DocType; fileName: string | null }> {
@@ -136,18 +151,34 @@ export async function loadJobView(env: Env, workspaceId: string, id: string): Pr
   return row
 }
 
+const CHECKED_COLUMNS = ', status_message, policy, held, usage, cost_center_id'
+
 /** Shared by REST, MCP, email-to-print and the test page: stores the document (or opens an upload slot) and dispatches. */
 export async function queueJob(ctx: Ctx, p: QueueInput): Promise<{ job: Job; uploadUrl?: string }> {
   const id = newId()
   const now = Date.now()
-  const insert = (status: 'uploading' | 'queued', fileKey: string | null, fileName: string | null, contentType: string, size: number, sha: string | null, title: string) =>
-    run(
+  const checks = await usageActive(ctx, p.workspaceId)
+  const newJob = (contentType: DocType, size: number): NewJob => ({
+    workspaceId: p.workspaceId,
+    jobId: id,
+    source: p.source as NewJob['source'],
+    sender: { userId: p.userId, role: p.role, clientId: p.sourceClientId ?? null, access: p.access },
+    printer: p.printer,
+    options: p.options,
+    contentType,
+    size,
+    costCenter: p.costCenter,
+  })
+  // Jobs the check never saw keep today's insert, column for column.
+  const insert = (status: JobStatus, fileKey: string | null, fileName: string | null, contentType: string, size: number, sha: string | null, title: string, a?: Partial<Accepted>) => {
+    const checked = a ? [a.statusMessage ?? null, a.policy ?? null, a.held ?? null, a.usage ?? null, a.costCenterId ?? null] : []
+    return stmt(
       ctx.env.DB,
-      `INSERT INTO jobs (id, workspace_id, printer_id, user_id, source, title, file_key, file_name, content_type, size, sha256, options, status, attempts, created_at, updated_at, source_client_id, requested_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?)`,
+      `INSERT INTO jobs (id, workspace_id, printer_id, user_id, source, title, file_key, file_name, content_type, size, sha256, options, status, attempts, created_at, updated_at, source_client_id, requested_by${a ? CHECKED_COLUMNS : ''})
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?${', ?'.repeat(checked.length)})`,
       id,
       p.workspaceId,
-      p.printer.id,
+      a?.printerId ?? p.printer.id,
       p.userId,
       p.source,
       title,
@@ -156,17 +187,21 @@ export async function queueJob(ctx: Ctx, p: QueueInput): Promise<{ job: Job; upl
       contentType,
       size,
       sha,
-      JSON.stringify(p.options),
+      a?.options ?? JSON.stringify(p.options),
       status,
       now,
       now,
       p.sourceClientId ?? null,
       p.requestedBy ?? null,
+      ...checked,
     )
+  }
 
   if (p.document.kind === 'upload') {
     const d = p.document
-    await insert('uploading', null, d.fileName, d.contentType, d.size, null, p.title ?? d.fileName ?? 'Document')
+    const slot = checks ? await checkSlot(ctx, newJob(d.contentType, d.size)) : undefined
+    // Only the cost center is settled now; the full check runs once the file arrives.
+    await insert('uploading', null, d.fileName, d.contentType, d.size, null, p.title ?? d.fileName ?? 'Document', slot && { costCenterId: slot.costCenterId }).run()
     await audit(ctx, p.workspaceId, 'job.create', id, { source: p.source, printerId: p.printer.id })
     const job = toJob(await loadJobView(ctx.env, p.workspaceId, id))
     notifyHub(ctx, p.workspaceId, (hub) => hub.broadcast([{ type: 'job', job }]))
@@ -177,10 +212,17 @@ export async function queueJob(ctx: Ctx, p: QueueInput): Promise<{ job: Job; upl
   const doc = await materialize(p.document, p.maxBytes)
   if (doc.data.byteLength === 0) throw badRequest('The document is empty')
   if (doc.data.byteLength > p.maxBytes) throw badRequest(`Documents are limited to ${p.maxBytes / MB} MB`, 'too_large')
+  const checked = checks ? await checkInline(ctx, newJob(doc.contentType, doc.data.byteLength), doc.data) : null
   const key = jobFileKey(p.workspaceId, id)
   await ctx.env.FILES.put(key, doc.data, { httpMetadata: { contentType: doc.contentType } })
-  await insert('queued', key, doc.fileName, doc.contentType, doc.data.byteLength, await sha256Hex(doc.data), p.title ?? doc.title ?? 'Document')
-  await audit(ctx, p.workspaceId, 'job.create', id, { source: p.source, printerId: p.printer.id })
-  notifyHub(ctx, p.workspaceId, (hub) => hub.dispatch(p.workspaceId, id))
-  return { job: toJob(await loadJobView(ctx.env, p.workspaceId, id)) }
+  const row = insert(checked?.accepted.status ?? 'queued', key, doc.fileName, doc.contentType, doc.data.byteLength, await sha256Hex(doc.data), p.title ?? doc.title ?? 'Document', checked?.accepted)
+  await (checked ? ctx.env.DB.batch([row, entryInsert(ctx.env, checked.draft, checked.accepted)]) : row.run())
+  await audit(ctx, p.workspaceId, 'job.create', id, { source: p.source, printerId: checked?.accepted.printerId ?? p.printer.id })
+  notifyHub(ctx, p.workspaceId, async (hub) => {
+    await hub.dispatch(p.workspaceId, id)
+    if (checked) await hub.broadcast([{ type: 'usage' }])
+  })
+  const job = toJob(await loadJobView(ctx.env, p.workspaceId, id))
+  if (checked) runAfter(ctx, checked.accepted.decision, job)
+  return { job }
 }

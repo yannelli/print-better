@@ -1,9 +1,12 @@
 import { PROTOCOL_VERSION, type HelloMsg, type JobStatusMsg, type LanJobMsg, type ResultMsg, type ServerMessage, type UiEvent } from '../../shared/protocol'
 import type { Os } from '../../shared/types'
 import { clientSettings, toClient, toJob, toPrinter } from '../db/map'
-import type { ClientRow } from '../db/rows'
+import type { ClientRow, JobViewRow } from '../db/rows'
+import { jobsEnded } from '../extensions/finish'
 import { first } from '../lib/db'
 import { deviceSettings } from '../services/client-settings'
+import { systemCtx } from '../services/context'
+import { isTerminal } from '../services/jobs'
 import { alertIfNeeded } from './alerts'
 import { applySnapshot, applyPrinterStatus, printerConfigs } from './inventory'
 import { applyJobStatus, applyLanJob, pendingOffers } from './jobs'
@@ -107,6 +110,13 @@ async function onSettings(s: Session, settings: unknown, updatedAt: unknown): Pr
   if (row) s.broadcast([{ type: 'client', client: toClient(row) }])
 }
 
+/** A report that ended its job runs the finish hooks first, so the event shows the settled usage. */
+async function jobEvents(s: Session, job: JobViewRow): Promise<UiEvent[]> {
+  if (!isTerminal(job.status)) return [{ type: 'job', job: toJob(job) }]
+  const ended = await jobsEnded(systemCtx(s.env, s.att.origin, s.waitUntil), job.workspace_id, [job])
+  return [{ type: 'job', job: toJob(ended.rows[0]) }, ...ended.events]
+}
+
 /** Anything but `hello` before the handshake is a protocol error (4400); unknown types are ignored for forward compatibility. */
 export async function handleClientMessage(s: Session, msg: Record<string, unknown>): Promise<void> {
   if (!s.att.ready && msg.type !== 'hello') {
@@ -128,7 +138,7 @@ export async function handleClientMessage(s: Session, msg: Record<string, unknow
     }
     case 'job_status': {
       const outcome = await applyJobStatus(s.env, s.att.clientId, msg as unknown as JobStatusMsg)
-      if (outcome.job) s.broadcast([{ type: 'job', job: toJob(outcome.job) }])
+      if (outcome.job) s.broadcast(await jobEvents(s, outcome.job))
       if (outcome.resendCancel && typeof msg.jobId === 'string') s.send({ type: 'cancel', jobId: msg.jobId })
       return
     }

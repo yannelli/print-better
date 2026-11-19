@@ -15,8 +15,21 @@ export interface ToolArguments {
 
 export const EXTENSION_TOOL_ARGUMENTS: ToolArguments[] = []
 
-/** Tools of the extensions available on this instance; each still refuses to run where its extension is off. */
-export async function extensionTools(env: Env): Promise<Tool[]> {
-  const available = await availableExtensions(env)
-  return EXTENSION_TOOLS.filter((e) => available.has(e.extension)).flatMap((e) => e.tools)
+/** A core tool with the arguments that available extensions add to it. */
+function widened(tool: Tool, available: ReadonlySet<ExtensionId>): Tool {
+  const extra = EXTENSION_TOOL_ARGUMENTS.filter((a) => a.tool === tool.name && available.has(a.extension))
+  if (extra.length === 0) return tool
+  const properties = Object.assign({}, tool.inputSchema.properties, ...extra.map((a) => a.properties))
+  return { ...tool, inputSchema: { ...tool.inputSchema, properties } }
 }
+
+/** The core tools as available extensions widen them, then the extensions' own tools. Shared tools are listed once. */
+export async function availableTools(env: Env, core: readonly Tool[]): Promise<Tool[]> {
+  const available = await availableExtensions(env)
+  const tools = [...core.map((t) => widened(t, available)), ...EXTENSION_TOOLS.filter((e) => available.has(e.extension)).flatMap((e) => e.tools)]
+  return tools.filter((t, i) => tools.findIndex((other) => other.name === t.name) === i)
+}
+
+/** Whether finding `name` needs the instance's extensions: an extension tool, or a core tool they may widen. */
+export const needsExtensions = (name: string, core: ReadonlyMap<string, Tool>): boolean =>
+  !core.has(name) || EXTENSION_TOOL_ARGUMENTS.some((a) => a.tool === name)

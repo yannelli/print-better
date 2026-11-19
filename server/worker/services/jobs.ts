@@ -1,6 +1,13 @@
 import { TERMINAL_JOB_STATUSES, type Job, type JobStatus } from '../../shared/printing'
+import type { Role } from '../../shared/types'
 import { JOB_VIEW, toJob } from '../db/map'
-import type { JobViewRow } from '../db/rows'
+import type { JobViewRow, UserRow } from '../db/rows'
+import { jobsEnded } from '../extensions/finish'
+import { jobViewer } from '../extensions/job-view'
+import { isActive } from '../extensions/state'
+import { usageActive } from '../extensions/usage/active'
+import { checkRetry, retryUpdate } from '../extensions/usage/attempts'
+import { entryInsert, runAfter } from '../extensions/usage/outcome'
 import { badRequest, conflict, notFound } from '../http/errors'
 import { all, first, run } from '../lib/db'
 import { decodeCursor, pageLimit, toPage, type Page } from '../lib/pagination'
@@ -15,6 +22,9 @@ import { memberAccess } from './permissions'
 const STATUSES: JobStatus[] = ['uploading', 'queued', 'dispatched', 'printing', 'completed', 'failed', 'canceled']
 export const isTerminal = (status: string): boolean => (TERMINAL_JOB_STATUSES as readonly string[]).includes(status)
 
+/** Jobs that haven't ended, as an SQL list; removing their printer or device cancels them. */
+export const OPEN = "('uploading', 'held', 'queued', 'dispatched', 'printing')"
+
 export interface JobQuery {
   printerId?: string | null
   status?: string | null
@@ -22,10 +32,14 @@ export interface JobQuery {
   limit?: string | null
 }
 
+/** `held` exists only while Enterprise controls is active; otherwise it is refused like any unknown status. */
+const knownStatus = async (ctx: Ctx, workspaceId: string, status: string): Promise<boolean> =>
+  STATUSES.includes(status as JobStatus) || (status === 'held' && (await isActive(ctx, workspaceId, 'enterprise')))
+
 export async function listJobs(ctx: Ctx, workspaceId: string, q: JobQuery = {}): Promise<Page<Job>> {
   requireScope(ctx, 'read')
-  const { user, access } = await memberAccess(ctx, workspaceId)
-  if (q.status && !STATUSES.includes(q.status as JobStatus)) throw badRequest(`status must be one of: ${STATUSES.join(', ')}`)
+  const { user, role, access } = await memberAccess(ctx, workspaceId)
+  if (q.status && !(await knownStatus(ctx, workspaceId, q.status))) throw badRequest(`status must be one of: ${STATUSES.join(', ')}`)
   const n = pageLimit(q.limit)
   const c = decodeCursor(q.cursor)
   const scope = await jobScope(ctx.env, workspaceId, user.id, access)
@@ -46,12 +60,18 @@ export async function listJobs(ctx: Ctx, workspaceId: string, q: JobQuery = {}):
     c?.id ?? null,
     n + 1,
   )
-  return toPage(rows, n, (r) => ({ createdAt: r.created_at, id: r.id }), toJob)
+  const view = await jobViewer(ctx, workspaceId, { kind: 'member', userId: user.id, role })
+  return toPage(rows, n, (r) => ({ createdAt: r.created_at, id: r.id }), (r) => view(toJob(r)))
 }
+
+/** What the caller may see of jobs (Enterprise controls can hide document names). */
+const memberView = (ctx: Ctx, workspaceId: string, found: { user: UserRow; role: Role }) =>
+  jobViewer(ctx, workspaceId, { kind: 'member', userId: found.user.id, role: found.role })
 
 export async function getJob(ctx: Ctx, workspaceId: string, id: string): Promise<Job> {
   requireScope(ctx, 'read')
-  return toJob((await jobFor(ctx, workspaceId, id)).job)
+  const found = await jobFor(ctx, workspaceId, id)
+  return (await memberView(ctx, workspaceId, found))(toJob(found.job))
 }
 
 /** The stored document (until purged), for the job page's download button. */
@@ -63,16 +83,20 @@ export async function jobDocument(ctx: Ctx, workspaceId: string, id: string): Pr
   return { job, object }
 }
 
-async function finishAndBroadcast(ctx: Ctx, workspaceId: string, id: string): Promise<Job> {
-  const job = toJob(await loadJobView(ctx.env, workspaceId, id))
-  notifyHub(ctx, workspaceId, (hub) => hub.broadcast([{ type: 'job', job }]))
+/** Broadcasts the job; when this call ended it, the finish hooks run first so the event shows its settled usage. */
+async function finishAndBroadcast(ctx: Ctx, workspaceId: string, id: string, ended: boolean): Promise<Job> {
+  const row = await loadJobView(ctx.env, workspaceId, id)
+  const shown = ended ? await jobsEnded(ctx, workspaceId, [row]) : { rows: [row], events: [] }
+  const job = toJob(shown.rows[0])
+  notifyHub(ctx, workspaceId, (hub) => hub.broadcast([{ type: 'job', job }, ...shown.events]))
   return job
 }
 
 /** Not yet with a device: canceled here. Otherwise the device is told to stop and reports the final state. */
 export async function cancelJob(ctx: Ctx, workspaceId: string, id: string): Promise<Job> {
   requireScope(ctx, 'print')
-  return cancelOwnedJob(ctx, (await jobFor(ctx, workspaceId, id, 'cancel')).job)
+  const found = await jobFor(ctx, workspaceId, id, 'cancel')
+  return (await memberView(ctx, workspaceId, found))(await cancelOwnedJob(ctx, found.job))
 }
 
 /** The cancel itself, once the caller is known to own `job` (REST or device endpoint). */
@@ -91,36 +115,47 @@ export async function cancelOwnedJob(ctx: Ctx, job: JobViewRow): Promise<Job> {
       id,
       ...from,
     )
-  const local = job.status === 'uploading' || job.status === 'queued' ? await cancelHere('Canceled', ['uploading', 'queued']) : 0
-  if (local === 0) {
+  const waiting = ['uploading', 'held', 'queued']
+  let ended = waiting.includes(job.status) ? await cancelHere('Canceled', waiting) : 0
+  if (ended === 0) {
     const delivered = await hubFor(ctx.env, workspaceId)
       .cancelJob(workspaceId, id)
       .catch(() => false)
     if (delivered) await run(ctx.env.DB, "UPDATE jobs SET status_message = 'Canceling…', updated_at = ? WHERE id = ? AND status IN ('dispatched', 'printing')", now, id)
-    else await cancelHere('Canceled while the device was offline', ['queued', 'dispatched', 'printing'])
+    else ended = await cancelHere('Canceled while the device was offline', ['queued', 'dispatched', 'printing'])
   }
   await audit(ctx, workspaceId, 'job.cancel', id)
-  return finishAndBroadcast(ctx, workspaceId, id)
+  return finishAndBroadcast(ctx, workspaceId, id, ended > 0)
 }
 
 /** A fresh attempt on the same job id; the device dedups by (id, attempt). */
 export async function retryJob(ctx: Ctx, workspaceId: string, id: string): Promise<Job> {
   requireScope(ctx, 'print')
-  const { job } = await jobFor(ctx, workspaceId, id, 'retry')
+  const found = await jobFor(ctx, workspaceId, id, 'retry')
+  const { job } = found
   if (job.status !== 'failed' && job.status !== 'canceled') throw conflict('Only failed or canceled jobs can be retried', 'job_not_retryable')
   if (!job.file_key) throw conflict('The document was already deleted', 'file_purged')
   if (!job.printer_id) throw conflict('The printer was removed', 'printer_missing')
-  const changed = await run(
-    ctx.env.DB,
-    `UPDATE jobs SET status = 'queued', status_message = NULL, pages = NULL, completed_at = NULL, attempts = attempts + 1, updated_at = ?
-     WHERE id = ? AND status IN ('failed', 'canceled')`,
-    Date.now(),
-    id,
-  )
+  const checked = (await usageActive(ctx, workspaceId)) ? await checkRetry(ctx, job) : null
+  // `usage` describes the current attempt, so usage recorded while checks were on goes with the old one.
+  const changed = checked
+    ? (await ctx.env.DB.batch([retryUpdate(ctx.env, job, checked.accepted), entryInsert(ctx.env, checked.draft, checked.accepted)]))[0].meta.changes
+    : await run(
+        ctx.env.DB,
+        `UPDATE jobs SET status = 'queued', status_message = NULL, pages = NULL, completed_at = NULL, attempts = attempts + 1, updated_at = ?${job.usage != null ? ', usage = NULL' : ''}
+         WHERE id = ? AND status IN ('failed', 'canceled')`,
+        Date.now(),
+        id,
+      )
   if (changed === 0) throw conflict('This job changed meanwhile; refresh and try again', 'job_not_retryable')
   await audit(ctx, workspaceId, 'job.retry', id, { attempt: job.attempts + 1 })
-  notifyHub(ctx, workspaceId, (hub) => hub.dispatch(workspaceId, id))
-  return toJob(await loadJobView(ctx.env, workspaceId, id))
+  notifyHub(ctx, workspaceId, async (hub) => {
+    await hub.dispatch(workspaceId, id)
+    if (checked) await hub.broadcast([{ type: 'usage' }])
+  })
+  const retried = toJob(await loadJobView(ctx.env, workspaceId, id))
+  if (checked) runAfter(ctx, checked.accepted.decision, retried)
+  return (await memberView(ctx, workspaceId, found))(retried)
 }
 
 export async function deleteJob(ctx: Ctx, workspaceId: string, id: string): Promise<void> {

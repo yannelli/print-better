@@ -1,7 +1,10 @@
 import type { PrinterPermission } from '../../shared/access'
 import type { Job, Printer } from '../../shared/printing'
+import type { Role } from '../../shared/types'
 import { JOB_VIEW, PRINTER_VIEW, printerSettings, toJob, toPrinter, workspaceSettings } from '../db/map'
 import type { JobViewRow, PrinterViewRow, UserRow } from '../db/rows'
+import { jobsEnded } from '../extensions/finish'
+import { jobViewer } from '../extensions/job-view'
 import type { Json } from '../http/body'
 import { conflict, notFound } from '../http/errors'
 import { NAME, nullableStr, optBool, optObj, optStr } from '../http/validate'
@@ -13,7 +16,8 @@ import type { Ctx } from './context'
 import { hubFor, notifyHub } from './hub'
 import { parseJobOptions } from './job-options'
 import { queueJob, workspaceLimits } from './job-create'
-import { memberAccess, requirePermission } from './permissions'
+import { OPEN } from './jobs'
+import { memberAccess, requirePermission, type Access } from './permissions'
 import { testPagePdf } from './test-page'
 import { loadWorkspace, saveWorkspaceSettings } from './workspaces'
 
@@ -26,11 +30,11 @@ export async function loadPrinter(env: Env, workspaceId: string, id: string): Pr
 }
 
 /** The printer, once the caller is known to hold `perm` on it (404 when they can't see it, 403 when they can). */
-async function printerFor(ctx: Ctx, workspaceId: string, id: string, perm: PrinterPermission): Promise<{ row: PrinterViewRow; user: UserRow }> {
-  const { user, access } = await memberAccess(ctx, workspaceId, perm)
+async function printerFor(ctx: Ctx, workspaceId: string, id: string, perm: PrinterPermission): Promise<{ row: PrinterViewRow; user: UserRow; role: Role; access: Access }> {
+  const { user, role, access } = await memberAccess(ctx, workspaceId, perm)
   const row = await loadPrinter(ctx.env, workspaceId, id)
   requirePermission(access, row.id, perm)
-  return { row, user }
+  return { row, user, role, access }
 }
 
 export async function listPrinters(ctx: Ctx, workspaceId: string, added?: string | null): Promise<Printer[]> {
@@ -108,7 +112,7 @@ export async function patchPrinter(ctx: Ctx, workspaceId: string, id: string, bo
 export async function deletePrinter(ctx: Ctx, workspaceId: string, id: string): Promise<void> {
   requireScope(ctx, 'write')
   const { row } = await printerFor(ctx, workspaceId, id, 'settings')
-  const open = await all<JobViewRow>(ctx.env.DB, `${JOB_VIEW} WHERE j.printer_id = ? AND j.status IN ('uploading', 'queued', 'dispatched', 'printing')`, id)
+  const open = await all<JobViewRow>(ctx.env.DB, `${JOB_VIEW} WHERE j.printer_id = ? AND j.status IN ${OPEN}`, id)
   const hub = hubFor(ctx.env, workspaceId)
   for (const job of open.filter((j) => j.status === 'dispatched' || j.status === 'printing')) {
     await hub.cancelJob(workspaceId, job.id).catch(() => false)
@@ -117,17 +121,22 @@ export async function deletePrinter(ctx: Ctx, workspaceId: string, id: string): 
   await run(
     ctx.env.DB,
     `UPDATE jobs SET status = 'canceled', status_message = 'Printer removed', completed_at = ?, updated_at = ?
-     WHERE printer_id = ? AND status IN ('uploading', 'queued', 'dispatched', 'printing')`,
+     WHERE printer_id = ? AND status IN ${OPEN}`,
     now,
     now,
     id,
   )
+  const canceled = open.map((j) => ({ ...j, status: 'canceled', status_message: 'Printer removed', completed_at: now, updated_at: now }))
+  const ended = await jobsEnded(ctx, workspaceId, canceled)
+  // Jobs never counted keep today's event; counted ones show their settled usage.
+  const shown = open.map((j, i) => (ended.rows[i] === canceled[i] ? j : ended.rows[i]))
   await run(ctx.env.DB, 'DELETE FROM printers WHERE id = ?', id)
   await clearDefaultIf(ctx, workspaceId, id)
   await audit(ctx, workspaceId, 'printer.delete', id, { name: row.name })
   notifyHub(ctx, workspaceId, async (h) => {
     await h.broadcast([
-      ...open.map((j) => ({ type: 'job' as const, job: { ...toJob(j), status: 'canceled' as const, printerId: null, printerName: null } })),
+      ...shown.map((j) => ({ type: 'job' as const, job: { ...toJob(j), status: 'canceled' as const, printerId: null, printerName: null } })),
+      ...ended.events,
       { type: 'printer_removed', id },
     ])
     await h.pushPrinterConfig(workspaceId, row.client_id)
@@ -146,7 +155,7 @@ export const refreshPrinter = (ctx: Ctx, workspaceId: string, id: string) => pri
 
 export async function printTestPage(ctx: Ctx, workspaceId: string, id: string): Promise<{ job: Job }> {
   requireScope(ctx, 'print')
-  const { row: printer, user } = await printerFor(ctx, workspaceId, id, 'print')
+  const { row: printer, user, role, access } = await printerFor(ctx, workspaceId, id, 'print')
   if (printer.added !== 1) throw conflict('Add this printer to the workspace before printing to it', 'printer_not_added')
   const pdf = testPagePdf({
     printerName: printer.name,
@@ -163,6 +172,8 @@ export async function printTestPage(ctx: Ctx, workspaceId: string, id: string): 
     options: {},
     document: { kind: 'bytes', data: pdf, contentType: 'application/pdf', fileName: 'test-page.pdf' },
     maxBytes: (await workspaceLimits(ctx.env, workspaceId)).maxBytes,
+    access,
+    role,
   })
-  return { job }
+  return { job: (await jobViewer(ctx, workspaceId, { kind: 'member', userId: user.id, role }))(job) }
 }
