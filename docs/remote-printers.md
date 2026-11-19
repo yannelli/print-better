@@ -77,3 +77,7 @@ The loopback server describes each printer from its `RemotePrinter`, so `lpadmin
 On the owning device, IPP routes send `source` and `mediaType` inside `media-col` (with the paper size moved into it) and only when the printer lists them in `media-source-supported` / `media-type-supported`; other routes ignore them.
 
 Supplies: `marker-names`, `marker-types`, `marker-colors`, `marker-levels` come from `RemotePrinter.supplies`. `printer-more-info` and `printer-supply-info-uri` point at the printer's page in the web app (`<server>/w/<workspaceId>/printers/<printerId>`); cupsd copies the first into the PPD as `*APSupplies`, which is where the **Supplies** button goes. The loopback lists `urf-supported` without accepting URF, so CUPS still sends PDF.
+
+macOS's other supply source, cupsd's cached `marker-*` refreshed by a CUPS `ReportLevels` command job, is never used for these queues: it needs `printer-commands` with `ReportLevels`, cupsd does not accept `application/vnd.cups-command` for an everywhere queue, and the loopback refuses anything but PDF, JPEG and PNG, so a command file can never turn into a print job.
+
+New options reach the Mac without a restart: the owning device re-probes every printer over IPP on each discovery (at start, every 10 minutes, and on demand), reports the inventory when anything but status changed, the hub sends a new `remote_printers`, and the changed fingerprint regenerates the queue's PPD.

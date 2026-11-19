@@ -127,7 +127,9 @@ fn only_what_shapes_the_ppd_regenerates_it() {
     quality.capabilities.qualities = vec![Quality::Normal];
     let mut model = base.clone();
     model.make_model = Some("Other model".into());
-    for changed in [trays, quality, model] {
+    let mut simplex = base.clone();
+    simplex.capabilities.duplex = false;
+    for changed in [trays, quality, model, simplex] {
         assert_ne!(fingerprint(changed), fingerprint(base.clone()));
     }
 }

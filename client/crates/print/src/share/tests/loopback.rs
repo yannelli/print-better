@@ -101,3 +101,15 @@ async fn a_tray_and_paper_type_picked_in_the_print_dialog_reach_the_job() {
     let o = h.sink.jobs()[0].options.clone();
     assert_eq!((o.media.as_deref(), o.source.as_deref(), o.media_type.as_deref()), (Some("na_letter_8.5x11in"), Some("tray-2"), Some("labels")));
 }
+
+#[tokio::test]
+async fn a_cups_command_file_is_refused_and_never_becomes_a_job() {
+    let h = remote().await;
+    for format in ["application/vnd.cups-command", "application/octet-stream"] {
+        let mut msg = request(op::PRINT_JOB, &h.uri());
+        msg.operation().push("document-format", Value::mime(format));
+        let reply = ipp(&h, &msg, b"#CUPS-COMMAND\nReportLevels\n").await;
+        assert_eq!(reply.code, status::DOCUMENT_FORMAT_NOT_SUPPORTED, "{format}");
+    }
+    assert!(h.sink.jobs().is_empty());
+}
