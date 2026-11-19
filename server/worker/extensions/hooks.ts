@@ -4,6 +4,7 @@ import type { DocType, Job, JobHold, JobNote, JobOptions, JobSource, JobUsage } 
 import type { Role } from '../../shared/types'
 import type { UsageImpact } from '../../shared/usage'
 import type { JobViewRow, PrinterViewRow } from '../db/rows'
+import type { SqlValue } from '../lib/db'
 import type { Ctx } from '../services/context'
 import type { Access } from '../services/permissions'
 import { enterpriseAuditView, enterpriseCron, enterpriseFinish, enterpriseOff, enterpriseView } from './enterprise/hooks'
@@ -64,8 +65,10 @@ export interface JobDraft {
   access: Access
   contentType: DocType
   size: number
-  /** Pages in the document before ranges and copies. Null when not counted (yet), which counts as 1. */
+  /** Pages in the document before ranges and copies; null when it couldn't be counted, so its size gives an estimate. */
   documentPages: number | null
+  /** False at an upload slot, before the file arrives: each copy counts as 1 page, and rules about pages wait for the count. */
+  counted: boolean
   /** The sender's `costCenter` input, unchecked; only Enterprise controls reads it. */
   costCenter: unknown
   /** The workspace time zone, for time conditions and cycles. */
@@ -89,10 +92,18 @@ export interface JobDecision {
   usage: JobUsage
   /** Limits and budgets the job counts against, for previews and alerts. */
   meters: UsageImpact[]
+  /** Checked again in the statement that stores the job, so jobs sent at the same moment can't pass a blocking limit together. */
+  guards: WriteGuard[]
   /** The refusal message; no later step runs. */
   block: string | null
   /** Side effects (alerts, approval emails) run once the job is stored; never for previews or refusals. */
   after: ((ctx: Ctx, job: Job) => Promise<void>)[]
+}
+
+/** An SQL condition that must still hold when the job is stored. */
+export interface WriteGuard {
+  sql: string
+  params: SqlValue[]
 }
 
 export type JobStepName = 'rules' | 'limits' | 'cost-center' | 'budgets' | 'approval' | 'release'

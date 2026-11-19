@@ -94,18 +94,19 @@ const toAdjustment = (r: AdjustmentRow): LimitAdjustment => ({
   createdAt: r.created_at,
 })
 
-const currentStart = async (ctx: Ctx, workspaceId: string, limit: PrintLimit): Promise<number> =>
-  cycleAt(limit.cycle, (await usageSettings(ctx, workspaceId)).timeZone, Date.now()).start
+const currentSpan = async (ctx: Ctx, workspaceId: string, limit: PrintLimit) => cycleAt(limit.cycle, (await usageSettings(ctx, workspaceId)).timeZone, Date.now())
 
-/** `GET /policies/limits/:id/adjustments`: this cycle's extra allowances. */
+/** `GET /policies/limits/:id/adjustments`: this cycle's extra allowances, including any given before the time zone or cycle changed. */
 export async function listAdjustments(ctx: Ctx, workspaceId: string, id: string): Promise<LimitAdjustment[]> {
   await enter(ctx, workspaceId, 'read', true)
   const limit = await limitOf(ctx.env, workspaceId, id)
+  const { start, end } = await currentSpan(ctx, workspaceId, limit)
   const rows = await all<AdjustmentRow>(
     ctx.env.DB,
-    'SELECT * FROM limit_adjustments WHERE limit_id = ? AND cycle_start = ? ORDER BY created_at',
+    'SELECT * FROM limit_adjustments WHERE limit_id = ? AND cycle_start >= ? AND cycle_start < ? ORDER BY created_at',
     id,
-    await currentStart(ctx, workspaceId, limit),
+    start,
+    end,
   )
   return rows.map(toAdjustment)
 }
@@ -134,7 +135,7 @@ export async function addAdjustment(ctx: Ctx, workspaceId: string, id: string, b
   const row: AdjustmentRow = {
     id: newId(),
     limit_id: id,
-    cycle_start: await currentStart(ctx, workspaceId, limit),
+    cycle_start: (await currentSpan(ctx, workspaceId, limit)).start,
     user_id: subject?.type === 'user' ? subject.id : null,
     client_id: subject?.type === 'client' ? subject.id : null,
     amount,

@@ -2,7 +2,7 @@ import { env } from 'cloudflare:workers'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ok, setEveryone, turnOnAccess, wsPath } from './helpers/access'
 import { connectPrinter, type Station } from './helpers/device'
-import { EventSocket } from './helpers/jobs'
+import { EventSocket, jobsPath } from './helpers/jobs'
 import { callTool, modern } from './helpers/mcp'
 import { entriesIn, preview, switchExtension, turnOnPolicies } from './helpers/usage'
 import { addMember, createPat, setupOwner, type Owner, type Person } from './helpers/world'
@@ -122,7 +122,7 @@ describe('job preview', () => {
     expect(await entriesIn(ws)).toEqual([])
   })
 
-  it('counts unknown pages as one per copy and checks the request like POST /jobs', async () => {
+  it('counts a tiny document it can’t count as 1 page per copy, and checks the request like POST /jobs', async () => {
     const counted = ok(await preview(member.agent, ws, { printerId: s.printerId, contentType: 'text/plain', size: 10, options: { copies: 3 } }), 'preview')
     expect(counted.usage).toMatchObject({ documentPages: null, pages: 3, sheets: 3 })
     const cases: [unknown, number, string?][] = [
@@ -138,6 +138,14 @@ describe('job preview', () => {
       expect(reply.status, JSON.stringify(body)).toBe(status)
       if (code) expect(reply.body.error.code).toBe(code)
     }
+  })
+
+  it('estimates from the size the pages of documents it can’t count, leaning high', async () => {
+    const text = ok(await preview(member.agent, ws, { printerId: s.printerId, contentType: 'text/plain', size: 9 * 1024 * 1024 }), 'long text')
+    expect(text.usage).toMatchObject({ documentPages: null, pages: 3146 })
+    const broken = `%PDF-1.7\n${'x'.repeat(59_991)}`
+    const job = ok(await member.agent.post(jobsPath(ws), { printerId: s.printerId, base64: btoa(broken), contentType: 'application/pdf', fileName: 'broken.pdf' }), 'job').job
+    expect(job.usage).toMatchObject({ documentPages: null, pages: 3 })
   })
 
   it('needs print on the printer', async () => {

@@ -54,11 +54,12 @@ async function apply(ctx: Ctx, job: JobDraft, d: JobDecision, rule: PrintRule, a
   }
 }
 
-/** Only to an added printer the sender may print to; otherwise the job stays and a note says why. */
+/** Only to an added printer the sender may print to, on a device that's online; otherwise the job stays and a note says why. */
 async function redirect(ctx: Ctx, job: JobDraft, d: JobDecision, printerId: string, note: (message: string) => void): Promise<void> {
   const target = await addedPrinter(ctx.env, job.workspaceId, printerId)
   if (!target) note('Not sent to another printer: that printer was removed')
   else if (!job.access.can(target.id, 'print')) note(`Not sent to ${target.name}, since the sender can't print there`)
+  else if (target.client_online !== 1) note(`Not sent to ${target.name}, since ${target.client_name} is offline`)
   else {
     d.printer = target
     note(`Sent to ${target.name}`)

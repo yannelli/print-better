@@ -36,7 +36,13 @@ async function sweep(env: Env): Promise<void> {
   const ended = open.filter((r) => r.attempts === r.attempt).map((r) => r.job_id)
   const rows = ended.length > 0 ? await all<JobViewRow>(env.DB, `${JOB_VIEW} WHERE j.id IN (SELECT value FROM json_each(?))`, JSON.stringify(ended)) : []
   for (const workspaceId of new Set(open.map((r) => r.workspace_id))) {
-    await settle(ctx, workspaceId, rows.filter((r) => r.workspace_id === workspaceId))
+    try {
+      await settle(ctx, workspaceId, rows.filter((r) => r.workspace_id === workspaceId))
+    } catch (e) {
+      // Its rows stay open for the next run; the other workspaces still settle.
+      console.error('settling usage failed', workspaceId, e)
+      continue
+    }
     await hubFor(env, workspaceId)
       .broadcast([{ type: 'usage' }])
       .catch(() => undefined)

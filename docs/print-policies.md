@@ -38,7 +38,7 @@ All conditions in a rule must match. A rule without conditions matches every job
 | File size | `minSizeMb` | Its file is at least this many megabytes |
 | Time | `time` | It is sent on the chosen days, between `from` and `to`, in the workspace time zone. A `to` earlier than `from` crosses midnight |
 
-Pages that couldn't be counted count as 1 page per copy.
+Pages that couldn't be counted are estimated from the file size ([Page Counting](usage.md#page-counting)). For an upload, rules about pages are checked once its file arrives and is counted.
 
 ### Actions
 
@@ -48,7 +48,7 @@ Pages that couldn't be counted count as 1 page per copy.
 | Print two-sided | `two-sided` | Two-sided, long edge, when the printer can |
 | Print in black and white | `monochrome` | Black and white |
 | Limit copies | `max-copies` | At most this many copies |
-| Send to another printer | `redirect` | Moves the job to another added printer. With Printer access, only if the sender may print there; otherwise the action is skipped with a note |
+| Send to another printer | `redirect` | Moves the job to another added printer whose device is online. With Printer access, only if the sender may print there. Otherwise the action is skipped with a note |
 | Require approval | `approval` | Waits for an approver. Needs Enterprise controls with approvals on; skipped otherwise |
 | Hold for release | `release` | Waits until the sender releases it. Needs Enterprise controls with secure release on; skipped otherwise |
 | Add a note | `note` | Shows your note on the job, for example "Printed two-sided to save paper" |
@@ -68,11 +68,13 @@ A limit has a name, **who** it applies to, **what it counts**, an **amount**, a 
 
 A limit set to **Doesn't apply to owners and admins** never blocks, warns about, or holds their jobs. What they print still counts toward shared counts, such as a printer's or the workspace's.
 
+Jobs from a computer's print window have no member, so member limits (`each-member` and `member`) don't count them. Device limits do, and so do printer, workspace, and group limits for groups the device is in. To cap what a computer prints, add a device limit.
+
 ### How Usage Is Counted
 
 1. When a job is sent, its usage is **estimated**: PDFs are counted page by page, images count as 1 page, and text is laid out the way the device prints it. Page ranges, copies, and two-sided printing are applied.
-2. The estimate counts against every matching limit right away, together with everything already printed or waiting in the current cycle. A job that would go over a limit gets that limit's action.
-3. When the job ends, the estimate is replaced by the pages the printer reported. A canceled or failed job counts only the pages actually printed.
+2. The estimate counts against every matching limit right away, together with everything already printed or waiting in the current cycle. A job that would go over a limit gets that limit's action. Blocking limits are checked again as the job is stored, so jobs sent at the same moment can't pass one together.
+3. When the job ends, the estimate is replaced by the pages the printer reported. A completed job reported as 0 pages keeps its estimate, since printers that don't count pages report 0. A canceled or failed job counts only the pages actually printed.
 
 Details are in [Usage and Job Checks](usage.md#usage).
 

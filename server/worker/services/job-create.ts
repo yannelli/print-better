@@ -12,8 +12,8 @@ import { fromB64, utf8 } from '../lib/encoding'
 import { VERSION } from '../version'
 import { deviceTitle, jobViewer } from '../extensions/job-view'
 import { usageActive } from '../extensions/usage/active'
-import { checkInline, checkSlot, type NewJob } from '../extensions/usage/attempts'
-import { entryInsert, runAfter, type Accepted } from '../extensions/usage/outcome'
+import { checkInline, checkSlot, recheck, type NewJob } from '../extensions/usage/attempts'
+import { entryInsert, refuse, runAfter, type Accepted } from '../extensions/usage/outcome'
 import { requireScope } from './access'
 import { audit } from './audit'
 import type { Ctx } from './context'
@@ -175,10 +175,11 @@ export async function queueJob(ctx: Ctx, p: QueueInput): Promise<{ job: Job; upl
   // Jobs the check never saw keep today's insert, column for column.
   const insert = (status: JobStatus, fileKey: string | null, fileName: string | null, contentType: string, size: number, sha: string | null, title: string, a?: Partial<Accepted>) => {
     const checked = a ? [a.statusMessage ?? null, a.policy ?? null, a.held ?? null, a.usage ?? null, a.costCenterId ?? null] : []
+    const values = `?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?${', ?'.repeat(checked.length)}`
     return stmt(
       ctx.env.DB,
       `INSERT INTO jobs (id, workspace_id, printer_id, user_id, source, title, file_key, file_name, content_type, size, sha256, options, status, attempts, created_at, updated_at, source_client_id, requested_by${a ? CHECKED_COLUMNS : ''})
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?${', ?'.repeat(checked.length)})`,
+       ${a?.guard ? `SELECT ${values} WHERE ${a.guard.sql}` : `VALUES (${values})`}`,
       id,
       p.workspaceId,
       a?.printerId ?? p.printer.id,
@@ -197,6 +198,7 @@ export async function queueJob(ctx: Ctx, p: QueueInput): Promise<{ job: Job; upl
       p.sourceClientId ?? null,
       p.requestedBy ?? null,
       ...checked,
+      ...(a?.guard?.params ?? []),
     )
   }
 
@@ -219,7 +221,12 @@ export async function queueJob(ctx: Ctx, p: QueueInput): Promise<{ job: Job; upl
   const key = jobFileKey(p.workspaceId, id)
   await ctx.env.FILES.put(key, doc.data, { httpMetadata: { contentType: doc.contentType } })
   const row = insert(checked?.accepted.status ?? 'queued', key, doc.fileName, doc.contentType, doc.data.byteLength, await sha256Hex(doc.data), p.title ?? doc.title ?? 'Document', checked?.accepted)
-  await (checked ? ctx.env.DB.batch([row, entryInsert(ctx.env, checked.draft, checked.accepted)]) : row.run())
+  const [stored] = checked ? await ctx.env.DB.batch([row, entryInsert(ctx.env, checked.draft, checked.accepted)]) : [await row.run()]
+  if (stored.meta.changes === 0) {
+    await ctx.env.FILES.delete(key)
+    const again = await recheck(() => checkInline(ctx, newJob(doc.contentType, doc.data.byteLength), doc.data))
+    await refuse(ctx, again.draft, again.accepted.decision)
+  }
   await audit(ctx, p.workspaceId, 'job.create', id, { source: p.source, printerId: checked?.accepted.printerId ?? p.printer.id })
   notifyHub(ctx, p.workspaceId, async (hub) => {
     await hub.dispatch(p.workspaceId, id, await deviceTitle(ctx, p.workspaceId, id))

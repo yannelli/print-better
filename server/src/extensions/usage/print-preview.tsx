@@ -49,7 +49,7 @@ function Details({ preview, prices, printerName }: { preview: JobPreview; prices
         {preview.hold && <li>{HOLDS[preview.hold]}</li>}
         <li>
           {formatAmount('pages', pages, prices.currency)} on {formatAmount('sheets', sheets, prices.currency)}
-          {cost}.{documentPages === null && " The pages couldn't be counted here, so each copy counts as 1 page until it prints."}
+          {cost}.{documentPages === null && " The pages couldn't be counted, so they're estimated from the file size until it prints."}
         </li>
         {preview.meters.map((m) => (
           <li key={`${m.kind}-${m.id}`}>

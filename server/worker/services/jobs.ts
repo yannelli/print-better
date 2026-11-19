@@ -6,8 +6,8 @@ import { jobsEnded } from '../extensions/finish'
 import { deviceTitle, jobViewer } from '../extensions/job-view'
 import { isActive } from '../extensions/state'
 import { usageActive } from '../extensions/usage/active'
-import { checkRetry, retryUpdate } from '../extensions/usage/attempts'
-import { entryInsert, runAfter } from '../extensions/usage/outcome'
+import { checkRetry, recheck, retryUpdate, unchanged } from '../extensions/usage/attempts'
+import { entryInsert, refuse, runAfter } from '../extensions/usage/outcome'
 import { badRequest, conflict, notFound } from '../http/errors'
 import { all, first, run } from '../lib/db'
 import { decodeCursor, pageLimit, toPage, type Page } from '../lib/pagination'
@@ -151,6 +151,10 @@ export async function retryJob(ctx: Ctx, workspaceId: string, id: string): Promi
         Date.now(),
         id,
       )
+  if (changed === 0 && checked?.accepted.guard && (await unchanged(ctx.env, job))) {
+    const again = await recheck(() => checkRetry(ctx, job))
+    await refuse(ctx, again.draft, again.accepted.decision)
+  }
   if (changed === 0) throw conflict('This job changed meanwhile; refresh and try again', 'job_not_retryable')
   await audit(ctx, workspaceId, 'job.retry', id, { attempt: job.attempts + 1 })
   notifyHub(ctx, workspaceId, async (hub) => {

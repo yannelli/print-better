@@ -2,6 +2,7 @@ import { env } from 'cloudflare:workers'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { ok, setEveryone, turnOnAccess } from './helpers/access'
 import { readReply } from './helpers/http'
+import { connectPrinter, eventually } from './helpers/device'
 import { jobsPath } from './helpers/jobs'
 import { addMember, setupOwner, type Owner, type Person } from './helpers/world'
 import { auditOf, entriesOf, office, type Office, pdfJob, pdfOf, preview, rulesPath, switchExtension, turnOnPolicies } from './helpers/usage'
@@ -89,6 +90,26 @@ describe('rule actions on real jobs', () => {
     }
   })
 
+  it('keep a job on its printer, with a note, when the printer a rule sends it to is offline', async () => {
+    const far = await connectPrinter(owner, 'usb:far', ws)
+    far.device.close()
+    await eventually(async () => expect(await env.DB.prepare('SELECT online FROM clients WHERE id = ?').bind(far.clientId).first('online')).toBe(0))
+    await rule({ name: 'Overflow', actions: [{ type: 'redirect', printerId: far.printerId }] })
+    const stayed = ok(await pdfJob(member.agent, ws, p.color, 2), 'job').job
+    expect(stayed).toMatchObject({ printerId: p.color, policy: { notes: [{ message: 'Not sent to Printer usb:far, since office-pi is offline' }] } })
+  })
+
+  it('wait for the page count before a rule about pages refuses an upload', async () => {
+    await rule({ name: 'Short jobs elsewhere', conditions: { pages: { max: 5 } }, actions: [{ type: 'block', message: 'Print short jobs on the mono printer.' }] })
+    const upload = async (pages: number) => {
+      const bytes = pdfOf(pages)
+      const slot = ok(await member.agent.post(jobsPath(ws), { printerId: p.color, upload: { fileName: 'doc.pdf', contentType: 'application/pdf', size: bytes.length } }), 'slot')
+      return readReply(await member.agent.fetch(new URL(slot.uploadUrl).pathname, { method: 'PUT', body: bytes, headers: { 'Content-Type': 'application/pdf' } }))
+    }
+    expect((await upload(12)).body.job).toMatchObject({ status: 'queued' })
+    expect(await upload(3)).toMatchObject({ status: 403, body: { error: { code: 'policy_blocked', message: 'Print short jobs on the mono printer.' } } })
+  })
+
   it('skip approval and release without Enterprise controls, so the job prints', async () => {
     await rule({ name: 'Check first', actions: [{ type: 'approval' }, { type: 'release' }] })
     const job = ok(await pdfJob(member.agent, ws, p.color, 1), 'job').job
@@ -126,5 +147,22 @@ describe('rule actions on real jobs', () => {
       [1, 0],
       [2, 4],
     ])
+  })
+
+  it('retry on the printer the job is on once the sender may no longer print to the one asked for', async () => {
+    const mono = await rule({ name: 'Mono first', conditions: { color: false }, actions: [{ type: 'redirect', printerId: p.mono }] })
+    const job = ok(await pdfJob(member.agent, ws, p.color, 2, { colorMode: 'monochrome' }), 'job').job
+    expect(job).toMatchObject({ printerId: p.mono, policy: { requested: { printerId: p.color } } })
+    ok(await member.agent.post(`${jobsPath(ws)}/${job.id}/cancel`), 'cancel')
+    ok(await owner.agent.patch(rulesPath(ws, `/${mono.id}`), { enabled: false }), 'turn off')
+    try {
+      await turnOnAccess(owner, ws)
+      await setEveryone(owner.agent, ws, p.mono, null)
+      await setEveryone(owner.agent, ws, p.color, 'viewer')
+      expect(ok(await member.agent.post(`${jobsPath(ws)}/${job.id}/retry`), 'retry')).toMatchObject({ status: 'queued', attempts: 2, printerId: p.mono })
+    } finally {
+      await setEveryone(owner.agent, ws, p.color, null)
+      await switchExtension(owner, 'printer-access', ws, false)
+    }
   })
 })

@@ -3,7 +3,7 @@ import { forbidden } from '../../http/errors'
 import { stmt } from '../../lib/db'
 import { audit } from '../../services/audit'
 import type { Ctx } from '../../services/context'
-import type { JobDecision, JobDraft } from '../hooks'
+import type { JobDecision, JobDraft, WriteGuard } from '../hooks'
 
 export const HOLD_MESSAGES: Record<JobHold['kind'], string> = {
   approval: 'Waiting for approval',
@@ -27,6 +27,16 @@ export interface Accepted {
   held: string | null
   usage: string
   costCenterId: string | null
+  /** Every guard of the check as one condition for the statement that stores the job; null when there are none. */
+  guard: WriteGuard | null
+}
+
+// D1 binds at most 100 parameters a statement: 10 guards of up to 7 leave room for the job's own.
+const MAX_GUARDS = 10
+
+function guardOf(guards: readonly WriteGuard[]): WriteGuard | null {
+  const kept = guards.slice(0, MAX_GUARDS)
+  return kept.length === 0 ? null : { sql: kept.map((g) => `(${g.sql})`).join(' AND '), params: kept.flatMap((g) => g.params) }
 }
 
 const canonical = (o: JobOptions): string => JSON.stringify(Object.entries(o).sort(([a], [b]) => a.localeCompare(b)))
@@ -55,6 +65,7 @@ export function accepted(decision: JobDecision, requested: Requested): Accepted 
     held: decision.hold && JSON.stringify(decision.hold),
     usage: JSON.stringify(decision.usage),
     costCenterId: decision.costCenterId,
+    guard: guardOf(decision.guards),
   }
 }
 
