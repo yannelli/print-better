@@ -26,16 +26,18 @@ export interface RemotePrinter {
   name: string               // display name (alias if set)
   location: string | null
   makeModel: string | null
+  uuid: string | null        // the printer's own uuid, so a device that reaches it natively can skip it
   clientName: string         // device that owns it
   online: boolean            // owning client connected AND printer state !== 'offline'
   state: PrinterState
   capabilities: Capabilities
   defaults: JobOptions
+  supplies: Supply[]         // from the printer's last status; older servers omit it
 }
 export interface RemotePrintersMsg { type: 'remote_printers'; printers: RemotePrinter[] }
 ```
 - Contains every `added` printer in the workspace whose `clientId` is not the receiving client. Full snapshot each time.
-- Sent right after `welcome`, then whenever that snapshot would change for a client (printer added/removed/renamed/edited, status state change, owning client connects or disconnects). Coalescing a burst into one send is fine; sending only on real change is required (no per-poll spam).
+- Sent right after `welcome`, then whenever that snapshot would change for a client (printer added/removed/renamed/edited, status state or supply level change, owning client connects or disconnects). Coalescing a burst into one send is fine; sending only on real change is required (no per-poll spam).
 
 ## Client job endpoints (Bearer `pbc_…`)
 | Method + path | Body → response |
@@ -54,6 +56,24 @@ export interface RemotePrintersMsg { type: 'remote_printers'; printers: RemotePr
 - Active when: paired, `settings.remotePrinters`, and the platform has CUPS `lpadmin` (macOS, Linux). Windows: not yet; status reports "Not available on Windows yet".
 - Loopback IPP server on `127.0.0.1:8632`, started before any queue is added. Printer key = server printer id; the `PrinterReport` passed to the share server is built from `RemotePrinter`.
 - Sink: `submit` refuses with "not ready" when the session is not connected; otherwise it returns a local id at once and a task uploads (create, PUT, delete the spool file), then polls `GET /api/client/jobs/:id` every 2 s until terminal. State map: `uploading|queued|dispatched` → pending (message "Waiting for <clientName>" when that device is offline), `printing` → processing, `completed` → completed, `failed` → aborted with the server's message, `canceled` → canceled. `cancel` → `POST …/cancel`.
-- Queue sync (diff, not rebuild): name `pb_<printerId>`; `lpadmin -p pb_<id> -E -v ipp://127.0.0.1:8632/ipp/print/<slug> -m everywhere -D "<name>" -L "<location or clientName> (via Print Better)" -o printer-is-shared=false`. Update `-D`/`-L` when they change. Remove (`lpadmin -x`) when a printer leaves the snapshot, when `remotePrinters` turns off, and on unpair. Only ever touch queues recorded as managed in local state and named `pb_*`. Daemon shutdown keeps queues.
+- Queue sync (diff, not rebuild): name `pb_<printerId>`; `lpadmin -p pb_<id> -E -v ipp://127.0.0.1:8632/ipp/print/<slug> -m everywhere -D "<name>" -L "<location or clientName> (via Print Better)" -o printer-is-shared=false`. Update `-D`/`-L` when they change. Each queue record keeps a fingerprint of what the PPD is generated from (capabilities, make and model, and a version of the loopback attributes); when it changes, or a record has none, the update adds `-m everywhere` so CUPS regenerates the PPD. Levels, state and online status never regenerate it. Remove (`lpadmin -x`) when a printer leaves the snapshot, when `remotePrinters` turns off, and on unpair. Only ever touch queues recorded as managed in local state and named `pb_*`. Daemon shutdown keeps queues.
+- macOS: after each `-m everywhere`, the daemon adds `*APAirPrint: True` to the generated PPD (`lpadmin -p pb_<id> -P <file>`). Printers & Scanners reads Supply Levels only for queues marked AirPrint, and then asks the device URI (the loopback server) through PrintKit, which also requires `urf-supported`. Failing to mark is logged and not fatal: the queue prints either way.
 - Status: local `/api/status` gains `remotePrinters: { active: boolean, error: string | null, printers: [{ id, name, queue, online }] }`; the status page, tray, and `doctor` surface errors (e.g. lpadmin permission denied).
 - CLI: `printbetter config set remotePrinters false` works through the existing settings path.
+
+## Options and supplies
+
+The loopback server describes each printer from its `RemotePrinter`, so `lpadmin -m everywhere` builds a PPD with the same choices a native AirPrint queue for that printer gets. Every choice maps to a job option the owning device applies:
+
+| macOS print dialog (PPD) | IPP on the loopback | Job option | Offered when |
+|---|---|---|---|
+| Paper Size (`PageSize`) | `media` / `media-col.media-size` | `media` | always (`capabilities.media`, else Letter and A4) |
+| Paper Feed (`InputSlot`) | `media-col.media-source` | `source` (`auto` means none) | `capabilities.sources` lists more than one |
+| Paper Type (`MediaType`) | `media-col.media-type` | `mediaType` | `capabilities.mediaTypes` has more than one standard keyword (vendor ones such as `com.hp.ecosmart-lite` have no label in CUPS and are left out) |
+| Quality (`cupsPrintQuality`) | `print-quality` | `quality` | `capabilities.qualities`, or all three when unknown |
+| Two-Sided (`Duplex`) | `sides` | `sides` | `capabilities.duplex` |
+| Color (`ColorModel`) | `print-color-mode` | `colorMode` | grayscale only unless `capabilities.color` |
+
+On the owning device, IPP routes send `source` and `mediaType` inside `media-col` (with the paper size moved into it) and only when the printer lists them in `media-source-supported` / `media-type-supported`; other routes ignore them.
+
+Supplies: `marker-names`, `marker-types`, `marker-colors`, `marker-levels` come from `RemotePrinter.supplies`. `printer-more-info` and `printer-supply-info-uri` point at the printer's page in the web app (`<server>/w/<workspaceId>/printers/<printerId>`); cupsd copies the first into the PPD as `*APSupplies`, which is where the **Supplies** button goes. The loopback lists `urf-supported` without accepting URF, so CUPS still sends PDF.

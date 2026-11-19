@@ -70,6 +70,7 @@ fn laser() -> SharedPrinter {
         media_default: Some("na_letter_8.5x11in".into()),
         resolutions: vec![600],
         copies_max: 99,
+        ..Capabilities::default()
     };
     let report = PrinterReport {
         key: "uuid:5f0c2a7e".into(),
@@ -82,7 +83,7 @@ fn laser() -> SharedPrinter {
         capabilities,
         status: PrinterStatus { state: PrinterState::Idle, ..PrinterStatus::default() },
     };
-    SharedPrinter { key: report.key.clone(), name: "Office Laser".into(), report }
+    SharedPrinter { key: report.key.clone(), name: "Office Laser".into(), report, info_url: None }
 }
 
 struct Harness {

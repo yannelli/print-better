@@ -3,13 +3,16 @@
 use super::client::{IppJobState, JobStateKind};
 use super::printer::{copies_max, page_ranges_supported};
 use super::tags::job_state as js;
-use super::value::{Attribute, Group, Value};
+use super::value::{Attribute, Group, Value, find};
 use crate::model::{ColorMode, Fit, JobOptions, Orientation, Quality, Sides};
+use crate::share::media;
 
 /// The "-supported" attributes that gate which options a job may carry.
 pub const SUPPORTED_ATTRS: &[&str] = &[
     "copies-supported",
     "media-supported",
+    "media-source-supported",
+    "media-type-supported",
     "sides-supported",
     "print-color-mode-supported",
     "orientation-requested-supported",
@@ -45,7 +48,12 @@ pub fn template(opts: &JobOptions, supported: &Group) -> Result<Vec<Attribute>, 
         }
         out.push(Attribute::new("copies", Value::Integer(copies)));
     }
-    if let Some(media) = opts.media.as_deref().filter(|m| lists("media-supported", m)) {
+    let media = opts.media.as_deref().filter(|m| lists("media-supported", m));
+    let source = opts.source.as_deref().filter(|s| lists("media-source-supported", s));
+    let media_type = opts.media_type.as_deref().filter(|t| lists("media-type-supported", t));
+    if source.is_some() || media_type.is_some() {
+        out.push(media_col(media, source, media_type));
+    } else if let Some(media) = media {
         out.push(Attribute::new("media", Value::keyword(media)));
     }
     if let Some(sides) = opts.sides.map(sides_keyword).filter(|s| lists("sides-supported", s)) {
@@ -62,12 +70,7 @@ pub fn template(opts: &JobOptions, supported: &Group) -> Result<Vec<Attribute>, 
     if let Some(o) = orientation.filter(|&o| lists_int("orientation-requested-supported", o)) {
         out.push(Attribute::new("orientation-requested", Value::Enum(o)));
     }
-    let quality = opts.quality.map(|q| match q {
-        Quality::Draft => 3,
-        Quality::Normal => 4,
-        Quality::High => 5,
-    });
-    if let Some(q) = quality.filter(|&q| lists_int("print-quality-supported", q)) {
+    if let Some(q) = opts.quality.map(quality_enum).filter(|&q| lists_int("print-quality-supported", q)) {
         out.push(Attribute::new("print-quality", Value::Enum(q)));
     }
     if let Some(fit) = opts.fit.map(scaling_keyword).filter(|f| lists("print-scaling-supported", f)) {
@@ -79,6 +82,20 @@ pub fn template(opts: &JobOptions, supported: &Group) -> Result<Vec<Attribute>, 
         out.push(Attribute::many("page-ranges", ranges.into_iter().map(|(lo, hi)| Value::Range(lo, hi)).collect()));
     }
     Ok(out)
+}
+
+/// media-col for a tray or paper type. It replaces `media`, so the paper size moves inside it.
+fn media_col(media: Option<&str>, source: Option<&str>, media_type: Option<&str>) -> Attribute {
+    let mut members = Vec::new();
+    if let Some(name) = media {
+        members.push(match media::dimensions(name) {
+            Some((x, y)) => Attribute::new("media-size", media::size(x, y)),
+            None => Attribute::new("media-size-name", Value::keyword(name)),
+        });
+    }
+    members.extend(source.map(|s| Attribute::new("media-source", Value::keyword(s))));
+    members.extend(media_type.map(|t| Attribute::new("media-type", Value::keyword(t))));
+    Attribute::new("media-col", Value::Collection(members))
 }
 
 /// What to resend after the printer refused the named attributes (or named none of ours): None when
@@ -96,6 +113,8 @@ pub fn retry_template(template: &[Attribute], refused: &[&str]) -> Option<Vec<At
 pub fn options(attrs: &[Attribute]) -> JobOptions {
     let get = |name: &str| attrs.iter().find(|a| a.name == name);
     let keyword = |name: &str| get(name).and_then(Attribute::str);
+    let col = get("media-col").and_then(|c| c.values.first()?.as_collection()).unwrap_or_default();
+    let col_keyword = |name: &str| find(col, name).and_then(Attribute::str).map(str::trim).filter(|k| !k.is_empty());
     JobOptions {
         copies: get("copies").and_then(Attribute::int).and_then(|n| u32::try_from(n).ok()).filter(|&n| n >= 1),
         media: keyword("media").map(str::to_string),
@@ -124,12 +143,28 @@ pub fn options(attrs: &[Attribute]) -> JobOptions {
             "none" => Some(Fit::None),
             _ => None,
         }),
-        quality: get("print-quality").and_then(Attribute::int).and_then(|q| match q {
-            3 => Some(Quality::Draft),
-            4 => Some(Quality::Normal),
-            5 => Some(Quality::High),
-            _ => None,
-        }),
+        quality: get("print-quality").and_then(Attribute::int).and_then(quality),
+        // "auto" is what every tray choice falls back to, so it is the same as not choosing.
+        source: col_keyword("media-source").filter(|s| *s != "auto").map(str::to_string),
+        media_type: col_keyword("media-type").map(str::to_string),
+    }
+}
+
+/// print-quality enum (3 draft, 4 normal, 5 high).
+pub fn quality(n: i32) -> Option<Quality> {
+    match n {
+        3 => Some(Quality::Draft),
+        4 => Some(Quality::Normal),
+        5 => Some(Quality::High),
+        _ => None,
+    }
+}
+
+pub fn quality_enum(q: Quality) -> i32 {
+    match q {
+        Quality::Draft => 3,
+        Quality::Normal => 4,
+        Quality::High => 5,
     }
 }
 

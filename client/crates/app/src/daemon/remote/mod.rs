@@ -42,7 +42,7 @@ pub fn port() -> u16 {
 }
 
 pub async fn run(d: Arc<Daemon>) {
-    match cups::system() {
+    match cups::system(d.paths.remote_spool()) {
         Some(cups) => serve(d, Arc::new(cups), port()).await,
         None => unavailable(d).await,
     }
@@ -90,7 +90,8 @@ async fn serve(d: Arc<Daemon>, cups: Arc<dyn Cups>, port: u16) {
         if let (Some(running), Some(printers)) = (&server, &snapshot)
             && served.as_ref() != Some(printers)
         {
-            running.set_printers(printers.iter().map(shared).collect());
+            let pages = d.credentials().map(|c| format!("{}/w/{}/printers", c.server.trim_end_matches('/'), c.workspace_id));
+            running.set_printers(printers.iter().map(|p| shared(p, pages.as_deref())).collect());
             served = Some(printers.clone());
         }
         if wanted && let Some(printers) = &snapshot {
@@ -164,8 +165,8 @@ async fn sync(cups: Arc<dyn Cups>, mut managed: Vec<Queue>, ops: Vec<Op>) -> (Ve
     .unwrap_or_else(|e| (before, Some(format!("Updating system printers failed: {e}"))))
 }
 
-/// The printer as the loopback server describes it to CUPS.
-fn shared(p: &RemotePrinter) -> SharedPrinter {
+/// The printer as the loopback server describes it to CUPS; `pages` is where the web app shows printers.
+fn shared(p: &RemotePrinter, pages: Option<&str>) -> SharedPrinter {
     // Always accepting: a job for an offline device waits on the server, not in CUPS.
     let state = if p.state == PrinterState::Printing { PrinterState::Printing } else { PrinterState::Idle };
     let report = PrinterReport {
@@ -180,8 +181,10 @@ fn shared(p: &RemotePrinter) -> SharedPrinter {
         status: PrinterStatus {
             state,
             message: (!p.online).then(|| format!("Waiting for {}", p.client_name)),
+            supplies: p.supplies.clone(),
             ..PrinterStatus::default()
         },
     };
-    SharedPrinter { key: p.id.clone(), name: p.name.clone(), report }
+    let info_url = pages.map(|pages| format!("{pages}/{}", p.id));
+    SharedPrinter { key: p.id.clone(), name: p.name.clone(), report, info_url }
 }

@@ -2,6 +2,7 @@
 
 use super::jobs::Jobs;
 use super::{ShareOptions, ShareSink, SharedPrinter};
+use crate::model::Quality;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError, RwLock};
 use std::time::Instant;
@@ -17,12 +18,14 @@ pub(super) struct Served {
     pub uuid: String,
     /// Input formats the engine can print to this printer, natively or after conversion.
     pub formats: Vec<&'static str>,
+    /// `formats` came from `ShareOptions::formats` rather than the printer.
+    pub fixed: bool,
 }
 
 impl Served {
     pub fn new(printer: SharedPrinter, host_label: &str, fixed: Option<&'static [&'static str]>) -> Served {
         let formats = fixed.map_or_else(|| crate::convert::printable_formats(&printer.report.capabilities), <[_]>::to_vec);
-        Served { slug: slug(&printer.key), uuid: uuid(host_label, &printer.key), formats, printer }
+        Served { slug: slug(&printer.key), uuid: uuid(host_label, &printer.key), formats, fixed: fixed.is_some(), printer }
     }
 
     pub fn accepts(&self, mime: &str) -> bool {
@@ -40,14 +43,32 @@ impl Served {
         caps.media_default.clone().or_else(|| self.media().into_iter().next()).unwrap_or_else(|| FALLBACK_MEDIA[0].to_string())
     }
 
+    /// Trays to offer; "auto" alone when the printer reported none.
+    pub fn sources(&self) -> Vec<String> {
+        let sources = &self.printer.report.capabilities.sources;
+        if sources.is_empty() { vec!["auto".into()] } else { sources.clone() }
+    }
+
+    /// Standard paper types only: CUPS has no label for vendor ones such as "com.example.glossy".
+    pub fn media_types(&self) -> Vec<String> {
+        let types: Vec<String> = self.printer.report.capabilities.media_types.iter().filter(|t| !t.contains('.')).cloned().collect();
+        if types.is_empty() { vec!["stationery".into()] } else { types }
+    }
+
+    pub fn qualities(&self) -> Vec<Quality> {
+        let q = &self.printer.report.capabilities.qualities;
+        if q.is_empty() { vec![Quality::Draft, Quality::Normal, Quality::High] } else { q.clone() }
+    }
+
     pub fn resolutions(&self) -> Vec<u32> {
         let r = &self.printer.report.capabilities.resolutions;
         if r.is_empty() { vec![300] } else { r.clone() }
     }
 
-    /// urf-supported keywords (also the TXT URF key); empty when URF input is not printable.
+    /// urf-supported keywords (also the TXT URF key); empty when URF is not printable, unless formats are fixed:
+    /// macOS reads supply levels only from printers listing it, and still sends a format from document-format-supported.
     pub fn urf(&self) -> Vec<String> {
-        if !self.accepts("image/urf") {
+        if !self.fixed && !self.accepts("image/urf") {
             return Vec::new();
         }
         let caps = &self.printer.report.capabilities;
@@ -94,6 +115,11 @@ impl State {
     pub fn up_time(&self) -> i32 {
         i32::try_from(self.started.elapsed().as_secs()).unwrap_or(i32::MAX).saturating_add(1)
     }
+}
+
+/// `preferred` when offered, else the first choice.
+pub(super) fn pick<T: PartialEq + Clone>(choices: &[T], preferred: T) -> T {
+    if choices.contains(&preferred) { preferred } else { choices.first().cloned().unwrap_or(preferred) }
 }
 
 fn sha256(parts: &[&[u8]]) -> [u8; 32] {

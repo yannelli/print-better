@@ -1,9 +1,9 @@
 use super::{FakeCups, daemon, printer, until};
 use crate::daemon::Daemon;
-use crate::daemon::remote::{cups, serve};
+use crate::daemon::remote::{cups, serve, shared};
 use crate::proto::ClientSettings;
 use crate::test_util::TempDir;
-use pb_print::PrinterState;
+use pb_print::{PrinterState, Supply, SupplyKind};
 use pb_print::ipp::IppClient;
 use std::future::Future;
 use std::sync::Arc;
@@ -120,4 +120,48 @@ async fn nothing_happens_until_a_server_sends_a_snapshot() {
     let fake = Arc::new(FakeCups::default());
     running(&d, &fake, until("the server", || status(&d).0)).await;
     assert!(fake.calls().is_empty());
+}
+
+#[test]
+fn the_loopback_printer_carries_supplies_and_its_web_page() {
+    let mut p = printer("pr_07", "Laser", None, "Den Pi", true);
+    p.supplies = vec![Supply { name: "Black".into(), kind: SupplyKind::Toner, color: Some("#000000".into()), level: 41 }];
+    let s = shared(&p, Some("https://print.example.com/w/ws_01/printers"));
+    assert_eq!(s.report.status.supplies, p.supplies);
+    assert_eq!(s.info_url.as_deref(), Some("https://print.example.com/w/ws_01/printers/pr_07"));
+    assert_eq!(shared(&p, None).info_url, None);
+}
+
+#[tokio::test]
+async fn new_options_regenerate_the_ppd_and_level_changes_do_not() {
+    let dir = TempDir::new();
+    let d = daemon(&dir, "http://127.0.0.1:1");
+    d.set_remote_printers(vec![printer("pr_07", "Laser", None, "Den Pi", true)]);
+    let fake = Arc::new(FakeCups::default());
+    let everywhere = |fake: &FakeCups| fake.calls().iter().filter(|c| c.contains(&"everywhere".to_string())).count();
+    running(&d, &fake, async {
+        until("the queue", || status(&d) == (true, None, 1)).await;
+        let mut toner = printer("pr_07", "Laser", None, "Den Pi", true);
+        toner.supplies = vec![Supply { name: "Black".into(), kind: SupplyKind::Toner, color: None, level: 41 }];
+        d.set_remote_printers(vec![toner.clone()]);
+        let ipp = IppClient::new("pb-test", dir.path());
+        let uri = uri_of(&fake, "pb_pr_07");
+        let mut level = None;
+        for _ in 0..500 {
+            level = ipp.get_printer_attributes(&uri).await.ok().and_then(|a| a.status.supplies.first().map(|s| s.level));
+            if level == Some(41) {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+        assert_eq!(level, Some(41), "the loopback printer reports the new level");
+        assert_eq!(everywhere(&fake), 1, "a level change is not a PPD change");
+
+        toner.capabilities.sources = vec!["tray-1".into(), "auto".into()];
+        d.set_remote_printers(vec![toner]);
+        until("the refresh", || everywhere(&fake) == 2).await;
+        assert_eq!(*fake.marked.lock().unwrap(), ["pb_pr_07", "pb_pr_07"]);
+        assert_eq!(fake.calls().len(), 2, "an add and a refresh, nothing else");
+    })
+    .await;
 }

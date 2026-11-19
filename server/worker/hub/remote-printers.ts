@@ -23,6 +23,7 @@ function toRemote(row: PrinterViewRow): RemotePrinter {
     state: p.status.state,
     capabilities: p.capabilities,
     defaults: p.defaults,
+    supplies: p.status.supplies,
   }
 }
 

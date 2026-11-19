@@ -35,6 +35,12 @@ export interface Capabilities {
   mediaDefault: string | null
   resolutions: number[]
   copiesMax: number
+  /** Paper trays (IPP media-source keywords, e.g. "auto", "tray-1"); absent when unknown or from older devices. */
+  sources?: string[]
+  /** Paper types (IPP media-type keywords, e.g. "stationery", "labels"); absent when unknown. */
+  mediaTypes?: string[]
+  /** Absent when unknown, which means any quality may be asked for. */
+  qualities?: Quality[]
 }
 
 /** What a client knows about one physical printer. `key` is stable per client. */
@@ -62,6 +68,7 @@ export const DEFAULT_PRINTER_SETTINGS: PrinterSettings = {
 }
 
 export type Sides = 'one-sided' | 'two-sided-long-edge' | 'two-sided-short-edge'
+export type Quality = 'draft' | 'normal' | 'high'
 
 export interface JobOptions {
   copies?: number
@@ -71,7 +78,11 @@ export interface JobOptions {
   orientation?: 'auto' | 'portrait' | 'landscape'
   pageRanges?: string
   fit?: 'fit' | 'fill' | 'none'
-  quality?: 'draft' | 'normal' | 'high'
+  quality?: Quality
+  /** Paper tray, one of `capabilities.sources`. */
+  source?: string
+  /** Paper type, one of `capabilities.mediaTypes`. */
+  mediaType?: string
 }
 
 export interface Printer extends PrinterReport {

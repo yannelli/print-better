@@ -13,6 +13,8 @@ export const JOB_OPTIONS = object(
     pageRanges: text('Pages to print, e.g. "1-3,5"'),
     fit: choice('How pages are scaled to the paper', ['fit', 'fill', 'none']),
     quality: choice('Print quality', ['draft', 'normal', 'high']),
+    source: text('Paper tray from the printer capabilities (sources), e.g. tray-1'),
+    mediaType: text('Paper type from the printer capabilities (mediaTypes), e.g. labels'),
   },
   [],
   'Print options; anything omitted uses the printer defaults',

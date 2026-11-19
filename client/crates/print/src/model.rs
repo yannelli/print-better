@@ -70,6 +70,15 @@ pub struct Capabilities {
     pub media_default: Option<String>,
     pub resolutions: Vec<u32>,
     pub copies_max: u32,
+    /// Paper trays (IPP media-source keywords); empty when unknown.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub sources: Vec<String>,
+    /// Paper types (IPP media-type keywords); empty when unknown.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub media_types: Vec<String>,
+    /// Empty when unknown, which means any quality may be asked for.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub qualities: Vec<Quality>,
 }
 
 impl Default for Capabilities {
@@ -82,6 +91,9 @@ impl Default for Capabilities {
             media_default: None,
             resolutions: Vec::new(),
             copies_max: 1,
+            sources: Vec::new(),
+            media_types: Vec::new(),
+            qualities: Vec::new(),
         }
     }
 }
@@ -161,6 +173,12 @@ pub struct JobOptions {
     pub fit: Option<Fit>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub quality: Option<Quality>,
+    /// Paper tray, one of `Capabilities::sources`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub source: Option<String>,
+    /// Paper type, one of `Capabilities::media_types`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub media_type: Option<String>,
 }
 
 impl JobOptions {
@@ -175,6 +193,8 @@ impl JobOptions {
             page_ranges: self.page_ranges.clone().or_else(|| defaults.page_ranges.clone()),
             fit: self.fit.or(defaults.fit),
             quality: self.quality.or(defaults.quality),
+            source: self.source.clone().or_else(|| defaults.source.clone()),
+            media_type: self.media_type.clone().or_else(|| defaults.media_type.clone()),
         }
     }
 }

@@ -9,7 +9,7 @@ const MARGIN: i32 = 423;
 const TOLERANCE: u32 = 100;
 
 /// (width, height) of a self-describing media name.
-pub(super) fn dimensions(name: &str) -> Option<(i32, i32)> {
+pub(crate) fn dimensions(name: &str) -> Option<(i32, i32)> {
     let dims = name.rsplit('_').next()?;
     let (dims, scale) = match dims.strip_suffix("mm") {
         Some(d) => (d, 100.0),
@@ -21,12 +21,12 @@ pub(super) fn dimensions(name: &str) -> Option<(i32, i32)> {
     (sane(w) && sane(h)).then(|| ((w * scale).round() as i32, (h * scale).round() as i32))
 }
 
-pub(super) fn size(x: i32, y: i32) -> Value {
+pub(crate) fn size(x: i32, y: i32) -> Value {
     Value::Collection(vec![Attribute::new("x-dimension", Value::Integer(x)), Attribute::new("y-dimension", Value::Integer(y))])
 }
 
 /// media-col for a named size, or None when the name carries no dimensions.
-pub(super) fn col(name: &str) -> Option<Value> {
+pub(super) fn col(name: &str, source: &str, media_type: &str) -> Option<Value> {
     let (x, y) = dimensions(name)?;
     let margin = |side: &str| Attribute::new(&format!("media-{side}-margin"), Value::Integer(MARGIN));
     Some(Value::Collection(vec![
@@ -35,8 +35,8 @@ pub(super) fn col(name: &str) -> Option<Value> {
         margin("left"),
         margin("right"),
         margin("top"),
-        Attribute::new("media-source", Value::keyword("auto")),
-        Attribute::new("media-type", Value::keyword("stationery")),
+        Attribute::new("media-source", Value::keyword(source)),
+        Attribute::new("media-type", Value::keyword(media_type)),
     ]))
 }
 

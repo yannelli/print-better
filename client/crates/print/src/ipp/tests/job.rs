@@ -25,11 +25,22 @@ fn all_options() -> JobOptions {
         page_ranges: Some("5,1-3".into()),
         fit: Some(Fit::Fill),
         quality: Some(Quality::High),
+        source: None,
+        media_type: None,
     }
 }
 
 fn names(attrs: Option<Vec<Attribute>>) -> Option<Vec<String>> {
     attrs.map(|a| a.into_iter().map(|a| a.name).collect())
+}
+
+/// media-col with an optional media-size, a tray and a paper type.
+fn col(size: Option<(i32, i32)>, source: &str, media_type: &str) -> Value {
+    let size = size.map(|(x, y)| [("x-dimension", x), ("y-dimension", y)].map(|(n, v)| Attribute::new(n, Value::Integer(v))));
+    let mut members: Vec<Attribute> = size.map(|s| Attribute::new("media-size", Value::Collection(s.to_vec()))).into_iter().collect();
+    members.push(Attribute::new("media-source", Value::keyword(source)));
+    members.push(Attribute::new("media-type", Value::keyword(media_type)));
+    Value::Collection(members)
 }
 
 fn strings(v: &[&str]) -> Option<Vec<String>> {
@@ -64,6 +75,25 @@ fn cosmetic_options_the_printer_does_not_list_are_left_out() {
     };
     assert_eq!(template(&opts, &hp()), Ok(vec![Attribute::new("print-quality", Value::Enum(3))]));
     assert_eq!(template(&JobOptions::default(), &hp()), Ok(Vec::new()));
+}
+
+#[test]
+fn trays_and_paper_types_travel_in_media_col_with_the_size() {
+    let laser = printer(vec![
+        Attribute::many("media-supported", vec![Value::keyword("na_letter_8.5x11in")]),
+        Attribute::many("media-source-supported", vec![Value::keyword("auto"), Value::keyword("tray-2")]),
+        Attribute::many("media-type-supported", vec![Value::keyword("stationery"), Value::keyword("labels")]),
+    ]);
+    let letter = JobOptions { media: Some("na_letter_8.5x11in".into()), ..JobOptions::default() };
+    let tray = JobOptions { source: Some("tray-2".into()), media_type: Some("labels".into()), ..letter.clone() };
+    assert_eq!(template(&tray, &laser), Ok(vec![Attribute::new("media-col", col(Some((21590, 27940)), "tray-2", "labels"))]));
+    assert_eq!(options(&template(&tray, &laser).unwrap()), JobOptions { media: None, ..tray });
+    let plain = Ok(vec![Attribute::new("media", Value::keyword("na_letter_8.5x11in"))]);
+    let unlisted = JobOptions { source: Some("tray-9".into()), media_type: Some("glossy".into()), ..letter.clone() };
+    assert_eq!(template(&unlisted, &laser), plain, "trays and types the printer lacks are left out");
+    let tray_only = JobOptions { source: Some("tray-2".into()), ..JobOptions::default() };
+    let only = Value::Collection(vec![Attribute::new("media-source", Value::keyword("tray-2"))]);
+    assert_eq!(template(&tray_only, &laser), Ok(vec![Attribute::new("media-col", only)]));
 }
 
 #[test]
@@ -135,6 +165,7 @@ fn received_job_attributes_become_options() {
         Attribute::many("page-ranges", vec![Value::Range(1, 3), Value::Range(7, 7), Value::Range(9, i32::MAX)]),
         Attribute::new("print-scaling", Value::keyword("auto-fit")),
         Attribute::new("print-quality", Value::Enum(3)),
+        Attribute::new("media-col", col(None, "tray-2", "labels")),
     ];
     let expected = JobOptions {
         copies: Some(2),
@@ -145,8 +176,12 @@ fn received_job_attributes_become_options() {
         page_ranges: Some("1-3,7,9-".into()),
         fit: Some(Fit::Fit),
         quality: Some(Quality::Draft),
+        source: Some("tray-2".into()),
+        media_type: Some("labels".into()),
     };
     assert_eq!(options(&attrs), expected);
+    let automatic = [Attribute::new("media-col", col(None, "auto", " "))];
+    assert_eq!(options(&automatic), JobOptions::default(), "the automatic tray and a blank type are no choice");
     let junk = [Attribute::new("copies", Value::Integer(0)), Attribute::new("sides", Value::keyword("both"))];
     assert_eq!(options(&junk), JobOptions::default());
 }

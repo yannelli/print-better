@@ -46,6 +46,7 @@ pub fn printer(id: &str, name: &str, location: Option<&str>, client: &str, onlin
         state: if online { PrinterState::Idle } else { PrinterState::Offline },
         capabilities,
         defaults: Default::default(),
+        supplies: Vec::new(),
     }
 }
 
@@ -84,6 +85,8 @@ pub struct FakeCups {
     pub refuse: Mutex<Option<String>>,
     /// Whether the device URI of each add answered when lpadmin ran.
     pub reachable: Mutex<Vec<bool>>,
+    /// Queues whose PPD was marked AirPrint, in order.
+    pub marked: Mutex<Vec<String>>,
 }
 
 impl FakeCups {
@@ -116,6 +119,11 @@ impl Cups for FakeCups {
 
     fn exists(&self, queue: &str) -> bool {
         self.queues.lock().unwrap().contains(queue)
+    }
+
+    fn mark_airprint(&self, queue: &str) -> Result<(), String> {
+        self.marked.lock().unwrap().push(queue.to_string());
+        Ok(())
     }
 }
 

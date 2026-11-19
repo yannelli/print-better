@@ -2,10 +2,11 @@
 //! PWG 5100.14 (IPP Everywhere) that phones and laptops query before printing.
 
 use super::media;
-use super::state::Served;
+use super::state::{Served, pick};
 use crate::ipp::tags::{op, printer_state, value as tag};
+use crate::ipp::job::quality_enum;
 use crate::ipp::{Attribute, Value};
-use crate::model::{PrinterState, SupplyKind};
+use crate::model::{PrinterState, Quality, SupplyKind};
 
 const OPERATIONS: [u16; 11] = [
     op::PRINT_JOB,
@@ -100,8 +101,9 @@ pub(super) fn printer(p: &Served, printer_uri: &str, up_time: i32) -> Vec<Attrib
     let modes: &[&str] = if caps.color { &["auto", "color", "monochrome"] } else { &["auto", "monochrome"] };
     a.keywords("print-color-mode-default", &[if caps.color { "auto" } else { "monochrome" }]);
     a.keywords("print-color-mode-supported", modes);
-    a.one("print-quality-default", Value::Enum(4));
-    a.many("print-quality-supported", vec![Value::Enum(3), Value::Enum(4), Value::Enum(5)]);
+    let qualities = p.qualities();
+    a.one("print-quality-default", Value::Enum(quality_enum(pick(&qualities, Quality::Normal))));
+    a.many("print-quality-supported", qualities.into_iter().map(|q| Value::Enum(quality_enum(q))).collect());
     a.keywords("print-scaling-default", &["auto"]);
     a.keywords("print-scaling-supported", &["auto", "auto-fit", "fill", "fit", "none"]);
     identity_attrs(&mut a, p, printer_uri);
@@ -134,19 +136,23 @@ fn dpi(r: u32) -> Value {
 fn media_attrs(a: &mut Attrs, p: &Served) {
     let media = p.media();
     let default = p.media_default();
+    let (sources, types) = (p.sources(), p.media_types());
+    let source = pick(&sources, "auto".to_string());
+    let media_type = pick(&types, "stationery".to_string());
+    let col = |name: &str| media::col(name, &source, &media_type);
     a.keywords("media-default", &[&default]);
     a.keywords("media-supported", &media);
     a.keywords("media-ready", &[&default]);
-    if let Some(col) = media::col(&default) {
+    if let Some(col) = col(&default) {
         a.one("media-col-default", col.clone());
         a.one("media-col-ready", col);
     }
-    a.many("media-col-database", media.iter().filter_map(|m| media::col(m)).collect());
+    a.many("media-col-database", media.iter().filter_map(|m| col(m)).collect());
     let sizes = media.iter().filter_map(|m| media::dimensions(m)).map(|(x, y)| media::size(x, y)).collect();
     a.many("media-size-supported", sizes);
     a.0.extend(media::margins());
-    a.keywords("media-source-supported", &["auto"]);
-    a.keywords("media-type-supported", &["stationery"]);
+    a.keywords("media-source-supported", &sources);
+    a.keywords("media-type-supported", &types);
     a.keywords("media-col-supported", &MEDIA_COL_MEMBERS);
 }
 
@@ -162,6 +168,11 @@ fn identity_attrs(a: &mut Attrs, p: &Served, printer_uri: &str) {
     a.keywords("uri-security-supported", &["none"]);
     a.keywords("uri-authentication-supported", &["none"]);
     a.one("printer-geo-location", Value::OutOfBand(tag::UNKNOWN));
+    // cupsd copies printer-more-info into the queue's *APSupplies; macOS reads printer-supply-info-uri.
+    if let Some(url) = p.printer.info_url.as_deref() {
+        a.one("printer-more-info", Value::uri(url));
+        a.one("printer-supply-info-uri", Value::uri(url));
+    }
     a.one("printer-is-accepting-jobs", Value::Boolean(true));
 }
 

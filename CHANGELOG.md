@@ -4,6 +4,16 @@ All notable changes to Print Better are documented here. Versions follow [Semant
 
 ## [Unreleased]
 
+### Added
+
+- **remote printers:** the Mac print dialog offers what the printer on the other device has: paper trays (**Paper Feed**), paper types, the print qualities it supports, and two-sided printing when it can. Each choice reaches that printer as the matching job option.
+- **remote printers:** **Supply Levels** in Printers & Scanners shows the printer's toner and ink, and its **Supplies** button opens the printer's page in the web app.
+- **printers:** devices report each printer's trays (`capabilities.sources`), paper types (`mediaTypes`) and qualities (`qualities`); jobs accept `source` and `mediaType` options (REST, MCP and device jobs).
+
+### Changed
+
+- **remote printers:** a device's `pb_` queues are regenerated when the printer's options change, and once after this update so existing queues pick up the new options and supply levels.
+
 ### Fixed
 
 - **doctor:** a device with every discovery method turned off shows Discovery as off instead of failing with "No printers found".

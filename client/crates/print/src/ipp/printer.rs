@@ -2,6 +2,7 @@
 //! CUPS-Get-Printers (one printer group each).
 
 use super::client::PrinterAttrs;
+use super::job::quality;
 use super::tags::{op, printer_state};
 use super::value::{Attribute, Group, Value};
 use crate::model::{Capabilities, PrinterState, PrinterStatus, Supply, SupplyKind};
@@ -22,6 +23,9 @@ pub const REQUESTED: &[&str] = &[
     "sides-supported",
     "media-supported",
     "media-default",
+    "media-source-supported",
+    "media-type-supported",
+    "print-quality-supported",
     "printer-resolution-supported",
     "copies-supported",
     "page-ranges-supported",
@@ -70,6 +74,7 @@ pub fn page_ranges_supported(g: &Group) -> bool {
 
 fn capabilities(g: &Group) -> Capabilities {
     let has = |name: &str, f: &dyn Fn(&str) -> bool| g.get(name).is_some_and(|a| a.strs().any(f));
+    let strs = |name: &str| -> Vec<String> { g.get(name).map(|a| a.strs().map(str::to_string).collect()).unwrap_or_default() };
     let color = g.get("color-supported").and_then(Attribute::bool).unwrap_or(false)
         || has("print-color-mode-supported", &|m| m == "color");
     Capabilities {
@@ -86,6 +91,9 @@ fn capabilities(g: &Group) -> Capabilities {
         media_default: g.get("media-default").and_then(Attribute::str).map(str::to_string),
         resolutions: dpis(g.get("printer-resolution-supported")),
         copies_max: copies_max(g).and_then(|n| u32::try_from(n).ok()).unwrap_or(1).max(1),
+        sources: strs("media-source-supported"),
+        media_types: strs("media-type-supported"),
+        qualities: g.get("print-quality-supported").map(|a| a.ints().filter_map(quality).collect()).unwrap_or_default(),
     }
 }
 

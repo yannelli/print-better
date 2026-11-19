@@ -5,7 +5,7 @@ mod attrs;
 mod dnssd;
 mod jobops;
 mod jobs;
-mod media;
+pub(crate) mod media;
 mod ops;
 mod server;
 mod state;
@@ -29,6 +29,8 @@ pub struct SharedPrinter {
     /// Name shown to phones and laptops.
     pub name: String,
     pub report: PrinterReport,
+    /// A web page about the printer and its supplies (printer-more-info, printer-supply-info-uri).
+    pub info_url: Option<String>,
 }
 
 #[derive(Clone, Debug)]

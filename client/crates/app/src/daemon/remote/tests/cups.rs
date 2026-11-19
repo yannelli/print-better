@@ -1,6 +1,7 @@
 use super::{FakeCups, printer};
-use crate::daemon::remote::cups::{Op, Queue, apply, plan, queue_name};
+use crate::daemon::remote::cups::{Op, Queue, airprint_ppd, apply, plan, queue_name};
 use pb_print::share::printer_path;
+use pb_print::{PrinterState, Quality, Supply, SupplyKind};
 
 /// Nothing listens on port 1, so the fake's reachability probe never touches a real service.
 fn queue(id: &str, name: &str) -> Queue {
@@ -40,6 +41,8 @@ fn lpadmin_arguments_follow_the_contract() {
     assert_eq!(Op::Add(q.clone()).args(), add);
     let update = strings(&["-p", "pb_pr_07", "-v", &uri, "-D", "Upstairs laser", "-L", "Office (via Print Better)"]);
     assert_eq!(Op::Update(q.clone()).args(), update);
+    let refresh = strings(&["-p", "pb_pr_07", "-v", &uri, "-m", "everywhere", "-D", "Upstairs laser", "-L", "Office (via Print Better)"]);
+    assert_eq!(Op::Refresh(q.clone()).args(), refresh);
     assert_eq!(Op::Remove(q).args(), strings(&["-x", "pb_pr_07"]));
 }
 
@@ -107,4 +110,59 @@ fn printers_this_computer_already_reaches_are_recognized() {
     let unknown = printer("pr_3", "Old laser", None, "Den Pi", true);
     assert!(native.reaches(&same), "uuids compare case-insensitively");
     assert!(!native.reaches(&other) && !native.reaches(&unknown), "no uuid means no match");
+}
+
+#[test]
+fn only_what_shapes_the_ppd_regenerates_it() {
+    let base = printer("pr_07", "Laser", None, "Den Pi", true);
+    let fingerprint = |p| Queue::for_printer(&p, 1).ppd;
+    let mut busy = base.clone();
+    busy.state = PrinterState::Printing;
+    busy.online = false;
+    busy.supplies = vec![Supply { name: "Black".into(), kind: SupplyKind::Toner, color: None, level: 41 }];
+    assert_eq!(fingerprint(busy), fingerprint(base.clone()), "levels, state and presence never touch the PPD");
+    let mut trays = base.clone();
+    trays.capabilities.sources = vec!["tray-1".into(), "auto".into()];
+    let mut quality = base.clone();
+    quality.capabilities.qualities = vec![Quality::Normal];
+    let mut model = base.clone();
+    model.make_model = Some("Other model".into());
+    for changed in [trays, quality, model] {
+        assert_ne!(fingerprint(changed), fingerprint(base.clone()));
+    }
+}
+
+#[test]
+fn a_changed_ppd_shape_refreshes_and_old_records_refresh_once() {
+    let have = queue("a", "A");
+    let mut want = have.clone();
+    want.ppd = "0123456789abcdef".into();
+    assert_eq!(plan(std::slice::from_ref(&have), std::slice::from_ref(&want)), [Op::Refresh(want.clone())]);
+    let old: Queue = serde_json::from_value(serde_json::json!({
+        "printerId": "a", "name": "pb_a", "uri": have.uri, "description": "A", "location": have.location
+    }))
+    .unwrap();
+    assert_eq!(old.ppd, "", "records saved before 0.1.3 have no fingerprint");
+    assert_eq!(plan(&[old], std::slice::from_ref(&have)), [Op::Refresh(have.clone())]);
+}
+
+#[test]
+fn added_and_refreshed_queues_are_marked_airprint_and_renames_are_not() {
+    let cups = FakeCups::default();
+    let mut managed = Vec::new();
+    let a = queue("a", "A");
+    assert_eq!(apply(&cups, &mut managed, vec![Op::Add(a.clone())]), None);
+    let renamed = queue("a", "A2");
+    assert_eq!(apply(&cups, &mut managed, vec![Op::Update(renamed.clone())]), None);
+    assert_eq!(apply(&cups, &mut managed, vec![Op::Refresh(renamed)]), None);
+    assert_eq!(*cups.marked.lock().unwrap(), ["pb_a", "pb_a"]);
+}
+
+#[test]
+fn the_airprint_keyword_goes_after_the_ppd_header_once() {
+    let generated = b"*PPD-Adobe: \"4.3\"\n*FormatVersion: \"4.3\"\n*cupsVersion: 2.3\n";
+    let marked = airprint_ppd(generated).unwrap();
+    assert_eq!(marked, b"*PPD-Adobe: \"4.3\"\n*APAirPrint: True\n*FormatVersion: \"4.3\"\n*cupsVersion: 2.3\n");
+    assert_eq!(airprint_ppd(&marked), None, "already marked");
+    assert_eq!(airprint_ppd(b"<html>Forbidden</html>\n"), None, "not a PPD");
 }

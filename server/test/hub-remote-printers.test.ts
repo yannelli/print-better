@@ -1,4 +1,5 @@
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
+import type { PrinterStatus } from '../shared/printing'
 import type { RemotePrintersMsg, ServerMessage } from '../shared/protocol'
 import { DEFAULT_CLIENT_SETTINGS } from '../shared/types'
 import { connectPrinter, Device, eventually, printerReport, type Station } from './helpers/device'
@@ -72,6 +73,7 @@ describe('remote_printers', () => {
         state: 'idle',
         capabilities: expect.objectContaining({ duplex: true, media: ['na_letter_8.5x11in'] }),
         defaults: {},
+        supplies: [],
       },
     ])
 
@@ -139,6 +141,26 @@ describe('remote_printers', () => {
     expect(await snapshot(d.device)).toMatchObject([{ state: 'stopped', online: true }])
     s.device.send({ type: 'printer_status', key: s.printerKey, status: status('offline') })
     expect(await snapshot(d.device)).toMatchObject([{ state: 'offline', online: false }])
+  })
+
+  it('carries supply levels and new options, resending only when they change', async () => {
+    const ws = await freshWorkspace(owner)
+    const s = await station(ws)
+    const d = await desk(ws)
+    await snapshot(d.device)
+    const toner = (level: number): PrinterStatus => ({ state: 'idle', reasons: [], message: null, supplies: [{ name: 'Black toner', kind: 'toner', color: '#000000', level }] })
+
+    s.device.send({ type: 'printer_status', key: s.printerKey, status: toner(64) })
+    expect(await snapshot(d.device)).toMatchObject([{ supplies: [{ name: 'Black toner', level: 64 }] }])
+    s.device.send({ type: 'printer_status', key: s.printerKey, status: toner(64) })
+    await noSnapshot(d.device)
+    s.device.send({ type: 'printer_status', key: s.printerKey, status: toner(63) })
+    expect(await snapshot(d.device)).toMatchObject([{ supplies: [{ level: 63 }] }])
+
+    const base = printerReport(s.printerKey)
+    const capabilities = { ...base.capabilities, sources: ['tray-1', 'auto'], mediaTypes: ['stationery', 'labels'], qualities: ['normal' as const] }
+    await s.device.report([{ ...base, capabilities, status: toner(63) }])
+    expect(await snapshot(d.device)).toMatchObject([{ capabilities: { sources: ['tray-1', 'auto'], mediaTypes: ['stationery', 'labels'], qualities: ['normal'] } }])
   })
 
   it('marks printers offline while their device is away and back when it returns', async () => {

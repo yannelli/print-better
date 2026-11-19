@@ -26,11 +26,32 @@
           300,
           600
         ],
-        "copiesMax": 99
+        "copiesMax": 99,
+        "sources": [
+          "auto",
+          "tray-1",
+          "manual"
+        ],
+        "mediaTypes": [
+          "stationery",
+          "labels"
+        ],
+        "qualities": [
+          "normal",
+          "high"
+        ]
       },
       "defaults": {
         "sides": "two-sided-long-edge"
-      }
+      },
+      "supplies": [
+        {
+          "name": "Black Toner",
+          "kind": "toner",
+          "color": "#000000",
+          "level": 64
+        }
+      ]
     },
     {
       "id": "pr_08",
@@ -50,7 +71,8 @@
         "resolutions": [],
         "copiesMax": 1
       },
-      "defaults": {}
+      "defaults": {},
+      "supplies": []
     }
   ]
 }

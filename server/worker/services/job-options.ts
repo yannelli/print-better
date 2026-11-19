@@ -7,7 +7,7 @@ const PAGE_RANGES = { max: 100, pattern: /^\s*\d+(\s*-\s*\d+)?(\s*,\s*\d+(\s*-\s
 /** Validates a full JobOptions object; unknown keys are rejected so typos do not silently print wrong. */
 export function parseJobOptions(value: unknown): JobOptions {
   if (!isObj(value)) throw badRequest('options must be an object')
-  const known = ['copies', 'media', 'sides', 'colorMode', 'orientation', 'pageRanges', 'fit', 'quality']
+  const known = ['copies', 'media', 'sides', 'colorMode', 'orientation', 'pageRanges', 'fit', 'quality', 'source', 'mediaType']
   const unknown = Object.keys(value).filter((k) => !known.includes(k))
   if (unknown.length > 0) throw badRequest(`Unknown job option: ${unknown.join(', ')}`)
   const o: JobOptions = {
@@ -19,6 +19,8 @@ export function parseJobOptions(value: unknown): JobOptions {
     pageRanges: optStr(value, 'pageRanges', PAGE_RANGES)?.replace(/\s+/g, ''),
     fit: optOneOf(value, 'fit', ['fit', 'fill', 'none'] as const),
     quality: optOneOf(value, 'quality', ['draft', 'normal', 'high'] as const),
+    source: optStr(value, 'source', { max: 100 }),
+    mediaType: optStr(value, 'mediaType', { max: 100 }),
   }
   return Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)) as JobOptions
 }

@@ -2,7 +2,7 @@
 // Mirrored in client/crates/app/src/proto.rs. Semantics: docs/protocol.md.
 
 import type { Client, ClientSettings, Os, Workspace } from './types'
-import type { Capabilities, Job, JobOptions, JobStatus, Printer, PrinterReport, PrinterState, PrinterStatus } from './printing'
+import type { Capabilities, Job, JobOptions, JobStatus, Printer, PrinterReport, PrinterState, PrinterStatus, Supply } from './printing'
 
 export const PROTOCOL_VERSION = 1
 /** Client sends this text frame; the hub auto-responds with PONG without waking. */
@@ -170,6 +170,8 @@ export interface RemotePrinter {
   state: PrinterState
   capabilities: Capabilities
   defaults: JobOptions
+  /** Supply levels from the printer's last status, for the desktop's printer settings. */
+  supplies: Supply[]
 }
 
 /** Full snapshot, sent after `welcome` and whenever it changes for this client. */

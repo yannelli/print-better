@@ -121,6 +121,8 @@ describe('POST /api/client/jobs', () => {
     expect((await slot(w.desk.token, p, { printerId: undefined })).status).toBe(400)
     expect((await slot(w.desk.token, p, { options: { copies: 0 } })).status).toBe(400)
     expect((await slot(w.desk.token, p, { options: { colour: 'mono' } })).body.error.message).toContain('Unknown job option')
+    const tray = await slot(w.desk.token, p, { options: { source: 'tray-2', mediaType: 'labels' } })
+    expect(tray.body.job.options).toEqual({ source: 'tray-2', mediaType: 'labels' })
     expect((await slot(w.desk.token, p, { requestedBy: 42 })).status).toBe(400)
   })
 

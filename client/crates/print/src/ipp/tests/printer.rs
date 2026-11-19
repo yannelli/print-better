@@ -2,7 +2,7 @@ use super::fixture;
 use crate::ipp::printer::{bare_uuid, parse, status, supply_kind};
 use crate::ipp::tags::group;
 use crate::ipp::{Attribute, Group, Message, Value};
-use crate::model::{PrinterState, Supply, SupplyKind};
+use crate::model::{PrinterState, Quality, Supply, SupplyKind};
 
 fn captured(name: &str) -> Group {
     let (msg, _) = Message::decode(&fixture(name)).unwrap();
@@ -64,6 +64,21 @@ fn local_cups_queue_for_the_same_printer() {
     assert!(!a.identify_supported, "CUPS does not list Identify-Printer");
     assert!(a.page_ranges_supported);
     assert_eq!(a.status.state, PrinterState::Idle);
+}
+
+#[test]
+fn trays_paper_types_and_qualities_are_capabilities() {
+    let g = printer(vec![
+        Attribute::many("media-source-supported", ["tray-1", "tray-2", "auto"].map(Value::keyword).to_vec()),
+        Attribute::many("media-type-supported", ["stationery", "com.example.glossy"].map(Value::keyword).to_vec()),
+        Attribute::many("print-quality-supported", vec![Value::Enum(4), Value::Enum(5), Value::Enum(9)]),
+    ]);
+    let caps = parse(&g).capabilities;
+    assert_eq!(caps.sources, ["tray-1", "tray-2", "auto"]);
+    assert_eq!(caps.media_types, ["stationery", "com.example.glossy"], "reported as is; the loopback server filters");
+    assert_eq!(caps.qualities, [Quality::Normal, Quality::High], "unknown enums are dropped");
+    let bare = parse(&printer(Vec::new())).capabilities;
+    assert!(bare.sources.is_empty() && bare.media_types.is_empty() && bare.qualities.is_empty());
 }
 
 #[test]

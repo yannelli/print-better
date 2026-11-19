@@ -1,6 +1,6 @@
 //! Serde mirror of server/shared/protocol.ts (client <-> WorkspaceHub). Semantics: docs/protocol.md.
 
-use pb_print::model::{Capabilities, JobOptions, PrinterReport, PrinterState, PrinterStatus};
+use pb_print::model::{Capabilities, JobOptions, PrinterReport, PrinterState, PrinterStatus, Supply};
 use serde::{Deserialize, Serialize};
 
 pub const PROTOCOL_VERSION: u32 = 1;
@@ -85,6 +85,8 @@ pub struct RemotePrinter {
     pub capabilities: Capabilities,
     #[serde(default)]
     pub defaults: JobOptions,
+    #[serde(default)]
+    pub supplies: Vec<Supply>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

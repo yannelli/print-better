@@ -66,7 +66,7 @@ pub async fn run(d: Arc<Daemon>) {
                 running.set_printers(
                     printers
                         .iter()
-                        .map(|(key, name, report)| SharedPrinter { key: key.clone(), name: name.clone(), report: report.clone() })
+                        .map(|(key, name, report)| SharedPrinter { key: key.clone(), name: name.clone(), report: report.clone(), info_url: None })
                         .collect(),
                 );
                 served = printers;

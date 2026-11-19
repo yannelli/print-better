@@ -108,7 +108,8 @@ fn nested_types_mirror_shared_ts() {
     assert_mirrors("protocol.ts", &[("server_job", "JobOffer")], "/job");
     assert_mirrors("protocol.ts", &[("server_welcome", "PrinterConfig")], "/printers/0");
     assert_mirrors("protocol.ts", &[("server_remote_printers", "RemotePrinter")], "/printers/0");
-    assert_mirrors("printing.ts", &[("server_remote_printers", "Capabilities")], "/printers/1/capabilities");
+    assert_mirrors("printing.ts", &[("server_remote_printers", "Capabilities")], "/printers/0/capabilities");
+    assert_mirrors("printing.ts", &[("server_remote_printers", "Supply")], "/printers/0/supplies/0");
     assert_mirrors("types.ts", &[("client_hello", "ClientSettings")], "/settings");
     assert_mirrors("printing.ts", &[("server_welcome", "JobOptions")], "/printers/0/defaults");
     let printers = [
@@ -135,6 +136,21 @@ fn unknown_server_types_and_fields_are_ignored() {
         panic!("expected welcome");
     };
     assert_eq!((name.as_str(), printers[0].id.as_str(), settings.log_level.as_str()), ("Kitchen Mac", "pr_01", "debug"));
+}
+
+#[test]
+fn remote_printers_from_older_servers_and_devices_still_parse() {
+    let mut msg = fixture("server_remote_printers");
+    let printer = msg["printers"][0].as_object_mut().unwrap();
+    printer.remove("supplies");
+    for field in ["sources", "mediaTypes", "qualities"] {
+        printer["capabilities"].as_object_mut().unwrap().remove(field);
+    }
+    let ServerMsg::RemotePrinters { printers } = serde_json::from_value(msg).unwrap() else { panic!("expected remote_printers") };
+    let caps = &printers[0].capabilities;
+    assert!(printers[0].supplies.is_empty() && caps.sources.is_empty() && caps.media_types.is_empty() && caps.qualities.is_empty());
+    let sent = serde_json::to_value(caps).unwrap();
+    assert!(sent.get("sources").is_none(), "unknown trays are omitted, as older devices do");
 }
 
 #[test]

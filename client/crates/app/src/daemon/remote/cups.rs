@@ -2,15 +2,20 @@
 //! diffing against the queues this daemon recorded as its own.
 
 use crate::fsx;
+use crate::net::http::hex;
 use crate::paths::Paths;
 use crate::proto::RemotePrinter;
 use pb_print::share::printer_path;
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 
 pub const PREFIX: &str = "pb_";
 const MAX_TEXT: usize = 127;
+const AIRPRINT: &[u8] = b"*APAirPrint: True\n";
+const PPD_DIR: &str = "/etc/cups/ppd";
+/// Bump when the loopback server's attributes change what `-m everywhere` generates, so queues regenerate.
+const PPD_SHAPE: u32 = 1;
 
 /// A queue as created (or to be created) with lpadmin.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -21,6 +26,9 @@ pub struct Queue {
     pub uri: String,
     pub description: String,
     pub location: String,
+    /// Fingerprint of what the queue's PPD was generated from; empty in records saved before 0.1.3.
+    #[serde(default)]
+    pub ppd: String,
 }
 
 impl Queue {
@@ -32,8 +40,15 @@ impl Queue {
             uri: format!("ipp://127.0.0.1:{port}{}", printer_path(&p.id)),
             description: text(&p.name),
             location: text(&format!("{place} (via Print Better)")),
+            ppd: ppd_fingerprint(p),
         }
     }
+}
+
+/// Changes only with what `-m everywhere` builds the PPD from (options and model), never with levels or state.
+fn ppd_fingerprint(p: &RemotePrinter) -> String {
+    let shape = serde_json::json!([PPD_SHAPE, p.capabilities, p.make_model]).to_string();
+    hex(&ring::digest::digest(&ring::digest::SHA256, shape.as_bytes()).as_ref()[..8])
 }
 
 /// `pb_<printerId>`, limited to characters CUPS accepts in queue names.
@@ -56,6 +71,8 @@ fn text(raw: &str) -> String {
 pub enum Op {
     Add(Queue),
     Update(Queue),
+    /// An update that also regenerates the PPD from the loopback server.
+    Refresh(Queue),
     Remove(Queue),
 }
 
@@ -67,6 +84,7 @@ impl Op {
                 "printer-is-shared=false",
             ],
             Op::Update(q) => vec!["-p", &q.name, "-v", &q.uri, "-D", &q.description, "-L", &q.location],
+            Op::Refresh(q) => vec!["-p", &q.name, "-v", &q.uri, "-m", "everywhere", "-D", &q.description, "-L", &q.location],
             Op::Remove(q) => vec!["-x", &q.name],
         };
         args.into_iter().map(String::from).collect()
@@ -83,6 +101,7 @@ pub fn plan(managed: &[Queue], desired: &[Queue]) -> Vec<Op> {
     for want in desired {
         match managed.iter().find(|m| m.printer_id == want.printer_id) {
             None => ops.push(Op::Add(want.clone())),
+            Some(have) if have.ppd != want.ppd => ops.push(Op::Refresh(want.clone())),
             Some(have) if have != want => ops.push(Op::Update(want.clone())),
             Some(_) => {}
         }
@@ -95,6 +114,8 @@ pub trait Cups: Send + Sync {
     /// Runs lpadmin; the error carries what it printed.
     fn lpadmin(&self, args: &[String]) -> Result<(), String>;
     fn exists(&self, queue: &str) -> bool;
+    /// Marks the queue's generated PPD as AirPrint where the system needs that to show supply levels.
+    fn mark_airprint(&self, queue: &str) -> Result<(), String>;
 }
 
 /// Runs `ops`, updating `managed` after each success. Returns the first failure.
@@ -118,11 +139,15 @@ fn run(cups: &dyn Cups, managed: &mut Vec<Queue>, op: &Op) -> Result<(), String>
             }
             cups.lpadmin(&op.args()).map_err(|e| failed(q, e))?;
             managed.push(q.clone());
+            mark_airprint(cups, q);
         }
-        Op::Update(q) => {
+        Op::Update(q) | Op::Refresh(q) => {
             let i = recorded(managed, q)?;
             cups.lpadmin(&op.args()).map_err(|e| failed(q, e))?;
             managed[i] = q.clone();
+            if matches!(op, Op::Refresh(_)) {
+                mark_airprint(cups, q);
+            }
         }
         Op::Remove(q) => {
             let i = recorded(managed, q)?;
@@ -135,6 +160,22 @@ fn run(cups: &dyn Cups, managed: &mut Vec<Queue>, op: &Op) -> Result<(), String>
         }
     }
     Ok(())
+}
+
+/// Not fatal: the queue prints either way, only Supply Levels stays empty.
+fn mark_airprint(cups: &dyn Cups, q: &Queue) {
+    if let Err(e) = cups.mark_airprint(&q.name) {
+        log::warn!("remote printers: {} will not show supply levels: {e}", q.name);
+    }
+}
+
+/// `ppd` with `*APAirPrint: True` after its header line; None when it has it already or is no PPD.
+pub fn airprint_ppd(ppd: &[u8]) -> Option<Vec<u8>> {
+    if !ppd.starts_with(b"*PPD-Adobe:") || ppd.windows(AIRPRINT.len()).any(|w| w == AIRPRINT) {
+        return None;
+    }
+    let header = ppd.iter().position(|&b| b == b'\n')? + 1;
+    Some([&ppd[..header], AIRPRINT, &ppd[header..]].concat())
 }
 
 /// Where `q` sits in the managed list; queues this daemon did not create are never touched.
@@ -160,18 +201,19 @@ pub fn save(paths: &Paths, queues: &[Queue]) {
     }
 }
 
-/// CUPS on this computer, when its admin tools are installed (never on Windows).
-pub fn system() -> Option<SystemCups> {
+/// CUPS on this computer, when its admin tools are installed (never on Windows). `scratch` is a private directory.
+pub fn system(scratch: PathBuf) -> Option<SystemCups> {
     if cfg!(windows) {
         return None;
     }
     let find = |name: &str| ["/usr/sbin", "/usr/bin", "/sbin"].iter().map(|d| PathBuf::from(d).join(name)).find(|p| p.exists());
-    Some(SystemCups { lpadmin: find("lpadmin")?, lpstat: find("lpstat")? })
+    Some(SystemCups { lpadmin: find("lpadmin")?, lpstat: find("lpstat")?, scratch })
 }
 
 pub struct SystemCups {
     lpadmin: PathBuf,
     lpstat: PathBuf,
+    scratch: PathBuf,
 }
 
 impl Cups for SystemCups {
@@ -188,5 +230,19 @@ impl Cups for SystemCups {
     fn exists(&self, queue: &str) -> bool {
         let status = Command::new(&self.lpstat).args(["-p", queue]).stdin(Stdio::null()).stdout(Stdio::null()).stderr(Stdio::null()).status();
         status.is_ok_and(|s| s.success())
+    }
+
+    /// macOS only: its Printers & Scanners reads levels from the printer itself (PrintKit) just for AirPrint queues.
+    fn mark_airprint(&self, queue: &str) -> Result<(), String> {
+        if !cfg!(target_os = "macos") {
+            return Ok(());
+        }
+        let generated = std::fs::read(Path::new(PPD_DIR).join(format!("{queue}.ppd"))).map_err(|e| format!("reading its PPD: {e}"))?;
+        let Some(marked) = airprint_ppd(&generated) else { return Ok(()) };
+        let file = self.scratch.join(format!("{queue}.ppd"));
+        std::fs::create_dir_all(&self.scratch).and_then(|()| std::fs::write(&file, marked)).map_err(|e| format!("writing its PPD: {e}"))?;
+        let result = self.lpadmin(&["-p".into(), queue.into(), "-P".into(), file.display().to_string()]);
+        let _ = std::fs::remove_file(&file);
+        result
     }
 }
