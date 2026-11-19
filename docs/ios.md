@@ -43,19 +43,18 @@ The app version comes from `client/Cargo.toml`, like the other clients.
 - The share extension and the Shortcuts action read the token from the shared Keychain item, so they work without opening the app.
 
 ## Signing
-Signing is automatic. `scripts/release-ios.sh` passes `-allowProvisioningUpdates`, so Xcode registers the two bundle IDs and the App Group and makes the profiles. It signs in with either:
-- the Apple ID added under **Xcode > Settings > Accounts**, or
-- an App Store Connect API key with access to Certificates, Identifiers & Profiles. Export `ASC_KEY_ID` and `ASC_ISSUER_ID`. The key file defaults to `~/.appstoreconnect/private_keys/AuthKey_<ASC_KEY_ID>.p8`; `ASC_KEY_PATH` overrides it.
+Signing is automatic and uses an App Store Connect API key with access to Certificates, Identifiers & Profiles. `scripts/release-ios.sh` passes the key with `-allowProvisioningUpdates`, so Xcode registers the two bundle IDs and the App Group and makes the profiles. The key file goes in `~/.appstoreconnect/private_keys/`, named `AuthKey_<key ID>.p8` as App Store Connect downloads it.
 
 | Variable | Use |
 |---|---|
 | `APPLE_TEAM_ID` | Team for signing; XcodeGen writes it into the project |
-| `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_PATH` | Optional App Store Connect API key for `-allowProvisioningUpdates` |
+| `ASC_KEY_ID` | The key ID, the part of the key's file name after `AuthKey_` |
+| `ASC_ISSUER_ID` | The issuer ID shown above the keys under **Users and Access > Integrations** in App Store Connect |
 | `BUILD_NUMBER` | `CFBundleVersion` (defaults to the UTC date and time, such as `20261119.1530`) |
 | `SIMULATOR` | Simulator for `build-ios.sh` (default `iPhone 17 Pro`) |
 
 ## Releasing to TestFlight
-NOTE: You need the App Manager or Admin role in App Store Connect, and `APPLE_TEAM_ID` exported.
+NOTE: You need the App Manager or Admin role in App Store Connect, and `APPLE_TEAM_ID`, `ASC_KEY_ID` and `ASC_ISSUER_ID` exported.
 
 1. Run `scripts/release-ios.sh`. The first run registers the two bundle IDs and the App Group, then it writes `build/ios/release/PrintBetter.ipa`.
 2. In App Store Connect, open **Apps**, click **+**, then **New App**. Choose iOS, name it Print Better, pick the bundle ID `dev.yannelli.printbetter.ios`, and enter any SKU. The bundle ID is only in the list once step 1 has registered it.

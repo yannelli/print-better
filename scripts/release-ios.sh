@@ -9,14 +9,11 @@ TEAM="${APPLE_TEAM_ID:?export APPLE_TEAM_ID}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(date -u +%Y%m%d.%H%M)}"
 command -v xcodegen >/dev/null || die "XcodeGen is required: brew install xcodegen"
 
-# Without an App Store Connect API key, xcodebuild signs with the account signed in to Xcode.
-auth=()
-if [ -n "${ASC_KEY_ID:-}" ]; then
-  key="${ASC_KEY_PATH:-$HOME/.appstoreconnect/private_keys/AuthKey_$ASC_KEY_ID.p8}"
-  [ -f "$key" ] || die "no API key at $key"
-  [ -n "${ASC_ISSUER_ID:-}" ] || die "export ASC_ISSUER_ID, the issuer ID shown with the key in App Store Connect"
-  auth=(-authenticationKeyPath "$key" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
-fi
+# The App Store Connect API key lets xcodebuild register the IDs and make the profiles itself.
+key="$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID:?export ASC_KEY_ID}.p8"
+[ -f "$key" ] || die "missing $key"
+auth=(-allowProvisioningUpdates -authenticationKeyPath "$key" -authenticationKeyID "$ASC_KEY_ID"
+  -authenticationKeyIssuerID "${ASC_ISSUER_ID:?export ASC_ISSUER_ID}")
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -25,8 +22,7 @@ xcodegen generate --spec "$IOS_DIR/project.yml" --quiet
 
 say "archiving $VERSION ($BUILD_NUMBER)"
 xcodebuild -project "$IOS_DIR/PrintBetter.xcodeproj" -scheme PrintBetter -configuration Release \
-  -destination 'generic/platform=iOS' -archivePath "$OUT/PrintBetter.xcarchive" \
-  -allowProvisioningUpdates ${auth[@]+"${auth[@]}"} \
+  -destination 'generic/platform=iOS' -archivePath "$OUT/PrintBetter.xcarchive" "${auth[@]}" \
   DEVELOPMENT_TEAM="$TEAM" MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" archive
 
 cat >"$OUT/ExportOptions.plist" <<EOF
@@ -45,5 +41,5 @@ EOF
 
 say "exporting the IPA"
 xcodebuild -exportArchive -archivePath "$OUT/PrintBetter.xcarchive" -exportPath "$OUT" \
-  -exportOptionsPlist "$OUT/ExportOptions.plist" -allowProvisioningUpdates ${auth[@]+"${auth[@]}"}
+  -exportOptionsPlist "$OUT/ExportOptions.plist" "${auth[@]}"
 say "wrote $OUT/PrintBetter.ipa"
