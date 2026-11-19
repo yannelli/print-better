@@ -28,9 +28,9 @@ The web app shows a device as **Offline** when its connection to the server is c
 Also check these:
 
 - **Clock**: if the device's clock is off by more than 2 minutes, turn on automatic date and time.
-- **New domain**: devices keep using the address they paired with. If you turned off that address, pair them again.
-- **Linux user service**: it stops when you log out. Run `loginctl enable-linger "$USER"` to keep it running.
-- **Raspberry Pi first start**: check that the three files kept their exact names. The setup code works once, for 7 days. If you can sign in to the Pi, read `/var/log/cloud-init-output.log` and `journalctl -u printbetter`.
+- Devices keep using the address they paired with. If you moved to a new domain and turned off the old address, pair them again.
+- A Linux user service stops when you log out. Run `loginctl enable-linger "$USER"` to keep it running.
+- On a new Raspberry Pi, check that the three setup files kept their exact names. The setup code works once, for 7 days. If you can sign in to the Pi, read `/var/log/cloud-init-output.log` and `journalctl -u printbetter`.
 
 ## No printers found
 
@@ -41,9 +41,9 @@ Also check these:
 
 More checks:
 
-- **A Mac with a Terminal install**: allow Print Better in **System Settings**, under **Privacy & Security**, then **Local Network**.
-- **USB on Linux**: the system service needs its udev rule. Run `sudo printbetter service install --system`, then unplug and replug the printer.
-- **Bonjour across networks**: Bonjour doesn't cross routers. A printer on another network segment won't announce itself to the device.
+- On a Mac with a Terminal install, allow Print Better in **System Settings**, under **Privacy & Security**, then **Local Network**.
+- For a USB printer on Linux, the system service needs its udev rule. Run `sudo printbetter service install --system`, then unplug and replug the printer.
+- Bonjour doesn't cross routers. A printer on another network segment won't announce itself to the device.
 - **Found but not added**: with **Ask me first**, found printers wait on the **Printers** page. Add them there.
 
 See [Printer discovery](/docs/devices/discovery).
@@ -90,11 +90,11 @@ A job that makes no progress for the workspace's **Keep trying for** time fails 
 
 Read the message on the job. It says why the job failed.
 
-- **The file type**: Print Better prints PDF, JPEG, PNG, and plain text files.
-- **The printer**: fix the problem the message names, then retry the job. See [Print jobs](/docs/printing/jobs).
-- **The document is gone**: a job can't be retried once its document is deleted after the **Keep documents for** time. Print the file again.
-- **From a print window**: "You can't print to this printer from this computer" means [Printer access](/docs/extensions/printer-access) doesn't let that computer print there.
-- **Not ready: Print Better is not connected to its server**: the computer's print system holds the job and tries again by itself.
+- Print Better prints PDF, JPEG, PNG, and plain text files. Convert other files first.
+- If the message names a printer problem, fix it, then retry the job. See [Print jobs](/docs/printing/jobs).
+- A job can't be retried once its document is deleted after the **Keep documents for** time. Print the file again.
+- In a print window, "You can't print to this printer from this computer" means [Printer access](/docs/extensions/printer-access) doesn't let that computer print there.
+- In a print window, "Not ready: Print Better is not connected to its server" means the computer can't reach your server. Its print system holds the job and tries again by itself.
 
 ## Email to print is refused
 
