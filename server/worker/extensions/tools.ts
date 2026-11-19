@@ -1,6 +1,7 @@
 import type { ExtensionId } from '../../shared/extensions'
 import { USAGE_EXTENSIONS } from '../../shared/usage'
 import type { Schema, Tool } from '../mcp/tool'
+import { printPolicyTools } from './print-policies/tools'
 import { printerAccessTools } from './printer-access/tools'
 import { availableExtensions } from './state'
 import { usageTools } from './usage/tools'
@@ -8,6 +9,7 @@ import { usageTools } from './usage/tools'
 const EXTENSION_TOOLS: { extension: ExtensionId; tools: Tool[] }[] = [
   { extension: 'printer-access', tools: printerAccessTools },
   ...USAGE_EXTENSIONS.map((extension) => ({ extension, tools: usageTools })),
+  { extension: 'print-policies', tools: printPolicyTools },
 ]
 
 /** Arguments an extension adds to another tool while it is available, e.g. `costCenter` on `print`. */
