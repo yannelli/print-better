@@ -1,0 +1,47 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Print Better hero</title>
+  <link rel="stylesheet" href="brand.css" />
+  <script>if (location.hash === '#dark') document.documentElement.classList.add('dark')</script>
+  <style>
+    body { width: 1600px; height: 560px; }
+    .copy { position: absolute; left: 104px; top: 50%; transform: translateY(-50%); width: 720px; display: flex; flex-direction: column; gap: 26px; }
+    .wordmark { font-size: 46px; }
+    .headline { font-size: 58px; }
+    .sub { font-size: 23px; max-width: 640px; }
+    .printer { left: 980px; top: 92px; width: 520px; height: 600px; }
+    .slot { height: 76px; }
+    .sheet { left: 70px; right: 70px; top: 38px; bottom: 0; }
+    .slit { left: 28px; right: 28px; top: 33px; height: 10px; }
+    .ticket { left: 118px; right: 118px; top: 124px; }
+    .ticket .dots { font-size: 30px; }
+    .status { left: 858px; top: 452px; }
+  </style>
+</head>
+<body>
+  <div class="grid"></div>
+  <div class="glow" style="left: 900px; top: -160px; width: 760px; height: 760px"></div>
+  <div class="copy">
+    <div class="brand"><img id="mark" src="../print-better-logo.svg" width="64" height="64" alt="" /><span class="wordmark">Print Better</span></div>
+    <h1 class="headline">Self-hosted printing that just works.</h1>
+    <p class="sub">Every printer in every print window, from anywhere. Runs on your own Cloudflare account, with a tiny Rust client next to your printers.</p>
+    <div class="chips"><span class="chip">Cloudflare Workers</span><span class="chip">Rust client</span><span class="chip">macOS · Linux · Pi</span><span class="chip">MCP for AI</span></div>
+  </div>
+  <div class="printer">
+    <div class="slot"></div>
+    <div class="sheet"></div>
+    <div class="slit"></div>
+    <div class="ticket">
+      <span class="dots">REPORT.PDF</span>
+      <span class="dots soft">12 PAGES</span>
+      <div class="rule"></div>
+      <span class="dots accent">OFFICE LASER</span>
+      <span class="dots">PRINTED</span>
+    </div>
+  </div>
+  <div class="status"><i></i>Printed from your phone <b>· just now</b></div>
+  <script>if (location.hash === '#dark') document.getElementById('mark').src = '../print-better-logo-dark.svg'</script>
+</body>
+</html>

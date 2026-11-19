@@ -1,10 +1,12 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <style>
-    .tile { fill: #171717 } .paper { fill: #fff } .ink { stroke: #171717 }
-    @media (prefers-color-scheme: dark) { .tile { fill: #f2f2f2 } .paper { fill: #000 } .ink { stroke: #f2f2f2 } }
+    .tile { fill: #0c0c0e } .slot { fill: #303036 } .slit { stroke: #0c0c0e }
+    @media (prefers-color-scheme: dark) { .tile { fill: #2c2c33 } .slot { fill: #4b4b54 } .slit { stroke: #2c2c33 } }
   </style>
-  <rect class="tile" width="32" height="32" rx="9"/>
-  <path class="paper" d="M10 7h8.6L23 11.4V24a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/>
-  <path class="ink" d="M18.4 7v3.6a1 1 0 0 0 1 1H23" fill="none" stroke-width="1.5" stroke-linejoin="round"/>
-  <path class="ink" d="M12.5 16.5h7M12.5 20h4.5" stroke-width="1.8" stroke-linecap="round"/>
+  <rect class="tile" width="512" height="512" rx="120"/>
+  <rect class="slot" x="80" y="118" width="352" height="72" rx="36"/>
+  <path d="M136 154H376V366a32 32 0 0 1-32 32H168a32 32 0 0 1-32-32Z" fill="#fafafa"/>
+  <path class="slit" d="M110 154H402" stroke-width="12" stroke-linecap="round"/>
+  <path d="M192 240H320" stroke="#2563eb" stroke-width="30" stroke-linecap="round"/>
+  <path d="M192 302H284" stroke="#0c0c0e" stroke-width="30" stroke-linecap="round"/>
 </svg>

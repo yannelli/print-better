@@ -1,0 +1,48 @@
+/* Sources for the README hero and social preview (scripts/make-brand.sh); fonts come from server/node_modules (run pnpm install there). */
+@font-face { font-family: Geist; src: url(../../../server/node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2) format('woff2'); font-weight: 100 900; }
+@font-face { font-family: 'Geist Mono'; src: url(../../../server/node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2) format('woff2'); font-weight: 100 900; }
+
+:root {
+  --bg: #fafafa; --fg: #0a0a0b; --muted: #5b5b66; --faint: #8b8b96; --grid: #d9d9df; --line: #e4e4e9;
+  --chip: #ffffff; --slot: #1d1d22; --slit: #0a0a0b; --paper: #ffffff; --ink: #111114; --accent: #2563eb;
+  --glow: rgba(37, 99, 235, 0.10); --ok: #16a34a; --paper-edge: rgba(10, 10, 11, 0.08);
+}
+:root.dark {
+  --bg: #09090b; --fg: #fafafa; --muted: #a1a1ad; --faint: #71717c; --grid: #222228; --line: #27272d;
+  --chip: #131317; --slot: #2a2a31; --slit: #09090b; --glow: rgba(59, 130, 246, 0.16); --ok: #22c55e; --paper-edge: rgba(0, 0, 0, 0);
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; }
+body { background: var(--bg); color: var(--fg); font-family: Geist, system-ui, sans-serif; -webkit-font-smoothing: antialiased; position: relative; }
+
+.grid { position: absolute; inset: 0; background-image: radial-gradient(circle, var(--grid) 1.1px, transparent 1.6px); background-size: 24px 24px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 90% at 78% 40%, #000 30%, transparent 75%); mask-image: radial-gradient(ellipse 70% 90% at 78% 40%, #000 30%, transparent 75%); }
+.glow { position: absolute; border-radius: 50%; background: radial-gradient(circle, var(--glow), transparent 68%); }
+
+.brand { display: flex; align-items: center; gap: 20px; }
+.brand img { display: block; }
+.wordmark { font-weight: 640; letter-spacing: -0.04em; line-height: 1; }
+.headline { font-weight: 620; letter-spacing: -0.038em; line-height: 1.06; }
+.sub { color: var(--muted); font-weight: 420; letter-spacing: -0.012em; line-height: 1.35; }
+.chips { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip { font-family: 'Geist Mono', ui-monospace, monospace; font-size: 14px; font-weight: 500; color: var(--muted);
+  padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--chip); }
+
+/* The printer: a slot, a slit, and a sheet that keeps coming out past the bottom edge. */
+.printer { position: absolute; }
+.slot { position: absolute; left: 0; right: 0; top: 0; border-radius: 999px; background: var(--slot); }
+.sheet { position: absolute; background: var(--paper); border-radius: 0 0 22px 22px;
+  box-shadow: 0 0 0 1px var(--paper-edge), 0 24px 60px -24px rgba(0, 0, 0, 0.35); overflow: hidden; }
+.sheet::before { content: ''; position: absolute; inset: 0 0 auto; height: 34px; background: linear-gradient(rgba(0, 0, 0, 0.16), transparent); }
+.slit { position: absolute; border-radius: 999px; background: var(--slit); }
+
+.ticket { position: absolute; display: flex; flex-direction: column; gap: 18px; }
+.dots { color: transparent; -webkit-background-clip: text; background-clip: text; font-family: 'Geist Mono', monospace; font-weight: 800;
+  background-image: radial-gradient(circle, var(--dot, #111114) 1.25px, transparent 1.6px); background-size: 3.4px 3.4px; letter-spacing: 0.02em; }
+.dots.accent { --dot: #2563eb; }
+.dots.soft { --dot: #8b8b96; }
+.rule { height: 0; border-top: 2px dashed #d4d4da; }
+.status { position: absolute; display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-radius: 16px; background: var(--chip);
+  border: 1px solid var(--line); box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.35); font-size: 17px; font-weight: 520; letter-spacing: -0.01em; }
+.status i { width: 10px; height: 10px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 22%, transparent); }
+.status b { font-weight: 520; color: var(--muted); }

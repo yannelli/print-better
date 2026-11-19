@@ -1,13 +1,7 @@
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/print-better-logo-dark.svg">
-    <img alt="Print Better logo" src="docs/assets/print-better-logo.svg" width="96">
-  </picture>
-</p>
-
-<h1 align="center">Print Better</h1>
-
-<p align="center">Self-hosted printing that just works. Print to the printers you already have, from anywhere.</p>
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/assets/hero-dark.png">
+  <img alt="Print Better: self-hosted printing that just works. Every printer in every print window, from anywhere." src="docs/assets/hero.png">
+</picture>
 
 <p align="center">
   <a href="https://github.com/yannelli/print-better/releases"><img alt="Latest release" src="https://img.shields.io/github/v/release/yannelli/print-better?sort=semver"></a>
@@ -180,8 +174,9 @@ client/             Rust workspace
   crates/print      pb-print: discovery, IPP, conversion, print backends, LAN sharing
   crates/app        printbetter: CLI, daemon, server session, job queue, tray, service install
   packaging/        macOS app bundle, launchd, systemd, and udev files
-scripts/            Deploy, local dev, cross-builds, macOS signing and notarization, publishing
+scripts/            Deploy, local dev, cross-builds, macOS signing and notarization, publishing, brand images
 docs/               The docs above, plus research notes
+  assets/brand/     Sources for the README hero and the social preview (scripts/make-brand.sh)
 ```
 
 ## Security
