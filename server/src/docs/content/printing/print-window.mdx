@@ -1,0 +1,139 @@
+On a Mac or Linux computer with Print Better, every printer on your other devices shows up in the computer's own print window. Print from any app, with each printer's real options, from anywhere the computer has internet.
+
+## How it works
+
+Every added printer in the workspace that is connected to another device appears on this computer as a normal printer. You see it in every app's print window. On a Mac, it is also listed in **System Settings** > **Printers & Scanners**.
+
+Each printer keeps its Print Better name. Its location reads like "Upstairs office (via Print Better)", or uses the device's name when the printer has no location.
+
+When you print, the computer's print system hands the job to Print Better on this computer. Print Better sends it to the server, which sends it to the device next to the printer. You don't need to be on the printer's network.
+
+The job appears in [**Print jobs**](/jobs) with the computer and the account that printed it, for example **From Front desk Mac (alex)**.
+
+This is on by default for paired Macs and Linux computers. It isn't available on Windows yet. A Linux computer without the CUPS print system, such as a headless Raspberry Pi, doesn't use it.
+
+Changes reach the computer without a restart. New printers appear, removed ones disappear, and renamed ones update.
+
+## Options in the print window
+
+Each printer offers the options the real printer has. On a Mac, the print dialog shows:
+
+| Print dialog | Offered when |
+| --- | --- |
+| **Paper Size** | Always. The printer's own sizes, or Letter and A4 when it reports none. |
+| **Paper Feed** | The printer has more than one paper tray. |
+| **Paper Type** | The printer reports more than one paper type. |
+| **Quality** | Always. The qualities the printer supports, or all three when it doesn't say. |
+| **Two-Sided** | The printer can print on both sides. |
+| **Color** | The printer prints in color. Otherwise it offers grayscale only. |
+
+Your choices travel with the job to the device next to the printer. Settings the print window doesn't send follow the printer's [default settings](/docs/printers/settings#default-settings).
+
+When a printer's options change, the device next to it notices the next time it looks for printers. That happens when it starts, every 10 minutes, and when you select **Look now** on that device's page. Your computer then updates the printer's options.
+
+### Supply levels on a Mac
+
+In **System Settings** > **Printers & Scanners**, select a printer from another device and open its **Supply Levels**. It shows the printer's toner and ink, from the printer's latest status.
+
+The **Supplies** button there opens the printer's page in the web app.
+
+## Choose which printers appear
+
+Each computer can show all of the workspace's printers, or only some. Owners and admins choose this in the web app.
+
+<Steps>
+
+### Open the computer's page
+
+Open [**Devices**](/devices) and select the Mac or Linux computer.
+
+### Find Printers on this computer
+
+Scroll to **Printers on this computer**. Every printer from your other devices has a row and a switch.
+
+### Show or hide a printer
+
+Turn a printer's switch off to hide it on this computer. Turn it on to show it again.
+
+</Steps>
+
+Each row shows how the printer is set up on that computer:
+
+| Status | What it means |
+| --- | --- |
+| **Added** | The printer is in the print window. The row says the name it uses there. |
+| **Hidden** | You turned it off for this computer. |
+| **Adding** | The computer hasn't added it yet. |
+| **Couldn't add** | The computer's print system refused. The problem shows above the list. |
+
+A row can also say **Also installed directly as** followed by a printer name. That means someone set up the same printer on this computer without Print Better. Print Better keeps its own copy, which keeps working away from that network. Hide one of them if you don't want both.
+
+The section needs Print Better 0.1.3 or later on the computer. On older versions it says **Update Print Better on** followed by the computer's name.
+
+With [Printer access](/docs/extensions/printer-access) turned on, a computer shows only printers it may print to. The others appear as **Not allowed on this Mac** or **Not allowed on this computer**, with a **Change access** link.
+
+## Choose the default printer
+
+Under **Printers on this computer**, pick a printer in **Default printer**. The row says which printer is the default right now.
+
+**Don’t change** leaves the computer's default alone. It is the starting choice.
+
+The computer applies your choice once. If someone later picks another default on the computer itself, their choice wins. The web app setting goes back to **Don’t change**. Pick the printer again to apply it again.
+
+If the choice can't apply yet, the row says why. For example, a hidden printer can't be the default, unless the computer also has it installed directly. In that case the directly installed printer becomes the default. Hiding the chosen default printer sets the choice back to **Don’t change**.
+
+When the computer is offline, the row says the change applies when it is back.
+
+### Macs set to Last Printer Used
+
+A Mac's print window can ignore the default printer. When **System Settings** > **Printers & Scanners** > **Default printer** is **Last Printer Used**, the window opens on the printer you used last on the current network. This is the macOS default.
+
+When a Mac uses this setting, the web app tells you. To always start on your chosen printer, set **Default printer** in **System Settings** > **Printers & Scanners** to that printer. Print Better doesn't change this setting for you.
+
+## What the print queue shows
+
+Each job shows a message in the computer's print queue while it travels.
+
+| Message | What it means |
+| --- | --- |
+| **Sending to Print Better** | The computer is uploading the job. |
+| **Waiting for** and a device name | The device with the printer is offline. The job waits on the server and prints when the device is back. |
+| **You can't print to this printer from this computer** | [Printer access](/docs/extensions/printer-access) doesn't allow this computer to print to the printer. The job stops. |
+| **Couldn't send the job to Print Better:** and a reason | The server refused the job for another reason, such as a file over the workspace's size limit. The job stops. |
+| The reason from **Print jobs** | The job didn't print. The queue shows the same message as the web app. |
+
+When the computer can't reach the server, the print system holds the job and tries again on its own. Nothing is lost.
+
+Canceling a job in the print queue cancels it in Print Better too.
+
+## Turn it off on a computer
+
+Open the computer's page. Under **Printers on this computer**, turn off **Show this workspace’s printers on this computer**.
+
+Print Better removes its printers from that computer. It leaves the computer's default printer as it is.
+
+You can also run this on the computer:
+
+```sh
+printbetter config set remotePrinters off
+```
+
+See [Command line](/docs/reference/cli) for the other settings.
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/printing/jobs" title="Print jobs">
+
+Follow and cancel jobs from any computer.
+
+</Card>
+
+<Card href="/docs/extensions/printer-access" title="Printer access">
+
+Choose which computers can print to each printer.
+
+</Card>
+
+</Cards>

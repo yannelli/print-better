@@ -1,0 +1,207 @@
+Print from scripts, cron jobs, and other apps with the REST API. This page walks through the common tasks with `curl`. Every route is listed in the [REST API reference](/docs/reference/rest-api).
+
+## Create a token
+
+<Steps>
+
+### Open Apps and tokens
+
+Open [**Your account**](/account/tokens) and select the **Apps and tokens** tab.
+
+### Create the token
+
+Under **Personal API tokens**, select **Create a token**. Give it a **Name**, choose where it **Works in**, and choose when it **Stops working after**. Select **Create token**.
+
+### Copy it
+
+Copy the token now. Print Better shows it only once.
+
+</Steps>
+
+Store it in an environment variable for the examples on this page:
+
+```sh
+export PRINTBETTER_TOKEN=pbt_your_token_here
+```
+
+A token acts as you, with your role in each workspace. Treat it like a password. See [API tokens](/docs/workspaces/tokens) for more.
+
+## Find your workspace and printers
+
+Every print route includes a workspace ID. It is also the part after `/w/` in the web app's address.
+
+```sh
+curl https://your-print-better.example/api/workspaces \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN"
+```
+
+The answer lists each workspace with its `id`, `name`, and your `role`. Save the ID:
+
+```sh
+export WORKSPACE_ID=your_workspace_id
+```
+
+List the printers you can print to:
+
+```sh
+curl "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/printers?added=true" \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN"
+```
+
+Each printer has an `id`, a `name`, its `status`, and its `capabilities`. Leave the printer out of a job to use the workspace's [default printer](/docs/workspaces/settings#general).
+
+## Print some text
+
+```sh
+curl -X POST "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/jobs" \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Hello from Print Better"}'
+```
+
+The answer is `{ "job": ... }`, with the job already `queued`. The first line of the text becomes the job's title.
+
+To choose the printer, the title, and settings, add them to the body:
+
+```json
+{
+  "printerId": "your_printer_id",
+  "title": "Shopping list",
+  "text": "Milk\nEggs\nCoffee",
+  "options": { "copies": 2, "sides": "two-sided-long-edge" }
+}
+```
+
+[Job options](/docs/reference/job-options) lists every setting. Settings you leave out follow the printer's defaults.
+
+## Print a document from a URL
+
+Send a `url` instead of `text`. The server downloads the document and prints it.
+
+```sh
+curl -X POST "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/jobs" \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://example.com/menu.pdf"}'
+```
+
+The URL must start with `http://` or `https://`. The document must be a PDF, JPEG, PNG, or plain text file, and fit the workspace's upload limit. The job's title is the file name from the URL, or the site's address when the URL has none.
+
+## Upload a file
+
+Files go up in two steps. First you describe the file, then you send it.
+
+<Steps>
+
+### Create the job
+
+Send the file's name, type, and exact size in bytes. The answer has the job and an `uploadUrl`.
+
+```sh
+FILE=report.pdf
+SIZE=$(wc -c < "$FILE" | tr -d ' ')
+
+UPLOAD_URL=$(curl -s -X POST "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/jobs" \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "{\"upload\": {\"fileName\": \"$FILE\", \"contentType\": \"application/pdf\", \"size\": $SIZE}}" \
+  | jq -r .uploadUrl)
+```
+
+The job starts as `uploading`. You can add `printerId`, `title`, and `options` next to `upload`, as with text.
+
+### Send the file
+
+```sh
+curl -X PUT "$UPLOAD_URL" \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN" \
+  -H "Content-Type: application/pdf" \
+  --data-binary @"$FILE"
+```
+
+The `Content-Type` must match the type you declared, and the body must be exactly the declared size. The answer is `{ "job": ... }`, now `queued` and on its way to the printer.
+
+</Steps>
+
+<Callout type="note">
+
+Finish the upload within an hour. After that, the job fails with **The upload never finished**.
+
+</Callout>
+
+The accepted types are `application/pdf`, `image/jpeg`, `image/png`, and `text/plain`. Files can be as large as the workspace's upload limit, 50 MB unless an admin changed it.
+
+For small files, you can skip the upload. Send the file inline as `base64`, with `contentType` and `fileName`, in one request. The whole request body can be up to 6 MB.
+
+## Check a job
+
+Every answer above includes the job's `id`. Save it:
+
+```sh
+export JOB_ID=your_job_id
+```
+
+Then ask for the job to follow it:
+
+```sh
+curl "https://your-print-better.example/api/workspaces/$WORKSPACE_ID/jobs/$JOB_ID" \
+  -H "Authorization: Bearer $PRINTBETTER_TOKEN"
+```
+
+Read `status` and `statusMessage`:
+
+| `status` | In the web app | What it means |
+| --- | --- | --- |
+| `uploading` | **Uploading** | Waiting for the file from step 2. |
+| `queued` | **Waiting** | Stored on the server, waiting for the device. |
+| `dispatched` | **Sending to printer** | The device has the job. |
+| `printing` | **Printing** | The printer is printing it. |
+| `completed` | **Printed** | Done. `pages` says how many pages printed, when the printer reports it. |
+| `failed` | **Didn't print** | `statusMessage` says why. |
+| `canceled` | **Canceled** | Someone canceled it. |
+
+To cancel a job, send `POST` to the job's address plus `/cancel`. To print a failed or canceled job again, send `POST` to its address plus `/retry`.
+
+## When something goes wrong
+
+Errors come back with an HTTP status and a body like this:
+
+```json
+{ "error": { "code": "printer_required", "message": "Choose a printer (this workspace has no default printer)" } }
+```
+
+| `code` | What to do |
+| --- | --- |
+| `invalid_token` | Check the token. It may be mistyped, removed, or expired. |
+| `printer_required` | Add a `printerId`, or set a default printer for the workspace. |
+| `printer_not_added` | Add the printer to the workspace first. |
+| `unsupported_type` | Send a PDF, JPEG, PNG, or plain text file, with a matching `Content-Type`. |
+| `size_mismatch` | Send exactly the number of bytes you declared. |
+| `too_large` | The document is over the workspace's upload limit. |
+| `fetch_failed` | The server couldn't download the URL. |
+
+The [REST API reference](/docs/reference/rest-api) lists every error code.
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/reference/rest-api" title="REST API">
+
+Every route, with authentication, errors, and pagination.
+
+</Card>
+
+<Card href="/docs/reference/job-options" title="Job options">
+
+Copies, sides, color, paper, trays, quality, and page ranges.
+
+</Card>
+
+<Card href="/docs/workspaces/tokens" title="API tokens">
+
+Limit a token to one workspace and choose when it expires.
+
+</Card>
+
+</Cards>
