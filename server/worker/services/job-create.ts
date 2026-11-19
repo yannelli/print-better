@@ -10,7 +10,7 @@ import { newId, sha256Hex } from '../lib/crypto'
 import { first, stmt } from '../lib/db'
 import { fromB64, utf8 } from '../lib/encoding'
 import { VERSION } from '../version'
-import { jobViewer } from '../extensions/job-view'
+import { deviceTitle, jobViewer } from '../extensions/job-view'
 import { usageActive } from '../extensions/usage/active'
 import { checkInline, checkSlot, type NewJob } from '../extensions/usage/attempts'
 import { entryInsert, runAfter, type Accepted } from '../extensions/usage/outcome'
@@ -222,7 +222,7 @@ export async function queueJob(ctx: Ctx, p: QueueInput): Promise<{ job: Job; upl
   await (checked ? ctx.env.DB.batch([row, entryInsert(ctx.env, checked.draft, checked.accepted)]) : row.run())
   await audit(ctx, p.workspaceId, 'job.create', id, { source: p.source, printerId: checked?.accepted.printerId ?? p.printer.id })
   notifyHub(ctx, p.workspaceId, async (hub) => {
-    await hub.dispatch(p.workspaceId, id)
+    await hub.dispatch(p.workspaceId, id, await deviceTitle(ctx, p.workspaceId, id))
     if (checked) await hub.broadcast([{ type: 'usage' }])
   })
   const job = toJob(await loadJobView(ctx.env, p.workspaceId, id))

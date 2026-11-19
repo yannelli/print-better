@@ -9,6 +9,7 @@ import type { Ctx } from '../../services/context'
 import { hubFor, notifyHub } from '../../services/hub'
 import { loadJobView } from '../../services/job-create'
 import { jobsEnded } from '../finish'
+import { deviceTitle } from '../job-view'
 import { HOLD_MESSAGES } from '../usage/outcome'
 
 export const holdOf = (row: Pick<JobViewRow, 'status' | 'held'>): JobHold | null => (row.status === 'held' ? parseJson<JobHold | null>(row.held, null) : null)
@@ -52,7 +53,7 @@ export async function moveOn(ctx: Ctx, row: JobViewRow, from: JobHold['kind'], n
     from,
   )
   if (changed === 0) throw notHeld(from)
-  notifyHub(ctx, row.workspace_id, (hub) => hub.dispatch(row.workspace_id, row.id))
+  notifyHub(ctx, row.workspace_id, async (hub) => hub.dispatch(row.workspace_id, row.id, await deviceTitle(ctx, row.workspace_id, row.id)))
   return toJob(await loadJobView(ctx.env, row.workspace_id, row.id))
 }
 

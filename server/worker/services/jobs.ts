@@ -3,7 +3,7 @@ import type { Role } from '../../shared/types'
 import { JOB_VIEW, toJob } from '../db/map'
 import type { JobViewRow, UserRow } from '../db/rows'
 import { jobsEnded } from '../extensions/finish'
-import { jobViewer } from '../extensions/job-view'
+import { deviceTitle, jobViewer } from '../extensions/job-view'
 import { isActive } from '../extensions/state'
 import { usageActive } from '../extensions/usage/active'
 import { checkRetry, retryUpdate } from '../extensions/usage/attempts'
@@ -12,6 +12,7 @@ import { badRequest, conflict, notFound } from '../http/errors'
 import { all, first, run } from '../lib/db'
 import { decodeCursor, pageLimit, toPage, type Page } from '../lib/pagination'
 import { requireScope } from './access'
+import { genericFileName } from './doc-types'
 import { audit } from './audit'
 import type { Ctx } from './context'
 import { hubFor, notifyHub } from './hub'
@@ -74,13 +75,16 @@ export async function getJob(ctx: Ctx, workspaceId: string, id: string): Promise
   return (await memberView(ctx, workspaceId, found))(toJob(found.job))
 }
 
-/** The stored document (until purged), for the job page's download button. */
-export async function jobDocument(ctx: Ctx, workspaceId: string, id: string): Promise<{ job: JobViewRow; object: R2ObjectBody }> {
+/** The stored document (until purged), with the file name the caller may see, for the job page's download button. */
+export async function jobDocument(ctx: Ctx, workspaceId: string, id: string): Promise<{ job: JobViewRow; object: R2ObjectBody; fileName: string }> {
   requireScope(ctx, 'read')
-  const { job } = await jobFor(ctx, workspaceId, id)
+  const found = await jobFor(ctx, workspaceId, id)
+  const { job } = found
   const object = job.file_key ? await ctx.env.FILES.get(job.file_key) : null
   if (!object) throw notFound('The document is no longer stored', 'file_purged')
-  return { job, object }
+  const shown = (await memberView(ctx, workspaceId, found))(toJob(job))
+  const hidden = shown.title !== job.title || shown.fileName !== job.file_name
+  return { job, object, fileName: hidden ? genericFileName(job.content_type) : (job.file_name ?? job.title) }
 }
 
 /** Broadcasts the job; when this call ended it, the finish hooks run first so the event shows its settled usage. */
@@ -150,7 +154,7 @@ export async function retryJob(ctx: Ctx, workspaceId: string, id: string): Promi
   if (changed === 0) throw conflict('This job changed meanwhile; refresh and try again', 'job_not_retryable')
   await audit(ctx, workspaceId, 'job.retry', id, { attempt: job.attempts + 1 })
   notifyHub(ctx, workspaceId, async (hub) => {
-    await hub.dispatch(workspaceId, id)
+    await hub.dispatch(workspaceId, id, await deviceTitle(ctx, workspaceId, id))
     if (checked) await hub.broadcast([{ type: 'usage' }])
   })
   const retried = toJob(await loadJobView(ctx.env, workspaceId, id))

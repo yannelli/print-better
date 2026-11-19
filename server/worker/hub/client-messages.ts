@@ -79,7 +79,7 @@ async function onHello(s: Session, msg: HelloMsg): Promise<void> {
     printers: await printerConfigs(s.env, row.id),
   })
   await s.syncRemotePrinters()
-  for (const job of await pendingOffers(s.env, row.id)) s.send({ type: 'job', job })
+  for (const job of await pendingOffers(s.env, row.workspace_id, row.id)) s.send({ type: 'job', job })
   s.broadcast([{ type: 'client', client: toClient(row) }])
 }
 

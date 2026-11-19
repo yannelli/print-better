@@ -2,7 +2,7 @@ import type { Job } from '../../shared/printing'
 import { toJob } from '../db/map'
 import type { JobViewRow } from '../db/rows'
 import { jobsEnded } from '../extensions/finish'
-import { jobViewer } from '../extensions/job-view'
+import { deviceTitle, jobViewer } from '../extensions/job-view'
 import { usageActive } from '../extensions/usage/active'
 import { checkUpload, uploadUpdate, type Checked } from '../extensions/usage/attempts'
 import { entryInsert, refuse, runAfter } from '../extensions/usage/outcome'
@@ -73,7 +73,7 @@ export async function storeUpload(ctx: Ctx, job: JobViewRow, req: Request): Prom
   }
   await audit(ctx, workspaceId, 'job.upload', id, { size: job.size })
   notifyHub(ctx, workspaceId, async (hub) => {
-    await hub.dispatch(workspaceId, id)
+    await hub.dispatch(workspaceId, id, await deviceTitle(ctx, workspaceId, id))
     if (checked) await hub.broadcast([{ type: 'usage' }])
   })
   const stored = toJob(await loadJobView(ctx.env, workspaceId, id))

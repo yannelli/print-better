@@ -8,7 +8,7 @@ import { all, first } from '../lib/db'
 import type { HubCommandResult } from '../services/clients'
 import { handleClientMessage, type Session } from './client-messages'
 import { printerConfigs } from './inventory'
-import { stuckOffers, toOffer, type OfferRow } from './jobs'
+import { offerView, stuckOffers, toOffer, type OfferRow } from './jobs'
 import { remoteSnapshots } from './remote-printers'
 import { attachment, CLIENT_TAG, clientTag, HUB_HEADERS, isOpen, send, UI_TAG, userTag, type Attachment, type ClientAtt } from './sockets'
 import { HubJobViews } from './job-views'
@@ -103,8 +103,8 @@ export class WorkspaceHub extends DurableObject<Env> {
 
   // ---- RPC called by the Worker after mutations ----
 
-  /** Broadcasts the job and offers it to its device when connected; otherwise it waits for the next `hello`. */
-  async dispatch(workspaceId: string, jobId: string): Promise<void> {
+  /** Broadcasts the job and offers it to its device when connected; otherwise it waits for the next `hello`. `title` replaces a hidden name. */
+  async dispatch(workspaceId: string, jobId: string, title?: string): Promise<void> {
     const job = await first<JobViewRow & { printer_key: string; client_id: string }>(
       this.env.DB,
       `SELECT j.*, p.name AS printer_name, ${SOURCE_CLIENT_NAME}, p.key AS printer_key, p.client_id FROM jobs j JOIN printers p ON p.id = j.printer_id WHERE j.id = ? AND j.workspace_id = ?`,
@@ -113,7 +113,7 @@ export class WorkspaceHub extends DurableObject<Env> {
     )
     if (!job) return
     this.fanOut([{ type: 'job', job: toJob(job) }])
-    if (job.status === 'queued' && job.file_key) this.toClient(job.client_id, { type: 'job', job: toOffer(job) })
+    if (job.status === 'queued' && job.file_key) this.toClient(job.client_id, { type: 'job', job: { ...toOffer(job), title: title ?? job.title } })
   }
 
   /** True when the owning device was connected and got the `cancel`. */
@@ -294,7 +294,8 @@ export class WorkspaceHub extends DurableObject<Env> {
     if (ready.length === 0) return
     const live = new Set(ready.map((a) => a.clientId))
     const rows: OfferRow[] = await stuckOffers(this.env, ready[0].workspaceId, now - STUCK_MS)
-    for (const row of rows) if (live.has(row.client_id)) this.toClient(row.client_id, { type: 'job', job: toOffer(row) })
+    const offer = rows.length ? await offerView(this.env, ready[0].workspaceId) : null
+    for (const row of rows) if (offer && live.has(row.client_id)) this.toClient(row.client_id, { type: 'job', job: offer(row) })
   }
 }
 

@@ -62,7 +62,7 @@ export function clientRoutes(r: Router): void {
   r.get('/api/client/jobs/:id/file', async (h) => {
     const client = await requireClient(h)
     const { job, object } = await clientJobDocument(h.env, client.id, h.params.id)
-    return documentResponse(job, object, false)
+    return documentResponse(job, object, null)
   })
 
   // Jobs this device submits from its own print dialog (docs/remote-printers.md).
