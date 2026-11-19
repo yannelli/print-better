@@ -6,7 +6,7 @@ The shared foundation of [Print rules and limits](print-policies.md) and [Enterp
 
 With both extensions off, a job takes exactly today's path: no page counting, no checks, no usage rows. Every response is byte for byte the same. `server/test/usage-legacy.test.ts` traces every job path at the SQL level to prove it.
 
-- `Job` has four optional fields: `policy`, `held`, `costCenterId` and `usage`. Each has its own nullable column in `jobs`, and `toJob` adds a field only when its column is set. Jobs created while both are off never get them.
+- `Job` has 4 optional fields: `policy`, `held`, `costCenterId` and `usage`. Each has its own nullable column in `jobs`, and `toJob` adds a field only when its column is set. Jobs created while both are off never get them.
 - A job keeps what was recorded on it while an extension was on, like its status message. The web app shows these fields only while the extension that wrote them is active.
 - The status `held` exists only with Enterprise controls. Turning it off cancels held jobs.
 - Prices, the time zone, and usage history are kept while both are off.
@@ -73,7 +73,7 @@ Options are the job's own over the printer's defaults, as the device applies the
 
 ## Usage
 
-`usage_entries` has one row per job attempt: member, device, printer, cost center, source, and jobs, pages, sheets, color pages, and cost.
+`usage_entries` has 1 row per job attempt: member, device, printer, cost center, source, and jobs, pages, sheets, color pages, and cost.
 
 - It is written with the estimate when the attempt is queued or held, and counts against limits and budgets right away.
 - When the attempt ends, it is settled. A completed job counts the pages the device reported, or the estimate when it reported none. A failed or canceled job counts the reported pages or 0, and 0 jobs. When the reported pages differ from the estimate, sheets and cost are worked out again from them, at the prices of that moment. The job's `usage` follows, with `estimated: false`.
@@ -158,11 +158,11 @@ Tables, every row cascading on workspace delete:
 ### Client
 
 - `not_sent` in `client/crates/app/src/daemon/remote/sink.rs` shows a `403 policy_blocked` message as it is, like `printer_access_denied`.
-- `ipp_state` in `api.rs` treats `held` as the end of the local job: completed, with the server's message. The CUPS queue sends one job at a time, so a local job that waited would hold back every job behind it.
+- `ipp_state` in `api.rs` treats `held` as the end of the local job: completed, with the server's message. The CUPS queue sends 1 job at a time, so a local job that waited would hold back every job behind it.
 
 ### Web App
 
-`server/src/extensions/` gains two things. `ExtensionUi` takes the id `usage`, active while either extension is. `ExtensionUi.pages` adds routes under `/w/:ws`, each with an optional nav entry and a `visible` rule.
+`server/src/extensions/` gains 2 things. `ExtensionUi` takes the id `usage`, active while either extension is. `ExtensionUi.pages` adds routes under `/w/:ws`, each with an optional nav entry and a `visible` rule.
 
 | What | Registered by | Slot or route |
 |---|---|---|
