@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useId, useState } from 'react'
+import { type FormEvent, useEffect, useId, useMemo, useState } from 'react'
 import { Link } from 'wouter'
 import type { Job, JobOptions, Printer } from '@shared/types'
 import { type PrintRequest, wsHref } from '@/components/shell/app-actions'
@@ -8,6 +8,7 @@ import { DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/co
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
 import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress'
 import { Spinner } from '@/components/ui/spinner'
+import { Slot } from '@/extensions/slot'
 import { usePrintablePrinters } from '@/hooks/access'
 import { useWorkspace } from '@/hooks/workspace'
 import { errorMessage } from '@/lib/api/http'
@@ -47,6 +48,10 @@ export function PrintForm({
   const [source, setSource] = useState<SourceDraft>({ kind: 'file', file: request.file ?? null })
   const [edits, setEdits] = useState<{ printerId: string; value: JobOptions } | null>(null)
   const [sent, setSent] = useState<Job | null>(null)
+  const [extra, setExtraFields] = useState<Record<string, unknown>>({})
+  const setExtra = (fields: Record<string, unknown>) => setExtraFields((current) => ({ ...current, ...fields }))
+  // Extensions read the typed text as a file, so it is counted like an upload.
+  const typed = useMemo(() => (source.kind === 'text' && source.text.trim() ? new File([source.text], 'text.txt', { type: 'text/plain' }) : null), [source])
   const uploading = submit.progress !== null
 
   useEffect(() => onBusyChange(submit.isPending), [submit.isPending, onBusyChange])
@@ -113,7 +118,7 @@ export function PrintForm({
     e.preventDefault()
     if (!ready) return
     const payload = source.kind === 'file' ? { kind: 'file' as const, file: source.file! } : source
-    submit.mutate({ printerId: printer.id, options: changedOptions(start, options), source: payload }, { onSuccess: setSent })
+    submit.mutate({ printerId: printer.id, options: changedOptions(start, options), source: payload, extra }, { onSuccess: setSent })
   }
 
   return (
@@ -145,6 +150,10 @@ export function PrintForm({
         onChange={(value) => setEdits({ printerId: printer.id, value })}
         mode="print"
         disabled={submit.isPending}
+      />
+      <Slot
+        name="printForm"
+        props={{ ws, draft: { printerId: printer.id, options: changedOptions(start, options), document: source.kind === 'file' ? source.file : typed }, extra, setExtra }}
       />
       {uploading && (
         <Progress value={Math.round((submit.progress ?? 0) * 100)} className="gap-2">

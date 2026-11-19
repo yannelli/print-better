@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { ExtensionId } from '@shared/extensions'
 import type { Client } from '@shared/types'
 import { printerRights } from '@/lib/access'
-import { type ExtensionUi, slotEntries, visibleEntries } from './registry'
+import { activeUi, type ExtensionUi, slotEntries, visibleEntries, visiblePages } from './registry'
 
 const Nothing = () => null
 const registry: ExtensionUi[] = [
@@ -35,5 +35,28 @@ describe('extension slots', () => {
     const admin = { rights: printerRights(undefined, 'admin'), canManage: true }
     expect(visibleEntries(entries, props, member)).toEqual([])
     expect(visibleEntries(entries, props, admin).map((e) => e.id)).toEqual(['device'])
+  })
+})
+
+describe('the shared usage UI', () => {
+  const usage: ExtensionUi = {
+    id: 'usage',
+    slots: { jobMeta: [{ id: 'usage', Component: Nothing }] },
+    pages: [{ path: '/usage/:tab?', Component: Nothing, visible: ({ active, canManage }) => canManage || active.has('print-policies') }],
+  }
+  const member = { rights: printerRights(undefined, 'member'), canManage: false }
+
+  it('is active while either usage extension is, and never with only printer access', () => {
+    expect(activeUi(new Set<ExtensionId>(['print-policies'])).has('usage')).toBe(true)
+    expect(activeUi(new Set<ExtensionId>(['enterprise'])).has('usage')).toBe(true)
+    expect(activeUi(on).has('usage')).toBe(false)
+    expect(slotEntries([usage], activeUi(on), 'jobMeta')).toEqual([])
+    expect(slotEntries([usage], activeUi(new Set<ExtensionId>(['print-policies'])), 'jobMeta').map((e) => e.id)).toEqual(['usage'])
+  })
+
+  it('shows its pages by their own rule, and none while it is inactive', () => {
+    expect(visiblePages([usage], { ...member, active: activeUi(off) })).toEqual([])
+    expect(visiblePages([usage], { ...member, active: activeUi(new Set<ExtensionId>(['enterprise'])) })).toEqual([])
+    expect(visiblePages([usage], { ...member, active: activeUi(new Set<ExtensionId>(['print-policies'])) })).toHaveLength(1)
   })
 })

@@ -32,6 +32,15 @@ export const qk = {
   access: (ws: string) => ['ws', ws, 'access'] as const,
   myAccess: (ws: string) => ['ws', ws, 'access', 'me'] as const,
   groups: (ws: string) => ['ws', ws, 'groups'] as const,
+  /** Prefix of everything a `usage` event refreshes: prices, previews, limits and what they counted. */
+  usage: (ws: string) => ['ws', ws, 'usage'] as const,
+  prices: (ws: string) => ['ws', ws, 'usage', 'prices'] as const,
+  jobPreview: (ws: string, request: unknown) => ['ws', ws, 'usage', 'preview', request] as const,
+  myUsage: (ws: string) => ['ws', ws, 'usage', 'me'] as const,
+  limits: (ws: string) => ['ws', ws, 'usage', 'limits'] as const,
+  cycleUsage: (ws: string, cycle: 'current' | 'previous') => ['ws', ws, 'usage', 'cycle', cycle] as const,
+  allowances: (ws: string, limitId: string) => ['ws', ws, 'usage', 'allowances', limitId] as const,
+  rules: (ws: string) => ['ws', ws, 'rules'] as const,
 }
 
 declare module '@tanstack/react-query' {
