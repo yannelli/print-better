@@ -120,6 +120,19 @@ async fn a_job_that_printed_with_a_problem_keeps_the_warning() {
 }
 
 #[tokio::test]
+async fn a_held_job_ends_the_local_job_with_the_hold_message() {
+    let server = server(&[("held", Some("Waiting for approval")), ("queued", None)]).await;
+    let dir = TempDir::new();
+    let sink = RemoteSink::new(daemon(&dir, &server.origin));
+    let id = sink.submit(job(&dir)).unwrap();
+    until("the hold", || state(&sink, id).0 == SharedJobState::Completed).await;
+    let seen = server.requests().len();
+    tokio::time::sleep(std::time::Duration::from_millis(100)).await;
+    assert_eq!(server.requests().len(), seen, "it stops checking on the job");
+    assert_eq!(state(&sink, id), (SharedJobState::Completed, Some("Waiting for approval".into())));
+}
+
+#[tokio::test]
 async fn failures_carry_the_servers_message() {
     let server = server(&[("failed", Some("Out of paper"))]).await;
     let dir = TempDir::new();
@@ -208,4 +221,6 @@ fn server_states_map_to_ipp_states() {
     assert_eq!(ipp_state(&job("failed", Some("Jammed")), None), (SharedJobState::Aborted, Some("Jammed".into())));
     assert_eq!(ipp_state(&job("failed", None), None), (SharedJobState::Aborted, Some("The job failed.".into())));
     assert_eq!(ipp_state(&job("canceled", None), Some(&online)), (SharedJobState::Canceled, None));
+    let held = Some("Waiting to be released at the printer".to_string());
+    assert_eq!(ipp_state(&job("held", held.as_deref()), Some(&offline)), (SharedJobState::Completed, held), "held");
 }

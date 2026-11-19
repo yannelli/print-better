@@ -14,7 +14,7 @@ use tokio::time::sleep;
 const POLL: Duration = if cfg!(test) { Duration::from_millis(20) } else { Duration::from_secs(2) };
 const KEEP: usize = 200;
 pub const NOT_READY: &str = "Not ready: Print Better is not connected to its server.";
-const TERMINAL: [&str; 3] = ["completed", "failed", "canceled"];
+const TERMINAL: [&str; 4] = ["completed", "failed", "canceled", "held"];
 
 #[derive(Clone)]
 pub struct RemoteSink(Arc<Inner>);
