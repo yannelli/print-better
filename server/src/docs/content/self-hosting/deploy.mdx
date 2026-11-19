@@ -1,0 +1,147 @@
+This page walks you through deploying Print Better to your own Cloudflare account. At the end you have a running server, client downloads that devices can install, and your first account.
+
+## Requirements
+
+- A Cloudflare account on the **Workers Paid** plan. Passwords are hashed with scrypt, which needs more CPU time than the Free plan allows.
+- Node.js 22.12 or later, pnpm, `git`, `jq`, and `openssl`. Wrangler, Cloudflare's command line tool, installs inside `server/`.
+- To build the client downloads: a Mac with Rust, `zig`, `cargo-zigbuild`, and Developer ID certificates. See [Publish the client downloads](#publish-the-client-downloads).
+
+## Deploy the server
+
+<Steps>
+
+### Get the code
+
+Clone the Print Better repository and open its folder in a terminal.
+
+### Sign in to Cloudflare
+
+```sh
+pnpm --dir server install
+pnpm --dir server exec wrangler login
+```
+
+### Run the deploy script
+
+```sh
+scripts/deploy.sh
+```
+
+The script does these things in order:
+
+1. Installs packages and builds the web app.
+2. Deploys the Worker. On the first deploy, Cloudflare creates the D1 database `print-better` and the R2 bucket `print-better-files`.
+3. Applies the database migrations.
+4. Creates the secrets `SETUP_TOKEN`, `APP_SECRET`, and `AUTH_PEPPER` if they don't exist yet.
+5. Prints a one-time setup link.
+
+</Steps>
+
+Wrangler writes the new database ID into `server/wrangler.jsonc`. Keep that change, so later deploys use the same database.
+
+## Secrets
+
+The deploy script fills each secret with a random value. Cloudflare never shows a secret again, and the script doesn't print them.
+
+| Secret | What it protects | If you lose it |
+| --- | --- | --- |
+| `SETUP_TOKEN` | Who may create the first account. | Nothing breaks after setup. You can delete it. |
+| `APP_SECRET` | Encrypts stored secrets: SSO client secrets, the Resend API key, and the webhook secret. | Enter those secrets again in **Server admin**. |
+| `AUTH_PEPPER` | Mixed into every password hash. | Every password stops working. People sign in with a passkey or SSO, or a server admin sends reset links. |
+
+<Callout type="warning" title="Keep a copy of APP_SECRET and AUTH_PEPPER">
+
+To keep a copy, replace both secrets with values you saved. Do it before you create the first account, while nothing depends on them yet.
+
+</Callout>
+
+```sh
+openssl rand -base64 48 | tr -d '/+=\n' | cut -c1-48
+pnpm --dir server exec wrangler secret put APP_SECRET
+```
+
+Run the two commands once for `APP_SECRET` and once for `AUTH_PEPPER`. Paste a new random value at each prompt, and store both values somewhere safe.
+
+## Open your server
+
+Open the setup link the script printed. It looks like `https://your-print-better.example/setup?token=...`. Follow the steps in [Quickstart](/docs/quickstart#create-your-account). The first account becomes the workspace owner and a server admin.
+
+The script prints the link only on the run that creates `SETUP_TOKEN`. If you lost it, set a new token and type it into **Setup code** on `/setup`:
+
+```sh
+pnpm --dir server exec wrangler secret put SETUP_TOKEN
+```
+
+After setup, the token has no use. Delete it if you like:
+
+```sh
+pnpm --dir server exec wrangler secret delete SETUP_TOKEN
+```
+
+## Publish the client downloads
+
+The install commands and **Add a device** download the client from your own R2 bucket. Publish once after the first deploy, and again for each new client version.
+
+```sh
+scripts/release.sh --publish remote
+```
+
+The script builds every platform on your Mac, signs and notarizes the macOS app and installer, and uploads the files. It uploads the files first and the `latest.json` list last, so devices never see a version whose files are missing.
+
+You need:
+
+- Rust 1.92 or later, with the targets listed in `docs/release.md`.
+- `zig` and `cargo-zigbuild` for the Linux builds.
+- The **Developer ID Application** and **Developer ID Installer** certificates in your Keychain.
+- `APPLE_ID`, `APPLE_PASSWORD` (an app-specific password), and `APPLE_TEAM_ID` in the environment, for notarization.
+
+| Option | What it does |
+| --- | --- |
+| `--publish remote` | Uploads to your Cloudflare R2 bucket. |
+| `--publish local` | Uploads to the local R2 of the development server. |
+| `--no-notarize` | Signs without notarizing. Use it for a faster local check. |
+| `--platforms "macos linux"` | Builds only the platforms you list. |
+
+Set `R2_BUCKET` if you renamed the bucket. The default is `print-better-files`.
+
+<Callout type="note">
+
+macOS devices accept only updates signed by the same Developer ID team as the installed app. Keep releasing with the same certificates.
+
+</Callout>
+
+## Use your own domain
+
+Add a custom domain in the Cloudflare dashboard, under the `print-better` Worker's **Settings**, then **Domains & Routes**. Or add it to `server/wrangler.jsonc` and deploy again:
+
+```jsonc title="wrangler.jsonc"
+"routes": [{ "pattern": "print.example.com", "custom_domain": true }]
+```
+
+Choose the final domain before anyone registers a passkey. A passkey works only on the hostname where it was created.
+
+Paired devices keep using the address they paired with. Leave the `workers.dev` address on, or pair those devices again after the switch.
+
+## Next steps
+
+<Cards>
+
+<Card href="/docs/self-hosting/configuration" title="Configuration">
+
+Change the server name, who can sign up, and other settings.
+
+</Card>
+
+<Card href="/docs/self-hosting/email" title="Email">
+
+Send invites and password resets, and accept email to print.
+
+</Card>
+
+<Card href="/docs/devices/macos" title="Install on a Mac">
+
+Connect your first computer.
+
+</Card>
+
+</Cards>
