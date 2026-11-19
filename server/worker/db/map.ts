@@ -209,8 +209,8 @@ export const toJob = (r: JobViewRow): Job => ({
   ...checkedFields(r),
 })
 
-/** What the job check recorded (docs/usage.md). Each field is absent while its column is null, so older jobs keep their JSON;
- *  the column keeps a job's last hold, shown only while the job is held. */
+/** What the job check recorded (docs/usage.md). Each field is absent while its column is null, so older jobs keep their JSON,
+ *  and `held` shows only while the job is held. */
 function checkedFields(r: JobViewRow): Pick<Job, 'policy' | 'held' | 'costCenterId' | 'usage'> {
   return {
     ...(r.policy != null && { policy: parseJson<JobPolicy>(r.policy, { notes: [] }) }),

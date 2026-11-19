@@ -1,7 +1,7 @@
 import type { UiEvent } from '../../shared/protocol'
 import { JOB_VIEW } from '../db/map'
 import type { JobViewRow } from '../db/rows'
-import { all, parseJson } from '../lib/db'
+import { all, parseJson, run } from '../lib/db'
 import type { Ctx } from '../services/context'
 import { JOB_FINISH_HOOKS } from './hooks'
 import { isActive } from './state'
@@ -29,9 +29,11 @@ export interface Ended {
   events: UiEvent[]
 }
 
-/** Runs the finish hooks and returns the rows to show. Jobs never counted cost no extra query. */
+/** Ends holds, runs the finish hooks, and returns the rows to show. Jobs never held or counted cost no extra query. */
 export async function jobsEnded(ctx: Ctx, workspaceId: string, rows: JobViewRow[]): Promise<Ended> {
   const counted = rows.filter(estimated)
+  const held = rows.filter((r) => r.held != null).map((r) => r.id)
+  if (held.length) await run(ctx.env.DB, "UPDATE jobs SET held = NULL WHERE id IN (SELECT value FROM json_each(?)) AND status != 'held'", JSON.stringify(held))
   await runFinishHooks(ctx, workspaceId, rows)
   if (counted.length === 0) return { rows, events: [] }
   const ids = JSON.stringify(counted.map((r) => r.id))
