@@ -29,7 +29,7 @@ export function JobsSection({ workspace, canManage }: { workspace: Workspace; ca
     maxUploadMb: String(settings.maxUploadMb),
   })
   const upload = Number(draft.maxUploadMb)
-  const uploadInvalid = !Number.isInteger(upload) || upload < 1 || upload > 500
+  const uploadInvalid = !Number.isInteger(upload) || upload < 1 || upload > 100
 
   const save = () => {
     const next = {
@@ -71,7 +71,7 @@ export function JobsSection({ workspace, canManage }: { workspace: Workspace; ca
           disabled={!canManage}
         />
       </Row>
-      <Row label="Largest file people can print" htmlFor="ws-upload" description="In megabytes, from 1 to 500.">
+      <Row label="Largest file people can print" htmlFor="ws-upload" description="In megabytes, from 1 to 100.">
         <div className="flex w-full flex-col gap-1.5 sm:w-64">
           <div className="flex items-center gap-2">
             <Input
@@ -88,7 +88,7 @@ export function JobsSection({ workspace, canManage }: { workspace: Workspace; ca
             />
             <span className="text-muted-foreground">MB</span>
           </div>
-          {uploadInvalid && <FieldError>Enter a whole number from 1 to 500.</FieldError>}
+          {uploadInvalid && <FieldError>Enter a whole number from 1 to 100.</FieldError>}
         </div>
       </Row>
       {canManage && (
