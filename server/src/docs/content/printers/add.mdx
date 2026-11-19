@@ -1,10 +1,10 @@
-Your devices find printers on their own. This page shows you how to choose which of those printers people in your workspace can print to.
+Your devices find printers on their own. Add a found printer to let people in your workspace print to it.
 
 ## Found and added printers
 
 Each device looks for printers on its network, over USB, and in its computer's own printer list. See [Printer discovery](/docs/devices/discovery) for how it searches. Every printer a device finds appears on the **Printers** page, in one of two states:
 
-- **Added**: people can print to it from the web app, the API, AI assistants, email, and the print window on their other computers.
+- **Added**: People can print to it from the web app, the API, AI assistants, email, and the print window on their other computers.
 - **Found but not added**: Print Better knows about it, but nobody can print to it yet.
 
 Owners and admins can add printers. With [Printer access](/docs/extensions/printer-access) turned on, anyone with the **Change settings** permission on a printer can add it too. Members see **Ask an admin to add one.**
@@ -33,7 +33,7 @@ When you add a new device, its **Choose the printers to use** step does the same
 
 ## Add printers automatically
 
-Print Better can add a printer as soon as a device finds it for the first time. Choose how in [**Settings**](/settings), under **New devices and printers** > **Add printers automatically**.
+Print Better can add a printer as soon as a device finds it for the first time. Choose how in **Settings** > [**Printing**](/settings/printing), under **New devices and printers** > **Add printers automatically**.
 
 | Choice | What happens |
 | --- | --- |
@@ -43,7 +43,7 @@ Print Better can add a printer as soon as a device finds it for the first time. 
 
 Select **Save changes** to apply your choice.
 
-Each device can also follow its own rule. Open the device from [**Devices**](/devices), then choose under **New printers**:
+Each device can also follow its own rule. Open the device from [**Devices**](/devices) and choose under **New printers**:
 
 | Choice | What happens |
 | --- | --- |
@@ -52,7 +52,7 @@ Each device can also follow its own rule. Open the device from [**Devices**](/de
 | **Add every printer found** | Same as **All of them**. |
 | **Ask me first** | New printers from this device wait until you add them. |
 
-Automatic adding applies only to printers a device sees for the first time. A printer that another device already added is the same printer. It isn't added twice, and it doesn't appear under **Found but not added**.
+Automatic adding applies only to printers a device sees for the first time. When a second device finds a printer another device already added, it's the same printer. It isn't added twice, and it doesn't appear under **Found but not added**.
 
 ## Stop using a printer
 

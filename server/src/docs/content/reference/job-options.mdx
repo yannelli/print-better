@@ -1,4 +1,4 @@
-Every print job can carry options, such as copies, two-sided printing, and paper size. This page lists each option and its values. It also explains how a printer's defaults and abilities shape the result.
+Every print job can carry options, such as copies, two-sided printing, and paper size. This page lists each option and its values, and how a printer's defaults and abilities change the result.
 
 ## Example
 
@@ -35,7 +35,9 @@ Every option is optional. Leave one out to use the printer's default.
 | `source` | A tray name, such as `tray-1` | The paper tray. Use a name from the printer's `capabilities.sources`. |
 | `mediaType` | A paper type name, such as `labels` | The kind of paper. Use a name from the printer's `capabilities.mediaTypes`. |
 
-The server rejects option names it doesn't know, so a typo never prints the wrong thing. It also checks every value against the lists above. `pageRanges` can be up to 100 characters, and spaces in it are removed.
+The server rejects option names it doesn't know, so a typo never prints the wrong thing. It also checks every value against the lists above.
+
+`pageRanges` can be up to 100 characters, and the server removes any spaces in it.
 
 ### Page ranges
 
@@ -62,7 +64,14 @@ Trays and paper types use the printer's own names, such as `tray-1`, `manual`, `
 | `source` | Not offered | Not offered |
 | `mediaType` | Not offered | Not offered |
 
-On a Mac, the [print window](/docs/printing/print-window#options-in-the-print-window) sets `media` with **Paper Size**, `source` with **Paper Feed**, and `mediaType` with **Paper Type**. It also sets `quality` with **Quality**, `sides` with **Two-Sided**, and `colorMode` with **Color**.
+On a Mac, the [print window](/docs/printing/print-window#options-in-the-print-window) sets these options:
+
+- `media` with **Paper Size**
+- `source` with **Paper Feed**
+- `mediaType` with **Paper Type**
+- `quality` with **Quality**
+- `sides` with **Two-Sided**
+- `colorMode` with **Color**
 
 The API and AI assistants can set every option. Jobs sent [by email](/docs/printing/email) and test pages carry no options, so they use the printer's defaults.
 
@@ -86,7 +95,7 @@ When a job prints, each option is decided in this order:
 2. Otherwise, the printer's default setting.
 3. Otherwise, the printer's own setting.
 
-The device next to the printer combines them when the job prints. If a default changes while a job waits, the job uses the new default for every option it didn't set.
+The device next to the printer combines them when the job prints, so if a default changes while a job waits, the job uses the new default for every option it didn't set.
 
 The web app's print dialog sends only the options you change. Everything you leave alone follows the printer's defaults.
 
