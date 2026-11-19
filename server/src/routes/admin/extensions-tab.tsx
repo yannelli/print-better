@@ -4,7 +4,7 @@ import type { InstanceExtension } from '@shared/extensions'
 import { Section } from '@/components/page'
 import { QueryState } from '@/components/states'
 import { Switch } from '@/components/ui/switch'
-import { docsUrl } from '@/extensions/docs'
+import { extensionDocsHref } from '@/extensions/docs'
 import { useAdminExtensions, useSetExtensionAvailable } from '@/hooks/extensions'
 import { extensionUsage } from '@/lib/words'
 
@@ -21,7 +21,7 @@ function ExtensionRow({ extension }: { extension: InstanceExtension }) {
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           <span>{extensionUsage(extension.enabledWorkspaces)}</span>
           <a
-            href={docsUrl(extension.docs)}
+            href={extensionDocsHref(extension)}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground"

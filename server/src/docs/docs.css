@@ -1,0 +1,202 @@
+@reference "../index.css";
+
+.docs-prose {
+  font-size: 1rem;
+  line-height: 1.75;
+  overflow-wrap: break-word;
+}
+.docs-prose > :first-child {
+  margin-top: 0;
+}
+.docs-prose p,
+.docs-prose ul,
+.docs-prose ol {
+  margin: 1.25rem 0;
+}
+.docs-prose ul {
+  list-style: disc;
+  padding-left: 1.5rem;
+}
+.docs-prose ol {
+  list-style: decimal;
+  padding-left: 1.5rem;
+}
+.docs-prose li {
+  margin: 0.4rem 0;
+}
+.docs-prose li > p {
+  margin: 0.4rem 0;
+}
+.docs-prose li::marker {
+  color: var(--muted-foreground);
+}
+.docs-prose h2 {
+  margin: 3rem 0 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  scroll-margin-top: 5.5rem;
+}
+.docs-prose h3 {
+  margin: 2.25rem 0 0.75rem;
+  font-size: 1.1875rem;
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  scroll-margin-top: 5.5rem;
+}
+.docs-prose h2 + h3 {
+  margin-top: 1.25rem;
+}
+.docs-prose strong {
+  font-weight: 600;
+}
+.docs-prose a:not(.docs-card, .docs-anchor) {
+  font-weight: 500;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--brand) 55%, transparent);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+}
+.docs-prose a:not(.docs-card, .docs-anchor):hover {
+  text-decoration-color: var(--brand);
+}
+.docs-prose :not(pre) > code {
+  @apply font-mono;
+  padding: 0.12rem 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--muted);
+  font-size: 0.875em;
+  overflow-wrap: anywhere;
+}
+.docs-prose hr {
+  margin: 2.5rem 0;
+  border-color: var(--border);
+}
+.docs-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+.docs-prose th {
+  background: var(--muted);
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+.docs-prose th,
+.docs-prose td {
+  padding: 0.6rem 0.9rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.docs-prose tbody tr:last-child td {
+  border-bottom: 0;
+}
+.docs-prose td code {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+@media (max-width: 639px) {
+  .docs-prose .docs-stack thead {
+    display: none;
+  }
+  .docs-prose .docs-stack tr {
+    display: block;
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .docs-prose .docs-stack tbody tr:last-child {
+    border-bottom: 0;
+  }
+  .docs-prose .docs-stack td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+  .docs-prose .docs-stack td:first-child {
+    font-weight: 600;
+  }
+  .docs-prose .docs-stack td code {
+    overflow-wrap: anywhere;
+  }
+  .docs-prose .docs-stack td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--muted-foreground);
+    font-size: 0.8125rem;
+    font-weight: 600;
+  }
+}
+
+/* Shiki writes both themes as variables; the app's own theme class picks one. */
+.docs-code pre {
+  margin: 0;
+}
+.docs-code .shiki,
+.docs-code .shiki span {
+  color: var(--shiki-light);
+}
+.dark .docs-code .shiki,
+.dark .docs-code .shiki span {
+  color: var(--shiki-dark);
+}
+.docs-code code {
+  display: block;
+  min-width: max-content;
+}
+
+.docs-callout p {
+  margin: 0.35rem 0;
+}
+.docs-callout p:first-child {
+  margin-top: 0;
+}
+.docs-callout p:last-child {
+  margin-bottom: 0;
+}
+
+.docs-card p {
+  margin: 0;
+}
+
+.docs-tabpanel > :first-child {
+  margin-top: 1rem;
+}
+
+.docs-steps {
+  counter-reset: step;
+  margin-left: 1rem;
+  padding-left: 2rem;
+  border-left: 1px solid var(--border);
+}
+.docs-steps h3 {
+  position: relative;
+  counter-increment: step;
+  margin-top: 2rem;
+}
+.docs-steps h3:first-child {
+  margin-top: 0;
+}
+.docs-steps h3::before {
+  content: counter(step);
+  position: absolute;
+  top: -0.1rem;
+  left: calc(-3rem - 1px);
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 9999px;
+  background: var(--brand-container);
+  color: var(--on-brand-container);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
