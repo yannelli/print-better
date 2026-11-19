@@ -33,7 +33,7 @@ The app version comes from `client/Cargo.toml`, like the other clients.
 | App | `dev.yannelli.printbetter.ios` |
 | Share extension | `dev.yannelli.printbetter.ios.share` |
 | App Group | `group.dev.yannelli.printbetter`, also the Keychain access group that holds the device token |
-| URL scheme | `printbetter://pair?server=<origin>&token=pbe_…`, the QR code under **Devices > Add a device > iPhone** |
+| URL scheme | `printbetter://pair?server=<origin>&token=pbe_…`, the QR code under **Devices > Add a device > iPhone or iPad** |
 
 ## How it talks to the server
 - Pairing with an address: `GET /api/instance` checks it, then the device code flow (`POST /api/client/device/code`) opens the approval page in a Safari sheet that shares Safari's sign-in. The app polls `POST /api/client/device/token` and closes the sheet once the server issues a token.
@@ -41,6 +41,7 @@ The app version comes from `client/Cargo.toml`, like the other clients.
 - The phone has no WebSocket. It polls `GET /api/client/printers` and `GET /api/client/jobs` while those screens are open, and `GET /api/client/jobs/:id` while a job it sent is running.
 - Printing: `POST /api/client/jobs`, then `PUT` the file to this server. Photos are sent as JPEG, several photos become one PDF with a photo on each page, scans become a PDF, and Safari pages become a PDF laid out by WebKit's print layout.
 - The share extension and the Shortcuts action read the token from the shared Keychain item, so they work without opening the app.
+- The app pairs with `os: ios` on an iPhone and `os: ipados` on an iPad, so the web app names, and shows an icon for, the right one. Its own text names the device the same way, from `UIDevice.current.model`.
 
 ## Signing
 Signing is automatic and uses an App Store Connect API key with access to Certificates, Identifiers & Profiles. `scripts/release-ios.sh` passes the key with `-allowProvisioningUpdates`, so Xcode registers the two bundle IDs and the App Group and makes the profiles. The key file goes in `~/.appstoreconnect/private_keys/`, named `AuthKey_<key ID>.p8` as App Store Connect downloads it.

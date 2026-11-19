@@ -1,5 +1,6 @@
 import { HUB_HEADERS, upgradeRequest } from '../hub/sockets'
 import { PROTOCOL_VERSION } from '../../shared/protocol'
+import { isMobileOs } from '../../shared/types'
 import { clientCtx, ctxOf, publicCtx, requireClient } from '../http/authenticate'
 import { readJson } from '../http/body'
 import { badRequest, notFound } from '../http/errors'
@@ -92,8 +93,8 @@ export function clientRoutes(r: Router): void {
 
   r.get('/api/client/latest', async (h) => {
     const client = await requireClient(h)
-    // iPhones update through the App Store, so they are never offered a client build.
-    if (client.os === 'ios') throw notFound('No build is published for this platform', 'no_build')
+    // iPhones and iPads update through the App Store, so they are never offered a client build.
+    if (isMobileOs(client.os)) throw notFound('No build is published for this platform', 'no_build')
     return latestBuild(h.env, h.url)
   })
 }

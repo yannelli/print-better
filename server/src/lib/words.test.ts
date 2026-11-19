@@ -20,6 +20,7 @@ import {
   printerStatus,
   reasonWords,
   systemPrinterStatus,
+  thisComputer,
 } from './words'
 
 function printer(state: PrinterState, reasons: string[] = [], extra: Partial<Printer> = {}): Printer {
@@ -140,7 +141,16 @@ describe('devices', () => {
     expect(deviceKind({ os: 'linux', arch: 'x86_64' })).toBe('Linux computer')
     expect(deviceKind({ os: 'linux', arch: 'armv7' })).toBe('Raspberry Pi or Linux')
     expect(deviceKind({ os: 'linux', arch: 'aarch64' })).toBe('Raspberry Pi or Linux')
+    expect(deviceKind({ os: 'ios', arch: 'arm64' })).toBe('iPhone')
+    expect(deviceKind({ os: 'ipados', arch: 'arm64' })).toBe('iPad')
     expect(deviceKind({ os: null, arch: null })).toBe('Device')
+  })
+
+  it('names the device in a sentence', () => {
+    expect(thisComputer({ os: 'macos' })).toBe('this Mac')
+    expect(thisComputer({ os: 'ios' })).toBe('this iPhone')
+    expect(thisComputer({ os: 'ipados' })).toBe('this iPad')
+    expect(thisComputer({ os: 'linux' })).toBe('this computer')
   })
 })
 

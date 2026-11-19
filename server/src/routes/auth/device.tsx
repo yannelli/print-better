@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { CircleCheck, LaptopMinimal } from 'lucide-react'
+import { CircleCheck } from 'lucide-react'
 import { type FormEvent, useState } from 'react'
 import { Link, useSearchParams } from 'wouter'
+import { isMobileOs } from '@shared/types'
 import { OptionCards } from '@/components/option-cards'
 import { Mono } from '@/components/page'
 import { Loading } from '@/components/states'
@@ -12,6 +13,7 @@ import { devicesApi } from '@/lib/api/devices'
 import type { DeviceCodeInfo } from '@/lib/api/types'
 import { dateTime } from '@/lib/format'
 import { OS_NAMES } from '@/lib/words'
+import { DeviceIcon } from '@/routes/devices/device-icon'
 import { AuthLayout, FormError } from './auth-layout'
 import { DeviceCodeForm } from './device-code-form'
 import { TextField, useSubmit } from './fields'
@@ -22,10 +24,10 @@ function DeviceFacts({ info }: { info: DeviceCodeInfo }) {
   return (
     <div className="flex items-center gap-4 rounded-2xl border bg-surface p-4">
       <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-container text-on-brand-container">
-        <LaptopMinimal className="size-6" />
+        <DeviceIcon client={info} className="size-6" />
       </span>
       <dl className="grid min-w-0 grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-[0.9375rem]">
-        <dt className="text-muted-foreground">{info.os === 'ios' ? 'Device' : 'Computer'}</dt>
+        <dt className="text-muted-foreground">{isMobileOs(info.os) ? 'Device' : 'Computer'}</dt>
         <dd className="truncate"><Mono>{info.hostname}</Mono></dd>
         <dt className="text-muted-foreground">System</dt>
         <dd>{OS_NAMES[info.os] ?? info.os} ({info.arch})</dd>
@@ -156,7 +158,7 @@ export default function DeviceApprove() {
   return (
     <AuthLayout
       title="Connect this device?"
-      description={`Only continue if you just started setting up Print Better on this ${info.data.os === 'ios' ? 'iPhone' : 'computer'}. The code works until ${dateTime(info.data.expiresAt)}.`}
+      description={`Only continue if you just started setting up Print Better on this ${isMobileOs(info.data.os) ? OS_NAMES[info.data.os] : 'computer'}. The code works until ${dateTime(info.data.expiresAt)}.`}
     >
       <DeviceFacts info={info.data} />
       <Approve code={code} info={info.data} onDone={setOutcome} />

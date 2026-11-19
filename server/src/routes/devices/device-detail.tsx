@@ -18,7 +18,7 @@ import { deviceKind, OS_NAMES, printerStatus } from '@/lib/words'
 import { ComputerPrinters } from './computer-printers'
 import { DeviceSettings } from './device-settings'
 import { DeviceTools } from './device-tools'
-import { deviceStatus, isPhone } from './phone'
+import { deviceStatus, isMobile } from './mobile'
 import { RenameDevice } from './rename-device'
 import { UpdateBadge } from './update-badge'
 
@@ -26,7 +26,7 @@ function About({ client, update }: { client: Client; update: string | null }) {
   return (
     <Section title="About this device" flush>
       {client.hostname && (
-        <Row label={isPhone(client) ? 'Device name' : 'Computer name'}>
+        <Row label={isMobile(client) ? 'Device name' : 'Computer name'}>
           <Mono>{client.hostname}</Mono>
         </Row>
       )}
@@ -47,7 +47,7 @@ function About({ client, update }: { client: Client; update: string | null }) {
           {update && <UpdateBadge version={update} />}
         </Row>
       )}
-      {isPhone(client) ? (
+      {isMobile(client) ? (
         <Row label="Last used">{timeAgo(client.lastSeenAt)}</Row>
       ) : (
         <Row label="Last seen">{client.online ? 'Connected now' : timeAgo(client.lastSeenAt)}</Row>
@@ -90,7 +90,7 @@ function Detail({ ws, client }: { ws: string; client: Client }) {
   const [, navigate] = useLocation()
   const [renaming, setRenaming] = useState(false)
   const status = deviceStatus(client)
-  const phone = isPhone(client)
+  const phone = isMobile(client)
 
   return (
     <>

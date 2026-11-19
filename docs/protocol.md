@@ -18,9 +18,9 @@ All responses are JSON unless noted. Errors: `{ "error": { "code", "message" } }
 | `GET /api/client/jobs/:id` | `Bearer pbc_…` | `{ job }` |
 | `POST /api/client/jobs/:id/cancel` | `Bearer pbc_…` | `{ job }` (409 `job_finished` when already terminal) |
 | `GET /api/client/me` | `Bearer pbc_…` | `{ clientId, name, workspaceId, workspaceName }` |
-| `GET /api/client/printers` | `Bearer pbc_…` | `{ printers }`: the `remote_printers` snapshot, for devices without a socket (the iPhone app). Only printers the device may print to |
+| `GET /api/client/printers` | `Bearer pbc_…` | `{ printers }`: the `remote_printers` snapshot, for devices without a socket (the iPhone and iPad app). Only printers the device may print to |
 | `GET /api/client/jobs?limit=&cursor=` | `Bearer pbc_…` | `{ items, nextCursor }`: jobs this device sent, newest first |
-| `GET /api/client/latest?os=&arch=&kind=` | `Bearer pbc_…` | `{ version, url, sha256, size }` or 404 `no_build`. `kind` (macOS only): `pkg` for the machine-wide install (`macos-pkg`), `app` or absent for the per-user zip (`macos-universal`); Linux gets its arch tarball (`armv6`/`armv7` for 32-bit ARM). An `ios` device always gets 404 `no_build` |
+| `GET /api/client/latest?os=&arch=&kind=` | `Bearer pbc_…` | `{ version, url, sha256, size }` or 404 `no_build`. `kind` (macOS only): `pkg` for the machine-wide install (`macos-pkg`), `app` or absent for the per-user zip (`macos-universal`); Linux gets its arch tarball (`armv6`/`armv7` for 32-bit ARM). An `ios` or `ipados` device always gets 404 `no_build` |
 
 - Enrollment tokens are single-use by default; enrolling consumes one use atomically.
 - Device codes: `userCode` is 8 chars from `BCDFGHJKLMNPQRSTVWXZ` shown as `XXXX-XXXX`, 10 min lifetime, poll interval 5 s; a poll less than 4 s after the previous one (1 s of slack) returns `slow_down`, and the client then adds 5 s to its interval (RFC 8628).

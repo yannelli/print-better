@@ -27,7 +27,7 @@ export function parseDeviceInfo(body: Json): DeviceInfo {
   return {
     name: optStr(body, 'name', NAME) ?? hostname ?? 'Device',
     hostname,
-    os: (optOneOf(body, 'os', ['macos', 'windows', 'linux', 'ios'] as const) ?? null) as Os | null,
+    os: (optOneOf(body, 'os', ['macos', 'windows', 'linux', 'ios', 'ipados'] as const) ?? null) as Os | null,
     arch: optStr(body, 'arch', { max: 32 }) ?? null,
     version: optStr(body, 'version', { max: 32 }) ?? null,
   }

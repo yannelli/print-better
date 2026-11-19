@@ -6,7 +6,8 @@ import { Agent, call, readReply } from './helpers/http'
 import { freshWorkspace, PDF } from './helpers/jobs'
 import { enrollDevice, jsonInit, setupOwner, type Owner } from './helpers/world'
 
-const PHONE = { hostname: 'iPhone', os: 'ios', arch: 'arm64', version: '1.0', name: 'Sam’s iPhone' }
+const PHONE = { hostname: 'iPhone', os: 'ios', arch: 'arm64', version: '1.0', name: 'Front Desk iPhone' }
+const TABLET = { ...PHONE, hostname: 'iPad', os: 'ipados', name: 'Front Desk iPad' }
 
 let owner: Owner
 beforeAll(async () => {
@@ -25,9 +26,9 @@ interface World {
   phone: { clientId: string; agent: Agent }
 }
 
-async function pairPhone(ws: string): Promise<{ clientId: string; agent: Agent }> {
-  const enrollment = ok(await owner.agent.post(`/api/workspaces/${ws}/enrollments`, { label: 'iPhone' }), 'enrollment')
-  const paired = ok(await readReply(await call('/api/client/enroll', jsonInit({ token: enrollment.token, ...PHONE }))), 'enroll')
+async function pairPhone(ws: string, device = PHONE): Promise<{ clientId: string; agent: Agent }> {
+  const enrollment = ok(await owner.agent.post(`/api/workspaces/${ws}/enrollments`, { label: device.hostname }), 'enrollment')
+  const paired = ok(await readReply(await call('/api/client/enroll', jsonInit({ token: enrollment.token, ...device }))), 'enroll')
   return { clientId: paired.clientId, agent: new Agent({ token: paired.token }) }
 }
 
@@ -49,14 +50,20 @@ async function printFromPhone(phone: Agent, printerId: string, title: string): P
   return slot.job.id
 }
 
-describe('an iPhone', () => {
+describe('an iPhone or iPad', () => {
   it('pairs as an iPhone with a pairing code or a device code', async () => {
     const w = await world()
     const listed = ok(await owner.agent.get(`/api/workspaces/${w.ws}/clients/${w.phone.clientId}`), 'client')
-    expect(listed).toMatchObject({ name: 'Sam’s iPhone', os: 'ios', arch: 'arm64', online: false, lastSeenAt: null })
+    expect(listed).toMatchObject({ name: 'Front Desk iPhone', os: 'ios', arch: 'arm64', online: false, lastSeenAt: null })
 
     const code = ok(await readReply(await call('/api/client/device/code', jsonInit(PHONE))), 'device code')
     expect(ok(await owner.agent.get(`/api/device/${code.userCode}`), 'describe')).toMatchObject({ hostname: 'iPhone', os: 'ios' })
+  })
+
+  it('pairs an iPad as an iPad', async () => {
+    const ws = await freshWorkspace(owner, 'Studio')
+    const tablet = await pairPhone(ws, TABLET)
+    expect(ok(await owner.agent.get(`/api/workspaces/${ws}/clients/${tablet.clientId}`), 'client')).toMatchObject({ name: 'Front Desk iPad', os: 'ipados' })
   })
 
   it('reads the same printers a desktop gets in its remote printers snapshot', async () => {
@@ -91,7 +98,7 @@ describe('an iPhone', () => {
 
     const all = ok(await w.phone.agent.get('/api/client/jobs'), 'jobs')
     expect(all.items.map((j: { id: string }) => j.id)).toEqual([second, first])
-    expect(all.items[0]).toMatchObject({ title: 'Recipe', status: 'queued', source: 'device', sourceClientName: 'Sam’s iPhone' })
+    expect(all.items[0]).toMatchObject({ title: 'Recipe', status: 'queued', source: 'device', sourceClientName: 'Front Desk iPhone' })
     expect(all.nextCursor).toBeNull()
 
     const page = ok(await w.phone.agent.get('/api/client/jobs?limit=1'), 'page 1')
@@ -104,7 +111,7 @@ describe('an iPhone', () => {
     const w = await world()
     expect(ok(await w.phone.agent.get('/api/client/me'), 'me')).toEqual({
       clientId: w.phone.clientId,
-      name: 'Sam’s iPhone',
+      name: 'Front Desk iPhone',
       workspaceId: w.ws,
       workspaceName: 'Studio',
     })
@@ -113,9 +120,12 @@ describe('an iPhone', () => {
   it('is never offered a client update', async () => {
     const w = await world()
     await env.FILES.put('downloads/latest.json', JSON.stringify({ version: '9.0.0', files: { 'macos-universal': { name: 'a.zip', sha256: 'a'.repeat(64), size: 1 } } }))
-    const reply = await w.phone.agent.get('/api/client/latest?os=macos&arch=aarch64')
-    expect(reply.status).toBe(404)
-    expect(reply.body.error.code).toBe('no_build')
+    const tablet = await pairPhone(w.ws, TABLET)
+    for (const agent of [w.phone.agent, tablet.agent]) {
+      const reply = await agent.get('/api/client/latest?os=macos&arch=aarch64')
+      expect(reply.status).toBe(404)
+      expect(reply.body.error.code).toBe('no_build')
+    }
   })
 
   it('records when it was last used, since it never stays connected', async () => {

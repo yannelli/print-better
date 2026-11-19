@@ -1,7 +1,7 @@
 import { CheckCircle2, RefreshCw } from 'lucide-react'
 import { Link } from 'wouter'
 import { toast } from 'sonner'
-import type { Client } from '@shared/types'
+import { type Client, isMobileOs } from '@shared/types'
 import { Mono } from '@/components/page'
 import { wsHref } from '@/components/shell/app-actions'
 import { Button, buttonVariants } from '@/components/ui/button'
@@ -15,7 +15,7 @@ import { StepHeading } from './steps'
 
 function Waiting({ kind }: { kind: DeviceChoice }) {
   const isPi = kind === 'pi'
-  const isPhone = kind === 'iphone'
+  const isMobile = kind === 'mobile'
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-5 rounded-3xl border bg-card p-6">
@@ -24,11 +24,11 @@ function Waiting({ kind }: { kind: DeviceChoice }) {
           <span className="relative size-6 rounded-full bg-brand" />
         </span>
         <div className="flex flex-col gap-1">
-          <h2 className="text-xl font-semibold tracking-tight">{isPhone ? 'Waiting for your iPhone…' : 'Waiting for your device…'}</h2>
+          <h2 className="text-xl font-semibold tracking-tight">{isMobile ? 'Waiting for your iPhone or iPad…' : 'Waiting for your device…'}</h2>
           <p className="text-muted-foreground">
             {isPi
               ? 'A Raspberry Pi takes about 5 to 10 minutes to start the first time.'
-              : isPhone
+              : isMobile
                 ? 'It connects as soon as you scan the code and tap Connect.'
                 : 'This usually takes a minute.'}
           </p>
@@ -37,8 +37,8 @@ function Waiting({ kind }: { kind: DeviceChoice }) {
       <div className="flex flex-col gap-2 text-[0.9375rem]">
         <p className="font-medium">Taking longer than expected? Check that:</p>
         <ul className="ml-5 flex list-disc flex-col gap-1.5 text-muted-foreground">
-          {isPhone ? (
-            <li>the Print Better app on the iPhone says it’s connected,</li>
+          {isMobile ? (
+            <li>the Print Better app on the iPhone or iPad says it’s connected,</li>
           ) : (
             <li>the install finished without showing an error,</li>
           )}
@@ -90,7 +90,7 @@ function Connected({ ws, client, onContinue }: { ws: string; client: Client; onC
   )
 }
 
-function PhoneConnected({ ws, client }: { ws: string; client: Client }) {
+function MobileConnected({ ws, client }: { ws: string; client: Client }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start gap-5 rounded-3xl bg-ok-container p-6 text-on-ok-container">
@@ -113,6 +113,6 @@ function PhoneConnected({ ws, client }: { ws: string; client: Client }) {
 }
 
 export function WaitForDevice({ ws, client, kind, onContinue }: { ws: string; client: Client | null; kind: DeviceChoice; onContinue: () => void }) {
-  const connected = client && (client.os === 'ios' ? <PhoneConnected ws={ws} client={client} /> : <Connected ws={ws} client={client} onContinue={onContinue} />)
+  const connected = client && (isMobileOs(client.os) ? <MobileConnected ws={ws} client={client} /> : <Connected ws={ws} client={client} onContinue={onContinue} />)
   return <div aria-live="polite">{connected || <Waiting kind={kind} />}</div>
 }

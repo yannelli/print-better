@@ -13,7 +13,7 @@ import { plural, timeAgo } from '@/lib/format'
 import { availableUpdate } from '@/lib/updates'
 import { deviceKind } from '@/lib/words'
 import { DeviceIcon } from './device-icon'
-import { deviceStatus, isPhone } from './phone'
+import { deviceStatus, isMobile } from './mobile'
 import { UpdateBadge } from './update-badge'
 
 function DeviceRow({ ws, client, printers, update }: { ws: string; client: Client; printers: Printer[]; update: string | null }) {
@@ -32,13 +32,13 @@ function DeviceRow({ ws, client, printers, update }: { ws: string; client: Clien
           <span className="truncate text-base font-medium">{client.name}</span>
           <span className="flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span>{deviceKind(client)}</span>
-            {!isPhone(client) && (
+            {!isMobile(client) && (
               <span>
                 {plural(added, 'printer')}
                 {found > 0 && `, ${found} more found`}
               </span>
             )}
-            {!client.online && !isPhone(client) && <span>Last seen {timeAgo(client.lastSeenAt)}</span>}
+            {!client.online && !isMobile(client) && <span>Last seen {timeAgo(client.lastSeenAt)}</span>}
             {client.version && <Mono>v{client.version}</Mono>}
             {update && <UpdateBadge version={update} />}
           </span>
