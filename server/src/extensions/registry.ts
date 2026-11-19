@@ -13,8 +13,8 @@ export interface SlotProps {
   printerSharingNote: { ws: string; printer: Printer }
   /** A tab next to People on the Members page. */
   membersTab: { ws: string }
-  /** A section on Workspace settings, after the core ones. */
-  settingsSection: { ws: string; workspace: Workspace }
+  /** A tab on Workspace settings, before Extensions. */
+  settingsTab: { ws: string; workspace: Workspace }
   /** A section on a device's page. */
   deviceSection: { ws: string; client: Client }
 }

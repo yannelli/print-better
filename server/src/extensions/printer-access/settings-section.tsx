@@ -40,7 +40,7 @@ function DefaultRole({ ws, access, canEdit }: { ws: string; access: WorkspaceAcc
   )
 }
 
-export default function PrinterAccessSettings({ ws }: SlotProps['settingsSection']) {
+export default function PrinterAccessSettings({ ws }: SlotProps['settingsTab']) {
   const access = useWorkspaceAccess(ws)
   const canEdit = useCanManage()
   return (

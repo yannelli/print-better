@@ -16,7 +16,7 @@ export const printerAccessUi: ExtensionUi = {
     printerBadge: [{ id: 'restricted', Component: lazy(() => import('./restricted-badge')) }],
     printerSharingNote: [{ id: 'lan-restricted', Component: lazy(() => import('./lan-share-note')) }],
     membersTab: [{ id: 'groups', label: 'Groups', Component: lazy(() => import('./groups-tab')) }],
-    settingsSection: [{ id: 'printer-access', Component: lazy(() => import('./settings-section')) }],
+    settingsTab: [{ id: 'printer-access', label: 'Printer access', Component: lazy(() => import('./settings-section')) }],
     deviceSection: [
       { id: 'printer-access', Component: lazy(() => import('./device-section')), visible: (_props, { canManage }) => canManage },
     ],
