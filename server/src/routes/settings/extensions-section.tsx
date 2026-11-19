@@ -97,7 +97,7 @@ function ExtensionRow({ ws, extension, isOwner }: { ws: string; extension: Works
 export function ExtensionsSection({ ws, isOwner }: { ws: string; isOwner: boolean }) {
   const extensions = useExtensions(ws)
   return (
-    <Section id="extensions" title="Extensions" description="Optional features you can turn on for this workspace." flush>
+    <Section id="extensions" description="Optional features you can turn on for this workspace." flush>
       <QueryState query={extensions}>
         {(list) => (
           <ul>

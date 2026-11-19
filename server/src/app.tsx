@@ -44,7 +44,7 @@ function WorkspacePages() {
         <Route path="/devices/add" component={AddDevice} />
         <Route path="/devices/:id" component={DeviceDetail} />
         <Route path="/members/:tab?" component={Members} />
-        <Route path="/settings" component={WorkspaceSettings} />
+        <Route path="/settings/:tab?" component={WorkspaceSettings} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
