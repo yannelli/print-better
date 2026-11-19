@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping. This file covers setup, the checks to run, the commit format, and how releases work.
+Thanks for helping.
 
 ## Setup
 
@@ -9,7 +9,7 @@ You need:
 - Node.js 22.12 or later with pnpm, for the server
 - Rust 1.92 or later, for the client
 
-All installs stay inside the repo. Nothing needs a global install.
+All installs stay inside the repo.
 
 ```sh
 scripts/dev.sh   # installs packages, migrates the local D1, and serves http://localhost:5173
@@ -33,7 +33,7 @@ Code rules:
 - Files under 300 lines
 - Short comments that explain why
 
-## Before you open a pull request
+## Before You Open a Pull Request
 
 ```sh
 pnpm --dir server check
@@ -52,7 +52,7 @@ The tests use local fakes. They don't need a Cloudflare account or a real printe
 
 `main` is the default branch and holds releases. Create feature branches from `main` and open pull requests against `main`.
 
-## Commit and PR format
+## Commit and PR Format
 
 Use [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) for commit subjects and PR titles:
 
@@ -72,7 +72,7 @@ PR bodies describe:
 
 ## Versions
 
-Versions follow [Semantic Versioning](https://semver.org/). Tags are `vX.Y.Z`. The server and the client share one version, set in three places:
+Versions follow [Semantic Versioning](https://semver.org/). Tags are `vX.Y.Z`. The server and the client share a single version, set in 3 places:
 
 - `client/Cargo.toml` (`[workspace.package] version`)
 - `server/package.json`
@@ -101,7 +101,7 @@ Protocol changes stay additive: Older clients ignore messages they don't know.
 
 The maintainer releases from a clean checkout of `main`:
 
-1. Set the new version in the three files above and add a section to [CHANGELOG.md](CHANGELOG.md).
+1. Set the new version in the 3 files above and add a section to [CHANGELOG.md](CHANGELOG.md).
 2. Deploy the server: `scripts/deploy.sh`.
 3. Build, sign, notarize, and publish the clients: `scripts/release.sh --publish remote`.
 4. Tag `vX.Y.Z` and publish the GitHub release with the files from `build/<version>/dist/`.

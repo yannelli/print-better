@@ -1,10 +1,10 @@
-# Printer access
+# Printer Access
 
 **Printer access** is an [extension](extensions.md) that controls who can see, print to, and manage each printer. It is off by default.
 
 Without it, every member can see every printer, print to every added printer, and see every job. Owners and admins can change everything.
 
-## Turning it on
+## Turning It On
 
 1. A server admin opens **Server admin > Extensions** and turns on **Available to workspaces** for **Printer access**.
 2. A workspace owner opens **Workspace settings > Extensions**, turns on **Printer access**, and clicks **Turn on** to confirm. A **Printer access** tab appears in **Workspace settings**.
@@ -36,20 +36,20 @@ A role is a named set of permissions.
 | **User** | `view`, `print`, `jobs.read` |
 | **Manager** | all six |
 
-Admins can create **custom roles** from any combination of the six permissions, for example "Prints, sees only own jobs" (`view`, `print`).
+Admins can create **custom roles** from any combination of the 6 permissions, for example "Prints, sees only own jobs" (`view`, `print`).
 
 Admins can edit a custom role while it's in use, and everyone holding it changes at once. A custom role can't be deleted while a grant, a printer's Everyone setting, or the workspace default uses it.
 
-### Who can be granted access
+### Who Can Be Granted Access
 
 - **Everyone**: every member and every device of the workspace.
-- **A member**: one person. Their API tokens and AI assistant connections act as them, still limited by the token's scopes.
+- **A member**: a single person. Their API tokens and AI assistant connections act as them, still limited by the token's scopes.
 - **A group**: a named set of members and devices, managed under **Members > Groups**.
-- **A device**: one paired computer or Raspberry Pi. Device access decides which printers appear in that computer's print window and which jobs it may send.
+- **A device**: a single paired computer or Raspberry Pi. Device access decides which printers appear in that computer's print window and which jobs it may send.
 
 ### Grants
 
-A grant gives a role to a member, a group, or a device, either on **one printer** or on **every printer** in the workspace (a workspace-wide grant, for example "IT group: Manager on every printer").
+A grant gives a role to a member, a group, or a device, either on **1 printer** or on **every printer** in the workspace (a workspace-wide grant, for example "IT group: Manager on every printer").
 
 Grants never go to Everyone. What Everyone gets is set per printer and by the workspace default, so a restricted printer stays restricted.
 
@@ -60,7 +60,7 @@ Each printer also has an **Everyone** setting, set to one of:
 
 Setting Everyone to **No access** makes a printer **restricted**: Only owners, admins, and explicit grants can use it.
 
-## How access is decided
+## How Access Is Decided
 
 For an actor and a printer, in order:
 
@@ -78,7 +78,7 @@ To keep someone out of a printer:
 1. Set the printer's **Everyone** setting to **No access**.
 2. Grant a role on that printer to the people who need it.
 
-## What changes where
+## What Changes Where
 
 | Place | With the extension active |
 |---|---|
@@ -96,9 +96,9 @@ To keep someone out of a printer:
 
 LAN sharing is outside access control: A printer shared on the local network can be used by anyone on that network. The printer settings page warns about this when a restricted printer is shared.
 
-## Turning it off
+## Turning It Off
 
-Turn off either switch from [Turning it on](#turning-it-on). The default rules apply immediately.
+Turn off either switch from [Turning It On](#turning-it-on). The default rules apply immediately.
 
 Groups, roles, and grants are kept, so turning it back on restores them.
 

@@ -4,11 +4,11 @@
 |---|---|
 | **Status** | Phase 1 shipped (0.1.x). Phase 2 in planning. |
 | **Owner** | Maintainer (see [README](../README.md#maintainer)) |
-| **Related** | [Architecture](architecture.md), [Remote printers](remote-printers.md), [Client protocol](protocol.md), [MCP server](mcp.md) |
+| **Related** | [Architecture](architecture.md), [Remote Printers on Desktops](remote-printers.md), [Client Protocol (v1)](protocol.md), [MCP Server](mcp.md) |
 
 ## 1. Summary
 
-Print Better makes printing reliable and easy for people who should never have to think about it. It has two parts:
+Print Better makes printing reliable and easy for people who should never have to think about it. It has 2 parts:
 
 - A self-hosted **print server** that runs on the owner's Cloudflare account
 - A small **client** (`printbetter`) that runs on any computer next to a printer
@@ -20,30 +20,30 @@ By default, anyone in a workspace can print to any of its printers from the web,
 Printing is one of the least reliable parts of everyday computing:
 
 - **Setup is fragile.** Drivers, ports, and vendor apps fail in ways newcomers and older users can't diagnose. The family "IT person" fixes the same printer over and over.
-- **Printers are tied to one network.** AirPrint and IPP Everywhere only work on the local network. Printing from work, from a phone on cellular, or from a laptop at a café usually means a cloud service tied to one vendor.
+- **Printers are tied to a single network.** AirPrint and IPP Everywhere only work on the local network. Printing from work, from a phone on cellular, or from a laptop at a café usually means a cloud service tied to a single vendor.
 - **Jobs get lost.** When a computer sleeps, a printer is offline, or Wi-Fi drops, jobs disappear or hang without a clear reason.
 - **Discovery is slow and duplicated.** Print dialogs list the same printer more than once or take a long time to find it.
 - **Nothing is scriptable or assistant-friendly.** There is no simple, permissioned API to print, check toner, or set up a new printer from code or an AI assistant.
 
-## 3. Goals and non-goals
+## 3. Goals and Non-Goals
 
 ### Goals
 
-1. **Minimal clicks.** Someone who has never set up a printer goes from nothing to a printed page with one command or one installer, plus one approval in the browser.
+1. **Minimal clicks.** Someone who has never set up a printer goes from nothing to a printed page with 1 command or 1 installer, plus 1 approval in the browser.
 2. **Reliable by default.** A submitted job prints, or fails with a reason a person can understand. It never disappears silently.
 3. **Works with the printers people already own.** Driverless IPP, raw sockets, LPD, USB, and the operating system's print system, with conversion for printers that cannot read PDF.
 4. **Native print dialogs.** Printers on other devices appear as ordinary printers in macOS and Linux print dialogs, with no duplicates.
 5. **Adjustable at every level.** Every automatic behavior (discovery, auto-add, defaults, sharing, updates) can be changed per workspace, per device, or per printer.
 6. **Fully operable by AI assistants.** MCP can do everything the web app can, with the same permissions.
-7. **Self-hosted and small.** One Worker deployment on the owner's account, few dependencies, and no third-party print cloud.
+7. **Self-hosted and small.** A single Worker deployment on the owner's account, few dependencies, and no third-party print cloud.
 
-### Non-goals (phase 1)
+### Non-Goals (Phase 1)
 
-- Phase 1 does not replace CUPS or the Windows spooler as the local print system.
-- Phase 1 does not support vendor-specific driver features (custom finishing units, proprietary color profiles).
-- Phase 1 has no billing, quotas, or print accounting for large organizations.
-- Phase 1 has no hosted multi-tenant service run by the project.
-- Phase 1 has no public IPP endpoint on the server (printing to the server directly from any OS).
+- Replacing CUPS or the Windows spooler as the local print system
+- Vendor-specific driver features (custom finishing units, proprietary color profiles)
+- Billing, quotas, or print accounting for large organizations
+- A hosted multi-tenant service run by the project
+- A public IPP endpoint on the server (printing to the server directly from any OS)
 
 ## 4. Users
 
@@ -64,7 +64,7 @@ Printing is one of the least reliable parts of everyday computing:
 - **Few dependencies.** Small protocol pieces (IPP, MCP, OAuth, WebAuthn, OIDC, raster encoders) are written in-house when that avoids real bloat.
 - **Small files, clear code.** Files stay under 300 lines; comments explain why.
 
-## 6. Scope and requirements
+## 6. Scope and Requirements
 
 Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 
@@ -79,7 +79,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | S-5 | Deployable by one script that also creates the secrets it needs | Shipped |
 | S-6 | A container build (workerd or Docker) for hosts other than Cloudflare | Later |
 
-### 6.2 Accounts and access
+### 6.2 Accounts and Access
 
 | ID | Requirement | Status |
 |---|---|---|
@@ -91,7 +91,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | A-6 | Extensions: optional modules that stay off until a server admin makes one available and a workspace owner turns it on; turning one off restores the default rules and keeps its data | Shipped |
 | A-7 | Printer access extension: who can see, print to, and manage each printer, with built-in and custom roles, groups of members and devices, and device rules, applied the same way in the web app, API, MCP, email, and print windows | Shipped |
 
-### 6.3 Devices and setup
+### 6.3 Devices and Setup
 
 | ID | Requirement | Status |
 |---|---|---|
@@ -105,7 +105,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | D-8 | Microcontroller bridge firmware (ESP32 class) that connects a USB or network printer; the protocol already avoids assuming a full OS | Later |
 | D-9 | Signed Windows builds | Later |
 
-### 6.4 Discovery and printers
+### 6.4 Discovery and Printers
 
 | ID | Requirement | Status |
 |---|---|---|
@@ -114,7 +114,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | P-3 | Printer health every 60 s: state, reasons (out of paper, toner low), supply levels | Shipped |
 | P-4 | Per-printer name, location, and default job options | Shipped |
 
-### 6.5 Printing and jobs
+### 6.5 Printing and Jobs
 
 | ID | Requirement | Status |
 |---|---|---|
@@ -125,7 +125,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | J-5 | Options: copies, media, sides, color mode, orientation, page ranges, fit, quality | Shipped |
 | J-6 | Cancel and retry from any surface; history shows where each job came from | Shipped |
 
-### 6.6 Remote printers (native print dialogs)
+### 6.6 Remote Printers (Native Print Dialogs)
 
 | ID | Requirement | Status |
 |---|---|---|
@@ -136,7 +136,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | R-5 | From the web app, choose which printers appear on each computer and set its default printer | Shipped |
 | R-6 | Remote printers on Windows | Later |
 
-### 6.7 Sharing and email
+### 6.7 Sharing and Email
 
 | ID | Requirement | Status |
 |---|---|---|
@@ -153,7 +153,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | M-3 | Tools cover everything the web app can do, including first-time setup, with the same permission checks as REST | Shipped |
 | M-4 | Documented REST API for every web app action | Shipped |
 
-### 6.9 Web app
+### 6.9 Web App
 
 | ID | Requirement | Status |
 |---|---|---|
@@ -162,7 +162,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | W-3 | Light, dark, and system themes; accent color, text size, and density settings | Shipped |
 | W-4 | Live updates over WebSocket; no manual refresh | Shipped |
 
-## 7. Non-functional requirements
+## 7. Non-Functional Requirements
 
 | Area | Requirement |
 |---|---|
@@ -175,15 +175,15 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | Operability | Every device problem shows up in the web app, the menu bar icon, and `printbetter doctor`. |
 | Accessibility | Keyboard and screen reader friendly; WCAG 2.2 AA contrast in every theme. |
 
-## 8. Key flows
+## 8. Key Flows
 
-1. **First run.** The owner deploys the Worker with one script, opens the setup link, and creates the first account (or lets an AI assistant do it over MCP).
-2. **Add a computer.** Copy one command (or double-click the macOS installer), approve the device code in the browser. Printers it finds appear in the web app, added automatically under the `smart` policy.
+1. **First run.** The owner deploys the Worker with 1 script, opens the setup link, and creates the first account (or lets an AI assistant do it over MCP).
+2. **Add a computer.** Copy 1 command (or double-click the macOS installer), approve the device code in the browser. Printers it finds appear in the web app, added automatically under the `smart` policy.
 3. **Print from a laptop away from home.** The home printer is already in Cmd+P. The job goes to the server, waits if the home device is asleep, and prints when it wakes. The laptop shows progress in the print queue.
 4. **Fix a problem remotely.** The helper sees "Out of paper in Tray 2" on the dashboard, asks someone at home to refill it, and the job resumes on its own.
 5. **Ask an assistant.** "Print this PDF two-sided on the office printer and tell me when it's done" works through MCP with the user's own permissions.
 
-## 9. Success metrics
+## 9. Success Metrics
 
 | Metric | Target |
 |---|---|
@@ -194,7 +194,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | Duplicate printers in a print dialog | Zero |
 | Support questions that need a terminal | Zero for the everyday printer persona |
 
-## 10. Risks and mitigations
+## 10. Risks and Mitigations
 
 | Risk | Mitigation |
 |---|---|
@@ -204,7 +204,7 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 | Self-hosters on an older server version | Clients and server share a versioned protocol; release notes call out deploy order |
 | Cloudflare platform limits | Documents stream to R2; the Durable Object stores only socket state; D1 holds the rest |
 
-## 11. Release plan
+## 11. Release Plan
 
 - **0.1.0 to 0.1.2 (shipped):** server, web app, accounts, MCP, client for macOS, Linux, and Windows, remote printers on macOS and Linux, automatic updates, and unattended updates for the Linux system service.
 - **0.1.3 (shipped):** supply levels and full options in native print dialogs, per-computer printer control and default printer from the web app.
@@ -212,8 +212,8 @@ Status key: **Shipped** (in 0.1.x), **Next** (0.1.6), **Later** (phase 2).
 - **0.1.5 (shipped):** the docs site every server serves at `/docs`, workspace settings in tabs, and warnings for jobs a printer only partly printed.
 - **Phase 2:** microcontroller bridge firmware, remote printers on Windows, signed Windows builds, a container build for non-Cloudflare hosts, and a public IPP endpoint on the server.
 
-## 12. Open questions
+## 12. Open Questions
 
-- Should a computer's default printer set in the web app win over one changed locally, or should the last change win? Resolved in 0.1.3: The local change wins, and picking the printer again in the web app applies it again ([Remote printers](remote-printers.md)).
-- Is a public IPP endpoint worth the extra attack surface, or do native remote printers cover the need? Currently unknown.
-- Which microcontroller boards should be supported first, and over which transport (Wi-Fi only, or Ethernet too)? Currently unknown.
+- Should a computer's default printer set in the web app win over one changed locally, or should the last change win? Resolved in 0.1.3: The local change wins, and picking the printer again in the web app applies it again ([Remote Printers on Desktops](remote-printers.md)).
+- Is a public IPP endpoint worth the extra attack surface, or do native remote printers cover the need?
+- Which microcontroller boards should be supported first, and over which transport (Wi-Fi only, or Ethernet too)?

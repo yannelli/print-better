@@ -1,6 +1,6 @@
-# Print Better: printing protocol research (as of 2026-11-18)
+# Print Better: Printing Protocol Research (as of 2026-11-18)
 
-The Print Better client has to find printers on the LAN, read what they support, and send them jobs in a format they accept. It also shares those printers to phones and laptops as AirPrint/IPP Everywhere printers, and has to run on a Raspberry Pi set up on first boot. These notes collect the wire formats and rules for each piece.
+The Print Better client has to find printers on the LAN, read what they support, and send them jobs in a format they accept. It also shares those printers to phones and laptops as AirPrint/IPP Everywhere printers, and has to run on a Raspberry Pi set up on first boot.
 
 Markers used below:
 - [V]: read in the primary text this session.
@@ -9,7 +9,7 @@ Markers used below:
 
 All integers are big-endian. Sources are listed under each section.
 
-## 1. IPP wire encoding
+## 1. IPP Wire Encoding
 An IPP request is an HTTP POST with Content-Type `application/ipp`. The body is a short binary header, groups of tagged attributes, an end tag (03), and then the document bytes. The response uses the same layout with a status code in place of the operation id.
 
 Sources: RFC 8010 (rfc-editor.org/rfc/rfc8010), RFC 8011 (.../rfc8011), IANA IPP registry (iana.org/assignments/ipp-registrations/ipp-registrations.xml), cups.org/doc/spec-ipp.html
@@ -72,7 +72,7 @@ HTTP [V 8010 s4-5]:
 
 printer-state-reasons: keyword plus optional `-report|-warning|-error`; any `-error` forces printer-state=stopped; no suffix means error if stopped else warning. Surface: media-empty, media-needed, media-low, media-jam, toner-empty, toner-low, marker-supply-empty, marker-supply-low, marker-waste-almost-full, marker-waste-full, cover-open, door-open, input-tray-missing, output-area-full, output-area-almost-full, paused, shutdown, timed-out, spool-area-full, connecting-to-device, other, interpreter-resource-unavailable, fuser-over-temp, opc-life-over (all in RFC 8011), identify-printer-requested (IANA, PWG 5100.13). `offline-report` is NOT in RFC 8011, IANA, or CUPS master backends: no standard "offline" keyword; treat connect failure as offline yourself.
 
-## 2. Capability model (Get-Printer-Attributes)
+## 2. Capability Model (Get-Printer-Attributes)
 Sources: RFC 8011 4.2.5, PWG 5100.14 v1.1 (ftp.pwg.org/pub/pwg/candidates/cs-ippeve11-20200515-5100.14.pdf) tables 5-7, PWG 5102.4, cups.org/doc/spec-ipp.html. Omit requested-attributes = "all". Pass `document-format` to get per-format values.
 
 | Attribute | Syntax / notes |
@@ -106,7 +106,7 @@ Sources: PWG 5100.14 s4.2 and s5; Apple Bonjour Printing Spec 1.2.1 (developer.a
 | LOC record | | MUST per 5100.14 4.2.3 (geo, 0x99 if accuracy unknown) |
 | `_http._tcp,_printer` (web UI), `_pdl-datastream._tcp` (only if raw 9100 truly served) | | optional |
 
-mDNS wire notes [V RFC 6762/6763 at rfc-editor.org]: UDP 5353 to 224.0.0.251 / FF02::FB. Probe 3x (random 0-250 ms delay, then 250 ms apart), then announce at least 2x one second apart. TTL 120 s for records naming a host (A, AAAA, SRV), 75 min (4500 s) for PTR and TXT. Cache-flush bit = top bit of rrclass on unique records (SRV, TXT, A, AAAA), not on shared PTR. Records: PTR `_ipp._tcp.local` -> `Name._ipp._tcp.local`; subtype PTR `_universal._sub._ipp._tcp.local` -> same instance; SRV (port, target `host.local`); TXT; A/AAAA. Two responders on one host give conflicting answers (airprint-usb-bridge README): on hosts already running avahi or mDNSResponder, register through them instead of binding 5353 yourself [I].
+mDNS wire notes [V RFC 6762/6763 at rfc-editor.org]: UDP 5353 to 224.0.0.251 / FF02::FB. Probe 3x (random 0-250 ms delay, then 250 ms apart), then announce at least 2x 1 second apart. TTL 120 s for records naming a host (A, AAAA, SRV), 75 min (4500 s) for PTR and TXT. Cache-flush bit = top bit of rrclass on unique records (SRV, TXT, A, AAAA), not on shared PTR. Records: PTR `_ipp._tcp.local` -> `Name._ipp._tcp.local`; subtype PTR `_universal._sub._ipp._tcp.local` -> same instance; SRV (port, target `host.local`); TXT; A/AAAA. Two responders on one host give conflicting answers (airprint-usb-bridge README): on hosts already running avahi or mDNSResponder, register through them instead of binding 5353 yourself [I].
 
 Instance name: <=63 bytes UTF-8, no unique id by default, same name on every service, conflict suffix " (2)"; host label letters/digits/hyphen. Name/host stable across reboots (persist). Re-register all services on name change.
 
@@ -138,8 +138,8 @@ TLS/IPPS: no public Apple document requires IPPS for iOS or macOS; Apple's deplo
 
 Formats iOS sends: UNVERIFIED. Evidence: URF is the only hard requirement; cups-filters ships `urftopdf` (iOS to CUPS queues, [I]); PAPPL accepts JPEG, PNG, PWG Raster, Apple Raster and no PDF. Windows and Android format choice: UNVERIFIED. Plan: decode URF, PWG raster, JPEG; PDF only if you add a rasterizer.
 
-## 4. Raster formats
-Each format below wraps rasterized page pixels in a header the printer can read. PWG Raster and Apple URF share one compression scheme.
+## 4. Raster Formats
+Each format below wraps rasterized page pixels in a header the printer can read. PWG Raster and Apple URF share the same compression scheme.
 
 Sources: PWG 5102.4 (ftp.pwg.org/pub/pwg/candidates/cs-ippraster10-20120420-5102.4.pdf), CUPS cups/raster-stream.c + raster.h, cups-filters urftopdf.cpp, HP PCL 5 Technical Reference (hp.com/ctg/Manual/bpl13210.pdf), HP Color LaserJet Developer's Guide (mirror pic.hallikainen.org/techref/language/pcl/LJCQREF.PDF), Adobe PLRM 3rd ed. (adobe.com/jp/print/postscript/pdfs/PLRM.pdf).
 
@@ -183,9 +183,9 @@ File header 12 bytes: "UNIRAST\0" + u32 page count. Then per page a 32-byte head
 | 12 / 16 / 20 | width / height / dpi (u32; ONE dpi, square pixels; CUPS writer rejects non-integer x/y ratios) |
 | 24-31 | 0 |
 
-Bitmap compression = identical line-repeat + PixelPackBits scheme as PWG Raster (CUPS uses one decoder for both). CUPS/PAPPL advertise 8-bit minimum ("W8") and never 1-bit URF [I]. Height of the whole page is in the header, so buffering or known page size is required.
+Bitmap compression = identical line-repeat + PixelPackBits scheme as PWG Raster (CUPS uses 1 decoder for both). CUPS/PAPPL advertise 8-bit minimum ("W8") and never 1-bit URF [I]. Height of the whole page is in the header, so buffering or known page size is required.
 
-### PCL 5 minimal raster job (HP TRM ch. 4, 5, 15; Color LJ guide ch. 4)
+### PCL 5 Minimal Raster Job (HP TRM Ch. 4, 5, 15; Color LJ Guide Ch. 4)
 ```
 ESC%-12345X @PJL ENTER LANGUAGE = PCL\r\n    UEL + PJL; HP sample also uses @PJL COMMENT
 ESC E                  reset          ESC&l26A  size: 1 exec, 2 letter, 3 legal, 6 ledger, 26 A4, 27 A3
@@ -202,7 +202,7 @@ Color (PCL 5c): before `*r1A` send `ESC*v6W 00 03 00 08 08 08` (device RGB, dire
 
 PackBits in PCL (method 2): control 0-127 = n+1 literals, 129-255 = (257-c) repeats, 128 = NOP; `*b#W` count wins over control bytes. Gotchas: raster is placed in the LOGICAL page, inset from paper (300 dpi: Letter 2550x3300 physical, 2400 wide logical, 75 px left offset; A4 2480x3507 physical, 2338 wide, 71 px) so full-bleed is clipped (table 2-1 col E, offset meaning [I]), and A4 is 3507 rows not 3508; `*rC` not on LaserJet III; PJL JOB/EOJ/USTATUS framing UNVERIFIED (PJL manual not fetched). PCL XL is a separate binary language, out of scope.
 
-### PostScript raster page (LanguageLevel 2, PLRM 3.13, 4.10)
+### PostScript Raster Page (LanguageLevel 2, PLRM 3.13, 4.10)
 ```
 %!PS-Adobe-3.0
 << /PageSize [595 842] >> setpagedevice
@@ -217,10 +217,10 @@ RunLengthEncode: length 0-127 copies n+1 literals, 129-255 repeats next byte 257
 
 ## 5. AppSocket, LPD, IEEE 1284, SNMP
 Sources: RFC 1179, CUPS backend/socket.c, lpd.c, usb-libusb.c, snmp.c, backend-private.h; USB Printer Class 1.1 (usb.org/sites/default/files/usbprint11a021811.pdf); Bonjour spec s9.2.10-12.
-- AppSocket: TCP 9100 (CUPS default), raw bytes, no framing or ack. CUPS flow: connect with retry (one client at a time [I]), write all, `shutdown(SHUT_WR)`, drain back-channel up to 90 s ("waiteof" default on), optionally read page count via SNMP. Completion detection: PJL USTATUS or SNMP prtMarkerLifeCount (UNVERIFIED for PJL). Closing early can truncate [I].
+- AppSocket: TCP 9100 (CUPS default), raw bytes, no framing or ack. CUPS flow: connect with retry (1 client at a time [I]), write all, `shutdown(SHUT_WR)`, drain back-channel up to 90 s ("waiteof" default on), optionally read page count via SNMP. Completion detection: PJL USTATUS or SNMP prtMarkerLifeCount (UNVERIFIED for PJL). Closing early can truncate [I].
 - LPD (RFC 1179, TCP 515, source port 721-731 per RFC; CUPS uses an unreserved port when not root, many printers accept [V code, I]): `02 <queue> LF` -> ack(00); `02 <len> SP cfA<3-digit job><host> LF` -> ack; control file bytes + `00` -> ack; `03 <len> SP dfA<nnn><host> LF` -> ack; data + `00` -> ack; close. Control file lines: `H<host>`, `P<user>`, `J<job>`, `N<name>`, `l dfA<nnn><host>` (raw print, no filtering), `U dfA...`. Control first (CUPS default); servers MUST accept it first, SHOULD accept data first. Size 0 = unknown (no trailing byte semantics, UNVERIFIED). Queue names are vendor specific (TXT `rp`).
 - USB IEEE 1284 ID [V class spec 4.2.1 + CUPS]: control IN, bmRequestType A1, bRequest 0 GET_DEVICE_ID, wValue = config index (0-based), wIndex = (interface index << 8) | alt setting, wLength = buffer (1024). Reply = u16 BE total length including itself, then `MFG:Brand;MDL:Model;CMD:PJL,PCL,PCLXL,POSTSCRIPT;CLS:PRINTER;DES:...;`. Buggy printers send the length little-endian: if length > bufsize or < 14, swap bytes (CUPS). Keys also written MANUFACTURER, MODEL, COMMAND SET. CMD tokens to PDL: `PS,PDF17,PCL` is Bonjour's example; map POSTSCRIPT/PS to application/postscript, PCL to application/vnd.hp-PCL, PDF to application/pdf, URF, PWG (token spellings UNVERIFIED). GET_PORT_STATUS: A1/1, 1 byte: bit5 paper empty, bit4 selected, bit3 NOT error (1 = ok). SOFT_RESET: 21/2 (v1.0 spec said 23).
-- SNMP discovery [V CUPS snmp.c]: SNMPv1, community "public", UDP 161; CUPS sends a GetRequest of hrDeviceType.1 to each interface broadcast address (IFF_BROADCAST), waits 3 s, then unicasts one OID per request: hrDeviceDescr.1, ppmPrinterIEEE1284DeviceId.1, ppmPortServiceNameOrURI.1.1, sysLocation.0, plus vendor IDs. Modern printers often disable v1/public (UNVERIFIED).
+- SNMP discovery [V CUPS snmp.c]: SNMPv1, community "public", UDP 161; CUPS sends a GetRequest of hrDeviceType.1 to each interface broadcast address (IFF_BROADCAST), waits 3 s, then unicasts 1 OID per request: hrDeviceDescr.1, ppmPrinterIEEE1284DeviceId.1, ppmPortServiceNameOrURI.1.1, sysLocation.0, plus vendor IDs. Modern printers often disable v1/public (UNVERIFIED).
 
 | OID | Meaning |
 |---|---|
@@ -237,11 +237,11 @@ BER (built and checked, sysDescr.0, 43 bytes): `30 29 02 01 00 04 06 "public" A0
 
 ## 6. IPP-over-USB
 Sources: github.com/OpenPrinting/ipp-usb, mankier.com/8/ipp-usb, robots.org.uk/IPPOverUSB (secondary), USB-IF "IPP Protocol 1.0" usb.org/sites/default/files/IPP_0.zip (2012-12-05, not opened).
-- Interface class 07 subclass 01 protocol 04 [V]; class descriptor bCapabilitiesType 00 carries capability bits, IPP versions, printer-uuid [secondary]. At least two such interfaces so status and a job run concurrently [secondary]. HTTP/1.1 over each interface's Bulk OUT/IN, `Host: localhost`, printer at /ipp/print, web UI at / [secondary].
+- Interface class 07 subclass 01 protocol 04 [V]; class descriptor bCapabilitiesType 00 carries capability bits, IPP versions, printer-uuid [secondary]. At least 2 such interfaces so status and a job run concurrently [secondary]. HTTP/1.1 over each interface's Bulk OUT/IN, `Host: localhost`, printer at /ipp/print, web UI at / [secondary].
 - ipp-usb is an HTTP reverse proxy, not a TCP relay (unread response bytes would leak to the next client); 2-3 USB connections, localhost port 60000-65535 persisted per VID/PID/serial, quirks files, blocks HTTP Upgrade (would pin a USB connection) [V].
 - Phase 1 recommendation [I]: skip. You need an HTTP/IPP stack anyway, but USB adds interface claiming (Linux usblp detach, Windows needs WinUSB or spooler), quirks, and truncated-job risks. Do raw USB (7/1/2 or 7/1/1 bulk OUT after reading 1284 ID) first, or the OS spooler on Windows; add IPP-USB in phase 2 as a transport that reuses the IPP client. Whether 7/1/4 devices also keep a 7/1/2 interface: UNVERIFIED.
 
-## 7. Raspberry Pi OS first boot
+## 7. Raspberry Pi OS First Boot
 Sources: downloads.raspberrypi.com/os_list_imagingutility_v4.json (parsed), github.com/raspberrypi/rpi-imager (doc/os_customisation_formats.md, src/customization_generator.cpp, src/downloadthread.cpp, src/cmdline_params.h, releases), raspberrypi.com/news/cloud-init-on-raspberry-pi-os/, docs.cloud-init.io/en/latest/reference/modules.html, doc.rust-lang.org/rustc/platform-support.html.
 - Current: Raspberry Pi OS Trixie images dated 2026-10-06 (armhf and arm64; Legacy Bookworm same date); Imager latest 2.0.12 (2026-10-08) [V manifest/releases].
 - Imager 2.x writes cloud-init for Trixie (`init_format: cloudinit-rpi`): FAT boot partition (/boot/firmware) gets `user-data` (Imager prepends `#cloud-config`), `network-config`, `meta-data` (`instance-id: rpi-imager-<epoch ms>`), and cmdline.txt gets ` ds=nocloud;i=<same id>` (plus `cfg80211.ieee80211_regdom=XX` when no SSID). Bookworm and the initial 2025-10-01 Trixie use `firstrun.sh` (`systemd`); Imager 1.x cannot customise Trixie (silently writes firstrun.sh). Imager 2.0.11+ also knows `rpi-preseed` (single rpi-preseed.toml) but the current Trixie manifest entries say cloudinit-rpi. Imager CLI flags `--cloudinit-userdata/--cloudinit-networkconfig`: UNVERIFIED (forum report only).
@@ -286,4 +286,4 @@ network:
 | armv7-unknown-linux-gnueabihf (tier 2) | Pi 2 and any 32-bit userland on 3/4/5 |
 | aarch64-unknown-linux-gnu (tier 1) | 64-bit Pi OS on 3/Zero 2 W/4/5 |
 
-Installer must detect userland with `dpkg --print-architecture` (armhf|arm64), not `uname -m`, since a 64-bit kernel can run 32-bit userland [I]. Zero W has 512 MB RAM and one armv6 core: keep the client small.
+Installer must detect userland with `dpkg --print-architecture` (armhf|arm64), not `uname -m`, since a 64-bit kernel can run 32-bit userland [I]. Zero W has 512 MB RAM and 1 armv6 core: keep the client small.

@@ -20,7 +20,7 @@
 
 Print Better is a print server you run on your own Cloudflare account, plus a small program (`printbetter`) that runs on a computer next to your printers. You send a document from the web app, from any app's print window, from a script, or from an AI assistant, and the client next to the printer prints it.
 
-To run your own, follow [Quick start](#quick-start): deploy the server, publish the client downloads, then add a device.
+To run your own, follow [Quick Start](#quick-start).
 
 - **Ways to print:** Upload a file in the web app, call the REST API, ask Claude or ChatGPT, or send an email (optional). Jobs wait on the server while a printer's computer is off and print when it comes back.
 - **Print windows:** On a Mac or Linux desktop, printers on your other devices show up in System Settings and in every app's Cmd+P dialog. It's on by default, with nothing to set up.
@@ -28,7 +28,7 @@ To run your own, follow [Quick start](#quick-start): deploy the server, publish 
 - **Printer support:** Driverless IPP and IPPS (AirPrint, IPP Everywhere), raw port 9100, LPD, USB, and the operating system's print system (CUPS, the Windows spooler). For printers that can't read PDF, the client converts pages to PWG, Apple, PCL, or PostScript raster.
 - **Reliability:** Jobs survive restarts and network drops, retry with backoff, and switch to another route to the same printer. Printer problems (out of paper, low toner) show up in plain language.
 - **Sign-in:** Username and password, passkeys, and optional Google or any OpenID Connect provider. Workspaces have owners, admins, and members, with invite links and recovery codes.
-- **Device setup:** Adding a computer takes one copy-paste command or one double-click on the signed macOS installer. For a Raspberry Pi, the web app writes the first-boot files for the SD card, and the Pi installs and connects on its first start.
+- **Device setup:** Adding a computer takes 1 copy-paste command or 1 double-click on the signed macOS installer. For a Raspberry Pi, the web app writes the first-boot files for the SD card, and the Pi installs and connects on its first start.
 - **Mac app:** The macOS app and installer are signed with a Developer ID, notarized, and stapled. A small menu bar icon shows whether printing works.
 - **AI assistants:** The built-in MCP server lets Claude, ChatGPT, Claude Code, and other MCP clients do everything the web app can, with the same permissions.
 
@@ -36,11 +36,9 @@ To run your own, follow [Quick start](#quick-start): deploy the server, publish 
 
 Printing at home or in a small office still breaks in the same ways: A laptop can't see the printer, a driver won't install, or someone has to ask for help to print a boarding pass.
 
-Print Better leaves the printers where they are and puts one small program on a computer next to them. Everyone else prints from the web app or a normal print window.
+Print Better leaves the printers where they are and puts 1 small program on a computer next to them. Everyone else prints from the web app or a normal print window. The client only makes outgoing connections, so you never open a port on your network.
 
-The client only makes outgoing connections, so you never open a port on your network.
-
-## How it works
+## How It Works
 
 ```text
  web app, REST API,     HTTPS    Cloudflare Worker   RPC   WorkspaceHub        WSS     printbetter      IPP, USB,
@@ -56,18 +54,18 @@ The client only makes outgoing connections, so you never open a port on your net
 3. The workspace's Durable Object sends the job over the WebSocket that the printer's client keeps open.
 4. The client prints by the best route it knows and reports progress, printer status, and supply levels back.
 
-Details: [Architecture](docs/architecture.md), [client protocol](docs/protocol.md), and [remote printers](docs/remote-printers.md).
+Details: [Architecture](docs/architecture.md), [Client Protocol](docs/protocol.md), and [Remote Printers on Desktops](docs/remote-printers.md).
 
-## Quick start
+## Quick Start
 
 Before you start:
 
 - A Cloudflare account on the **Workers Paid** plan (password hashing needs more CPU time than the Free plan gives)
 - Node.js 22.12 or later, pnpm, `jq`, and `openssl`
 - To build the clients: a Mac with Rust 1.92 or later, `zig`, and `cargo-zigbuild`
-- For signed macOS builds only: a Developer ID
+- To build the macOS client: Developer ID Application and Developer ID Installer certificates. Without them, leave macOS out with `--platforms "linux windows"`.
 
-### 1. Deploy the server
+### 1. Deploy the Server
 
 ```sh
 git clone https://github.com/yannelli/print-better.git && cd print-better
@@ -85,9 +83,9 @@ scripts/deploy.sh
 
 Back up `APP_SECRET` and `AUTH_PEPPER`. Cloudflare doesn't show them again.
 
-If you want a custom domain, set it up before anyone registers a passkey. See [Self-hosting](docs/self-hosting.md).
+If you want a custom domain, set it up before anyone registers a passkey. See [Self-Hosting](docs/self-hosting.md).
 
-### 2. Publish the client downloads
+### 2. Publish the Client Downloads
 
 The install commands and the **Add a device** page download clients from your own R2 bucket. Publish once after the first deploy and again for each update:
 
@@ -95,15 +93,13 @@ The install commands and the **Add a device** page download clients from your ow
 scripts/release.sh --publish remote
 ```
 
-The script builds every platform on your Mac, signs and notarizes the macOS app and installer, and uploads the files. Add `--no-notarize` for a faster local check, or `--platforms "macos"` to build a subset. See [Releasing the client](docs/release.md).
+The script builds every platform on your Mac, signs and notarizes the macOS app and installer, and uploads the files. Add `--no-notarize` for a faster local check, or `--platforms "macos"` to build a subset. See [Releasing the Client](docs/release.md).
 
-### 3. Create your account and add a device
+### 3. Create Your Account and Add a Device
 
 1. Open the setup link.
 2. Create the owner account and the first workspace.
 3. Go to **Devices > Add a device**. The page walks you through 5 steps: choose, install, connect, printers, and a test page.
-
-How each device installs:
 
 | Device | How it installs |
 | --- | --- |
@@ -114,7 +110,7 @@ How each device installs:
 
 Each command already holds a single-use pairing code. Run the same command later to update the client; it keeps the pairing.
 
-## Use it with AI assistants
+## Use It With AI Assistants
 
 The MCP server lives at `https://<your-server>/mcp`. The **Connect AI** page in the web app has the steps for each assistant.
 
@@ -131,7 +127,7 @@ Things you can ask:
 - "Print this PDF on the kitchen printer, both sides"
 - "Why isn't my printer working?"
 
-The tools are listed in [MCP server](docs/mcp.md).
+The tools are listed in [MCP Server](docs/mcp.md).
 
 The same token works with the REST API:
 
@@ -142,7 +138,7 @@ curl -X POST https://<your-server>/api/workspaces/<workspace-id>/jobs \
   -d '{"text":"Hello from Print Better"}'
 ```
 
-Without a `printerId`, the job goes to the workspace's default printer. See [REST API](docs/api.md).
+Without a `printerId`, the job goes to the workspace's default printer. See [REST API (v1)](docs/api.md).
 
 ## Screenshots
 
@@ -158,19 +154,19 @@ Every Print Better deployment serves its user docs at `/docs`, for example `http
 
 | Page | Contents |
 | --- | --- |
-| [Docs site](docs/docs-site.md) | The docs every server serves at `/docs`: how pages are written, checked, and built |
-| [Self-hosting](docs/self-hosting.md) | Deploy, secrets, custom domains, Google and OIDC sign-in, email, backups, and updates |
-| [Releasing the client](docs/release.md) | Build targets, signing and notarization, publishing to R2, and known limits |
-| [Remote printers](docs/remote-printers.md) | How printers on other devices show up in Cmd+P on Mac and Linux |
-| [Client CLI](docs/cli.md) | `printbetter` commands, service install, install scripts, and Raspberry Pi first boot |
-| [REST API](docs/api.md) | Every route, auth, token scopes, and errors |
-| [MCP server](docs/mcp.md) | Protocol versions, OAuth 2.1, scopes, and the tool list |
+| [Writing the Docs Site](docs/docs-site.md) | The docs every server serves at `/docs`: how pages are written, checked, and built |
+| [Self-Hosting](docs/self-hosting.md) | Deploy, secrets, custom domains, Google and OIDC sign-in, email, backups, and updates |
+| [Releasing the Client](docs/release.md) | Build targets, signing and notarization, publishing to R2, and known limits |
+| [Remote Printers on Desktops](docs/remote-printers.md) | How printers on other devices show up in Cmd+P on Mac and Linux |
+| [Client CLI and Install Contract](docs/cli.md) | `printbetter` commands, service install, install scripts, and Raspberry Pi first boot |
+| [REST API (v1)](docs/api.md) | Every route, auth, token scopes, and errors |
+| [MCP Server](docs/mcp.md) | Protocol versions, OAuth 2.1, scopes, and the tool list |
 | [Extensions](docs/extensions.md) | Optional modules that stay off until a server admin and a workspace owner turn them on |
-| [Printer access](docs/printer-access.md) | The extension that decides who can see, print to, and manage each printer |
-| [Client protocol](docs/protocol.md) | The WebSocket messages between the server and the client |
+| [Printer Access](docs/printer-access.md) | The extension that decides who can see, print to, and manage each printer |
+| [Client Protocol (v1)](docs/protocol.md) | The WebSocket messages between the server and the client |
 | [Architecture](docs/architecture.md) | How the Worker, the Durable Object, D1, R2, and the client fit together |
-| [Product requirements](docs/prd.md) | Goals, users, requirements, metrics, and the roadmap |
-| [Research notes](docs/research/) | Printing protocols, the Rust client, Cloudflare, and MCP auth |
+| [Print Better: Product Requirements](docs/prd.md) | Goals, users, requirements, metrics, and the roadmap |
+| [Research Notes](docs/research/) | Printing protocols, the Rust client, Cloudflare, and MCP auth |
 
 ## Development
 
@@ -190,7 +186,7 @@ cargo run -p printbetter -- run    # daemon and tray; status page at http://127.
 | `cargo test --workspace` | Runs the client tests (run in `client/`) |
 | `scripts/release.sh --no-notarize` | Builds every client platform without waiting for Apple |
 
-## Project layout
+## Project Layout
 
 ```text
 server/             One Vite project: the React web app and the Cloudflare Worker

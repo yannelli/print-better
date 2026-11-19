@@ -1,4 +1,4 @@
-# Releasing the client
+# Releasing the Client
 
 `scripts/release.sh` does these steps on this Mac:
 
@@ -40,11 +40,11 @@ scripts/release.sh --publish remote       # also upload to your Cloudflare R2 bu
 | `PrintBetter-<v>.pkg` | double-click install; postinstall runs `printbetter service install --system` (root daemon and per-user tray) |
 | `printbetter-<v>-linux-{x86_64,aarch64,armv7,armv6}.tar.gz` | `install.sh` on Linux and Raspberry Pi |
 | `printbetter-<v>-windows-{x86_64,aarch64}.exe` | `install.ps1` |
-| `latest.json` | manifest read by the install scripts (format in [Downloads manifest](cli.md#downloads-manifest)) |
+| `latest.json` | manifest read by the install scripts (format in [Downloads Manifest](cli.md#downloads-manifest)) |
 
 Publishing uploads files to `downloads/<version>/` first and `downloads/latest.json` last, so clients never see a manifest whose files are missing.
 
-## How updates reach devices
+## How Updates Reach Devices
 1. Bump `[workspace.package] version` in `client/Cargo.toml`.
 2. Run `scripts/release.sh --publish remote`.
 
@@ -65,7 +65,7 @@ The workflow uses these secrets:
 - `MACOS_CERTS_P12` (base64 of a p12 holding both Developer ID certs) and `MACOS_CERTS_PASSWORD`
 - Optional, to publish to R2: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
 
-## Known limits
+## Known Limits
 - Windows builds are unsigned. SmartScreen does not prompt for files fetched by the PowerShell installer, but Smart App Control (if enabled) may still block them.
 - armv6 (Pi Zero/1) builds compile, but ring's ARM assembly is not documented for ARMv6. Verify on hardware.
 - macOS slices are stripped by the linker (`-Wl,-x`), not rustc's `strip`. Xcode 27's `strip` writes Mach-O files that dyld rejects ("mis-aligned LINKEDIT string pool") once a deployment target of 12 or later enables chained fixups. `package-macos.sh` runs the packaged binary before signing to catch this class of failure.

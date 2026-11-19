@@ -1,13 +1,13 @@
 # Architecture
 
-Print Better has two programs: a **server** (one Cloudflare Worker that also serves the web app) and a **client** (a Rust daemon that runs next to printers). Clients dial out to the server over WebSocket, so nothing on the printer's network needs to be exposed.
+Print Better has 2 programs: a **server** (1 Cloudflare Worker that also serves the web app) and a **client** (a Rust daemon that runs next to printers). Clients dial out to the server over WebSocket, so nothing on the printer's network needs to be exposed.
 
 ```
  browser / API / MCP / email ──HTTPS──▶ Worker ──RPC──▶ WorkspaceHub DO ◀──WSS── client ──IPP/USB/OS──▶ printer
                                           │  D1 (state)   R2 (documents, downloads)
 ```
 
-## Repo layout
+## Repo Layout
 ```
 server/                 Vite project: React SPA + Worker in one deployable
   wrangler.jsonc        bindings: DB (D1), FILES (R2), HUB (Durable Object), assets, cron (operators may add an EMAIL send binding)
@@ -32,7 +32,7 @@ docs/                   decisions, architecture, protocol, api, mcp, research no
   - device endpoints take a `pbc_` client token
 
   Permission checks (role and token scope) run in the service layer that REST and MCP share. The Worker reads and writes D1, streams documents to and from R2, and calls the hub for anything realtime.
-- **WorkspaceHub Durable Object**: one per workspace (`idFromName(workspaceId)`). It holds the WebSockets of that workspace's clients and open browser tabs, using the hibernation API. It handles:
+- **WorkspaceHub Durable Object**: 1 per workspace (`idFromName(workspaceId)`). It holds the WebSockets of that workspace's clients and open browser tabs, using the hibernation API. It handles:
   - delivering jobs
   - relaying commands and their results
   - applying client reports to D1
@@ -53,7 +53,7 @@ docs/                   decisions, architecture, protocol, api, mcp, research no
 - **MCP** (`/mcp`): stateless streamable-HTTP MCP server that speaks both 2026-07-28 and the 2025 `initialize` era. Its tools cover everything the UI can do (see `docs/mcp.md`). Auth: the built-in OAuth 2.1 server (for Claude/ChatGPT connectors) or a personal API token.
 - **Install endpoints**: `/install.sh`, `/install.ps1`, `/dl/<file>`, templated with the server origin. Tokens are passed as script arguments, never baked into cached responses.
 
-## Web app
+## Web App
 
 The React SPA is served as static assets with SPA fallback. `run_worker_first` covers `/api/*`, `/mcp*`, `/.well-known/*`, `/install.*`, `/dl/*` and the OAuth endpoints (`/oauth/authorize`, `/token`, `/register`, `/revoke`; `/oauth/consent` is an SPA page).
 
@@ -63,12 +63,12 @@ Look: Vercel-style monochrome (Geist, 1px borders, dense type) mixed with Google
 
 ## Client
 
-One binary, `printbetter`, two crates:
+A single binary, `printbetter`, built from 2 crates:
 
 - **pb-print** (library, no knowledge of the server):
   - `model`: serde types mirrored from `server/shared/types.ts`.
   - `ipp`: RFC 8010 codec and client over HTTP/1.1 (+TLS, trust-on-first-use for printer certs).
-  - `discovery`: mDNS/DNS-SD, SNMP broadcast, USB printer class, OS queues (CUPS on macOS/Linux, spooler on Windows). Merges results into one `PrinterReport` per physical printer with ordered `routes`.
+  - `discovery`: mDNS/DNS-SD, SNMP broadcast, USB printer class, OS queues (CUPS on macOS/Linux, spooler on Windows). Merges results into 1 `PrinterReport` per physical printer with ordered `routes`.
   - `convert`: sniff formats; PDF passthrough when the printer takes PDF; otherwise rasterize (pure-Rust PDF renderer) and encode PWG Raster, URF, PCL or PostScript; images and plain text supported.
   - backends: `ipps`/`ipp`, `socket` (9100), `lpd`, `usb` (raw printer class), `os` (CUPS via IPP on localhost; Windows spooler RAW passthrough or GDI page bitmaps for any driver).
   - `share`: optional IPP Everywhere/AirPrint server + DNS-SD advertisement for LAN sharing; also runs loopback-only, never advertised, behind remote printer queues.
@@ -94,7 +94,7 @@ Threads: The tray (when enabled) owns the main thread, because AppKit requires i
 2. **Device code** (double-clicked app/pkg): The app's local page asks for the server address, calls `POST /api/client/device/code`, and opens `<server>/device?code=ABCD-EFGH`. A signed-in user picks the workspace and approves. The client polls `/api/client/device/token`.
 3. The web UI can also hand the local page a link: `http://127.0.0.1:47631/pair#server=<origin>&token=pbe_…` (the fragment keeps the token out of logs). The local page posts it to the daemon.
 
-## Job lifecycle and reliability
+## Job Lifecycle and Reliability
 
 `queued → dispatched → printing → completed | failed | canceled`
 
@@ -115,7 +115,7 @@ Auto-add (`autoAdd`, a workspace setting the client may override):
 
 Everything else stays `discovered` for one-click adding.
 
-## Security model
+## Security Model
 
 - Every bearer secret is random (≥160 bits), shown once, and stored as SHA-256. Prefixes:
   - `pbs_`: session cookie value
@@ -128,7 +128,7 @@ Everything else stays `discovered` for one-click adding.
   - `pbt_`: personal API token
   - `pbo_`/`pbr_`: OAuth access/refresh
 - Passwords: scrypt (N=2^15, r=8, p=3) via `node:crypto` over HMAC-SHA256 of the password keyed with a server pepper (`AUTH_PEPPER` secret). Hash strings are self-describing and rehashed at login when the parameters change.
-- Tokens carry scopes (`read`, `write`, `print`; PATs hold all three), checked in the service layer. OAuth access tokens are bound to `<origin>/mcp` and refused by the REST API. Refresh tokens rotate, and reusing one revokes the whole connection.
+- Tokens carry scopes (`read`, `write`, `print`; PATs hold all 3), checked in the service layer. OAuth access tokens are bound to `<origin>/mcp` and refused by the REST API. Refresh tokens rotate, and reusing one revokes the whole connection.
 - Instance secrets (SSO client secrets, email API key, webhook secret) are encrypted with AES-GCM under a key derived from `APP_SECRET`.
 - Cookie auth: `HttpOnly; Secure; SameSite=Lax`. Non-GET requests must carry a matching `Origin`.
 - Client tokens download documents only for jobs on that client's own printers, read only the jobs that client submitted from its print window, and connect only to their own workspace hub.

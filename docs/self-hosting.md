@@ -1,11 +1,11 @@
-# Self-hosting
+# Self-Hosting
 
-Print Better runs as one Cloudflare Worker (API, web app, MCP server, install scripts). It uses D1 for data, R2 for documents and client downloads, and one Durable Object per workspace for live device connections.
+Print Better runs as 1 Cloudflare Worker (API, web app, MCP server, install scripts). It uses D1 for data, R2 for documents and client downloads, and 1 Durable Object per workspace for live device connections.
 
 ## Requirements
 - A Cloudflare account on **Workers Paid**. Password hashing (scrypt) needs more CPU time than the Free plan allows, and Cloudflare's email sending is paid-only.
 - Node.js 22.12 or later, pnpm, `jq`, and `openssl`. Everything else (wrangler included) installs inside `server/`.
-- To build clients: a Mac with Rust 1.92 or later (targets listed in [Releasing the client](release.md#requirements)), `zig`, `cargo-zigbuild`, and optionally a Developer ID for signed macOS builds.
+- To build clients: a Mac with Rust 1.92 or later (targets listed in [Releasing the Client](release.md#requirements)), `zig`, and `cargo-zigbuild`. The macOS client also needs Developer ID Application and Developer ID Installer certificates. Without them, leave macOS out with `--platforms "linux windows"`.
 
 ## Deploy
 ```sh
@@ -17,7 +17,7 @@ scripts/deploy.sh
 
 1. Builds the app and deploys the Worker. D1 and R2 are created on the first deploy.
 2. Applies the database migrations.
-3. Creates the three secrets below if they're missing.
+3. Creates the 3 secrets below if they're missing.
 4. Prints a one-time setup link.
 
 Open the setup link to create the owner account and the first workspace.
@@ -30,16 +30,16 @@ Open the setup link to create the owner account and the first workspace.
 
 Cloudflare won't show a secret again. When `scripts/deploy.sh` creates `APP_SECRET` or `AUTH_PEPPER`, it saves a copy to `~/.config/print-better/secrets.env` (readable only by you). Copy both to a password manager.
 
-## Publish client downloads
+## Publish Client Downloads
 The install commands and the web app's **Add a device** page download clients from your own R2 bucket. Publish a release once after deploying and again for each update:
 ```sh
 scripts/release.sh --publish remote
 ```
-See [Releasing the client](release.md) for signing, notarization, and platform options.
+See [Releasing the Client](release.md) for signing, notarization, and platform options.
 
 Macs and Linux devices check your server for a new version about every 6 hours and install it on their own, unless someone turned off **Install updates automatically**. To update one sooner, select **Update now** on its page in the web app, re-run its install command (it keeps the pairing), or install the new macOS pkg.
 
-## Custom domain
+## Custom Domain
 Add one in the Cloudflare dashboard under **Workers & Pages > print-better > Settings > Domains & Routes**, or in `server/wrangler.jsonc`:
 ```jsonc
 "routes": [{ "pattern": "print.example.com", "custom_domain": true }]
@@ -48,7 +48,7 @@ Pick the final domain **before** people register passkeys. Passkeys are tied to 
 
 Paired devices keep using the address they paired with. After you switch, leave the `workers.dev` address enabled or re-pair the devices.
 
-## Sign-in options
+## Sign-In Options
 Set these in **Server admin > Sign-in options**. Username and password sign-in and passkeys work out of the box. New accounts are invite-only unless you switch sign-up to open.
 
 Once Google or OIDC is on, people can connect it to an existing account in **Your account > Sign-in and security > Connected accounts**.
@@ -82,7 +82,7 @@ The server drops mail that fails DMARC or comes from someone who isn't allowed.
 
 Attachments (PDF, JPEG, PNG, text) print. If a message has no attachments, its body prints.
 
-## AI assistants (MCP)
+## AI Assistants (MCP)
 The MCP server is at `https://<your-domain>/mcp`. The web app's **Connect AI** page (`/connect`) has step-by-step instructions.
 
 Claude and ChatGPT connect with OAuth: add the URL as a custom connector and approve access in the browser.
@@ -96,11 +96,11 @@ Other tools can send a personal token from **Your account > Apps and tokens** as
 pnpm --dir server exec wrangler d1 export print-better --remote --output print-better.sql
 pnpm --dir server exec wrangler d1 time-travel info print-better   # point-in-time restore, last 30 days
 ```
-The database export plus your two secrets are everything worth backing up. R2 only holds:
+The database export plus your 2 secrets are everything worth backing up. R2 only holds:
 - Print documents, deleted automatically after the workspace's **Keep documents for** setting
 - Client downloads, which `scripts/release.sh` rebuilds
 
-## Updating the server
+## Updating the Server
 ```sh
 git pull && scripts/deploy.sh
 ```

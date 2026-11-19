@@ -20,11 +20,11 @@ Token scopes:
 - `print`: create, upload, cancel, retry and delete jobs; test pages
 - `write`: every other change
 
-PATs hold all three scopes. A token without the scope a route needs gets 403 `insufficient_scope`.
+PATs hold all 3 scopes. A token without the scope a route needs gets 403 `insufficient_scope`.
 
 Password, passkey, session, PAT-creation, recovery-code and OAuth-consent routes refuse tokens with 403 `session_required`.
 
-## Instance and auth
+## Instance and Auth
 | Route | Notes |
 |---|---|
 | `GET /instance` | `InstanceInfo` (public) |
@@ -76,7 +76,7 @@ Password, passkey, session, PAT-creation, recovery-code and OAuth-consent routes
 | `GET /workspaces/:ws/audit?cursor=` **A** | `AuditEntry` page |
 | `GET /workspaces/:ws/events` | WebSocket; server pushes `UiEvent` |
 
-## Devices (clients)
+## Devices (Clients)
 | Route | Notes |
 |---|---|
 | `GET /workspaces/:ws/clients`, `GET …/clients/:id` | `Client[]`, `Client` |
@@ -122,9 +122,9 @@ Jobs printed from a paired computer's own print dialog have source `device` and 
 - `sourceClientId` and `sourceClientName` (null once that device is removed)
 - `requestedBy` (the computer account name)
 
-Other sources leave all three null. Devices create these jobs with `/api/client/jobs` (protocol.md, "Remote printers").
+Other sources leave all 3 null. Devices create these jobs with `/api/client/jobs` (protocol.md, "Remote Printers").
 
-## Instance admin
+## Instance Admin
 | Route | Notes |
 |---|---|
 | `GET /admin/settings`, `PATCH /admin/settings` **I** | `InstanceSettings`; secrets are write-only fields: `sso.google.clientSecret`, `sso.oidc.clientSecret`, `email.apiKey` |
@@ -147,7 +147,7 @@ docs/printer-access.md lists the printer access routes (`/workspaces/:ws/access�
 
 Moving either switch sends an `access` event to open pages and refreshes the printers devices offer in their print windows.
 
-## Webhooks and non-API routes
+## Webhooks and Non-API Routes
 | Route | Notes |
 |---|---|
 | `POST /api/hooks/resend` | Resend inbound email webhook (signature verified) |
@@ -155,7 +155,7 @@ Moving either switch sends an `access` event to open pages and refreshes the pri
 | `GET /dl/:file` | client builds from R2 `downloads/` (`latest.json` manifest) |
 | `/mcp`, `/.well-known/oauth-*`, `/oauth/*`, `/api/oauth/requests/:id` | see docs/mcp.md |
 
-## Error codes
+## Error Codes
 Generic: `invalid_request` 400, `unauthorized` 401, `forbidden` 403, `not_found` 404, `method_not_allowed` 405, `conflict` 409, `too_large` 413, `upgrade_required` 426, `rate_limited` 429.
 - Auth: `bad_origin`, `invalid_token`, `session_required`, `insufficient_scope`, `invalid_credentials`, `setup_required`, `setup_complete`, `bad_setup_token`, `signup_closed`, `username_taken`, `email_taken`, `reset_invalid`, `email_disabled`, `no_email`, `already_verified`, `email_failed`.
 - Passkeys and SSO: `challenge_expired`, `passkey_invalid`, `passkey_exists`, `passkey_unknown`, `last_sign_in_method`, `sso_disabled`, `sso_expired`, `sso_failed`, `sso_invalid_token`, `sso_unverified_account`, `sso_wrong_user`, `identity_in_use`, `identity_exists`, `sso_<provider error>`, `oidc_discovery_failed`.
@@ -165,7 +165,7 @@ Generic: `invalid_request` 400, `unauthorized` 401, `forbidden` 403, `not_found`
 - Extensions and printer access: `extension_inactive` 404, `extension_unavailable` 409, `printer_access_denied` 403 (404 for a device that can't see the printer), `role_in_use` 409, `name_taken` 409.
 - Resend webhook: `not_enabled` 404, `not_configured` 503, `bad_signature` 401.
 
-## SPA conventions
+## SPA Conventions
 - Links the server generates:
   - invites: `<origin>/invite/<pbi_…>`
   - password resets: `<origin>/reset-password#token=<pbp_…>` (a fragment; the page posts `{ token, password }` to `/auth/reset/confirm`)
