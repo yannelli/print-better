@@ -173,12 +173,14 @@ Tables, every row cascading on workspace delete:
 | Rules, limits, and this cycle's usage | `print-policies` | `/w/:ws/policies/:tab?` (admins) |
 | What is left, on Home | `print-policies` | `homeSection` (new) |
 | Alerts, waiting approvals, jobs ready to release, on Home | `enterprise` | `homeSection` |
-| Approvals | `enterprise` | `jobsTab` (new, on Print jobs) and `jobActions` (new) |
-| Release | `enterprise` | `/w/:ws/release` (members, while secure release is on) |
-| Cost centers, defaults, and budgets | `enterprise` | `/w/:ws/cost-centers/:tab?` (admins) |
-| Reports, schedules, and the audit export | `enterprise` | `/w/:ws/reports/:tab?` (admins) |
-| Enterprise settings | `enterprise` | `settingsSection` |
+| Approvals | `enterprise` | `jobsTab` (new, on Print jobs, for approvers) and `jobActions` (new) |
+| Ready to release | `enterprise` | `jobsTab` (while secure release is on) and `jobActions` |
+| Cost centers, defaults, and budgets | `enterprise` | `usageTab` (admins) |
+| Reports, schedules, and the audit export | `enterprise` | `usageTab` (admins) |
+| Enterprise settings | `enterprise` | `settingsTab` |
 | A printer's approval and release switches | `enterprise` | `printerTab` (`settings` on the printer) and `printerBadge` |
 | A device's default cost center | `enterprise` | `deviceSection` |
 
 `realtime.ts` refetches usage on `usage` events and shows approvers a notice on `approval` events.
+
+An extension's `useFeatures` hook names its parts that are on (`enterprise.approvals` and so on) in `SlotContext.features`, so `visible` rules can hide entries for parts that are off.
