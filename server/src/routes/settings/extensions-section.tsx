@@ -24,6 +24,14 @@ const CONFIRM: Record<ExtensionId, { on: string; off: string }> = {
     on: 'Nothing changes until you restrict a printer. Every printer stays open to everyone with the User role. You can turn it off again at any time.',
     off: 'Everyone gets the usual access to every printer right away. Your groups, roles, and access choices are kept in case you turn it back on.',
   },
+  'print-policies': {
+    on: 'Nothing changes until you add a rule or a limit. You can turn it off again at any time.',
+    off: 'Rules and limits stop applying right away. They are kept, with prices and usage history, in case you turn it back on.',
+  },
+  enterprise: {
+    on: 'Nothing changes until you turn on one of its parts. You can turn it off again at any time.',
+    off: 'Jobs waiting for approval or release are canceled, and the other controls stop applying right away. Settings, cost centers, and history are kept.',
+  },
 }
 
 function status(extension: WorkspaceExtension, isOwner: boolean): string {

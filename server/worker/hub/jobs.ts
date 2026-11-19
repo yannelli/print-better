@@ -43,7 +43,8 @@ export async function stuckOffers(env: Env, workspaceId: string, olderThan: numb
   )
 }
 
-const RANK: Record<JobStatus, number> = { uploading: 0, queued: 1, dispatched: 2, printing: 3, completed: 4, failed: 4, canceled: 4 }
+// Devices are never offered a held job, so `held` outranks every report and none can move it.
+const RANK: Record<JobStatus, number> = { uploading: 0, queued: 1, dispatched: 2, printing: 3, completed: 4, failed: 4, canceled: 4, held: 5 }
 const REPORTABLE: JobStatus[] = ['dispatched', 'printing', 'completed', 'failed', 'canceled']
 
 export interface StatusOutcome {

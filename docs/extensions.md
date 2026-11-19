@@ -5,6 +5,10 @@ Extensions are optional modules that ship with Print Better and stay **off until
 | Extension | What it does |
 |---|---|
 | `printer-access` | Who can see, print to, and manage each printer: groups, device rules, built-in and custom roles. [Docs](printer-access.md) |
+| `print-policies` | Print rules and limits: rules that change, redirect, or stop jobs, and page, job, and cost limits per cycle. [Docs](print-policies.md) |
+| `enterprise` | Enterprise controls: approvals, secure release, cost centers and budgets, reports, alerts, retention and privacy. [Docs](enterprise.md) |
+
+Print rules and limits and Enterprise controls share the job check, page counting, usage, cycles, and prices, which work while either is active. See [Usage and job checks](usage.md).
 
 ## Turning one on
 
@@ -30,7 +34,7 @@ Turning either switch off makes the extension inactive at once. Its data (groups
 | Catalog (ids, names, summaries) shared by the Worker and the web app | `server/shared/extensions.ts` |
 | Instance availability | `settings` table, key `extensions` (`{ "available": ["printer-access"] }`) |
 | Workspace state and config | `workspace_extensions` table (`workspace_id`, `extension_id`, `enabled`, `config` JSON, `updated_at`) |
-| Server registry and hooks | `server/worker/extensions/` (`hooks.ts`, `routes.ts`, `tools.ts`, and one folder per extension) |
+| Server registry and hooks | `server/worker/extensions/` (`hooks.ts`, `routes.ts`, `tools.ts`, and one folder per extension; `usage/` is shared by two) |
 | Web app registry and slots | `server/src/extensions/` (one folder per extension) |
 
 ## API

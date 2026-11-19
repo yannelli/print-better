@@ -21,7 +21,8 @@ const ALL = 'all'
 function Filters({ ws, filters, onChange }: { ws: string; filters: JobFilters; onChange: (next: JobFilters) => void }) {
   const id = useId()
   const printers = (usePrinters(ws).data ?? []).slice().sort((a, b) => a.name.localeCompare(b.name))
-  const statuses = Object.entries(JOB_STATUS_LABELS) as [JobStatus, { label: string }][]
+  // `held` only exists with Enterprise controls, so the core filter leaves it out.
+  const statuses = (Object.entries(JOB_STATUS_LABELS) as [JobStatus, { label: string }][]).filter(([status]) => status !== 'held')
   return (
     <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:max-w-2xl">
       <Field>
