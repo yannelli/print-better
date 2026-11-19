@@ -123,4 +123,16 @@ describe('budgets', () => {
     await setEnterprise(owner.agent, ws, { approvals: { enabled: true } })
     await setControls(owner.agent, ws, printer, { approval: false })
   })
+
+  it('let jobs sent at the same moment through only as far as a blocking budget has room', async () => {
+    const shared = (await center('Shared')).id
+    ok(await owner.agent.post(wsPath(ws, '/budgets'), { costCenterId: shared, unit: 'pages', amount: 10, cycle: { kind: 'month' } }), 'budget')
+    const replies = await Promise.all(Array.from({ length: 8 }, () => pdfJob(bob.agent, ws, printer, 10, {}, { costCenter: shared })))
+    expect(replies.map((r) => r.status).sort()).toEqual([200, 403, 403, 403, 403, 403, 403, 403])
+    for (const refused of replies.filter((r) => r.status === 403)) {
+      expect(refused.body.error).toMatchObject({ code: 'policy_blocked', message: 'This job would go over the Shared monthly budget' })
+    }
+    const view = ok(await owner.agent.get(wsPath(ws, '/budgets')), 'list').find((b: { costCenterId: string }) => b.costCenterId === shared)
+    expect(view.usage).toMatchObject({ used: 10, left: 0 })
+  })
 })

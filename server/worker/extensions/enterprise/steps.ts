@@ -4,7 +4,7 @@ import type { JobDecision, JobDraft, JobStep } from '../hooks'
 import { holdAvailable } from '../usage/active'
 import { alertAfterJob } from './alerts'
 import { defaultFor } from './defaults'
-import { amountOf, budgetMeter, budgetRows, toBudget } from './meters'
+import { amountOf, budgetMeter, budgetRoom, budgetRows, toBudget } from './meters'
 import { announceApproval } from './notify'
 import { holdUntil } from './settings'
 import { controlsOf, costCentersOf, findCostCenter, settingsOf } from './store'
@@ -28,7 +28,8 @@ async function chargeCostCenter(ctx: Ctx, job: JobDraft, d: JobDecision): Promis
   if (!d.costCenterId && settings.costCenters.required && job.source !== 'test') d.block = 'Choose a cost center to charge this job to'
 }
 
-/** Each enabled budget of the job's cost center; one it would go over blocks, warns, or asks for approval. */
+/** Each enabled budget of the job's cost center; one it would go over blocks, warns, or asks for approval.
+ * Blocking budgets it fits are guarded, so jobs sent at the same moment can't pass them together. */
 async function checkBudgets(ctx: Ctx, job: JobDraft, d: JobDecision): Promise<void> {
   const settings = await settingsOf(ctx, job.workspaceId)
   if (!settings.costCenters.enabled || !d.costCenterId) return
@@ -38,12 +39,15 @@ async function checkBudgets(ctx: Ctx, job: JobDraft, d: JobDecision): Promise<vo
     const budget = toBudget(row)
     if (!budget.enabled) continue
     const meter = await budgetMeter(ctx.env, job.workspaceId, budget, job.timeZone, job.at)
-    const over = meter.used + amountOf(budget.unit, d.usage) > budget.amount
+    const need = amountOf(budget.unit, d.usage)
+    const over = meter.used + need > budget.amount
     const name = `${center.name} ${cycleWord(budget.cycle)} budget`
     d.meters.push({ ...meter, kind: 'budget', id: budget.id, name, action: budget.action, over })
-    if (!over) continue
-    if (budget.action === 'warn') d.notes.push({ source: 'budget', id: budget.id, name, message: `Over the ${name}` })
-    else if (budget.action === 'approval' && (await holdAvailable(ctx, job.workspaceId, 'approval'))) d.approval.push(`Over the ${name}`)
+    const blocks = budget.action === 'block' || (budget.action === 'approval' && !(await holdAvailable(ctx, job.workspaceId, 'approval')))
+    if (!over) {
+      if (blocks && need > 0) d.guards.push(budgetRoom(job.workspaceId, budget, meter, need))
+    } else if (budget.action === 'warn') d.notes.push({ source: 'budget', id: budget.id, name, message: `Over the ${name}` })
+    else if (!blocks) d.approval.push(`Over the ${name}`)
     else {
       d.block = `This job would go over the ${name}`
       return

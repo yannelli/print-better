@@ -48,7 +48,7 @@ Cost centers (departments, projects, clients) charge printing to the right place
 - **Which one a job uses:** the one the sender picked, else the member's default, else the default of the sender's groups (first by name), else the device's. For uploads it is settled when the job is created.
 - **Choosing:** the print dialog asks **Charge to**, starting at the default. The REST API and MCP take `costCenter` (an id or a code) next to `printerId`. A cost center that doesn't exist or is inactive is refused with `400 cost_center_invalid`.
 - **Every job needs a cost center** refuses jobs without one. Test pages always print.
-- **Budgets:** a cost center can have budgets per cycle (the same cycles as limits), counted in cost or pages, covering every job charged to it. When a job would go over: block, warn and allow, or require approval. Require approval blocks while approvals are off.
+- **Budgets:** a cost center can have budgets per cycle (the same cycles as limits), counted in cost or pages, covering every job charged to it. When a job would go over: block, warn and allow, or require approval. Require approval blocks while approvals are off. Blocking budgets are checked again as the job is stored, with a guard (`JobDecision.guards`), so jobs sent at the same moment can't pass one together.
 
 ## Reports
 

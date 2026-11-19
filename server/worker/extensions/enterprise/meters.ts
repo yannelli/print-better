@@ -1,8 +1,9 @@
 import type { Budget } from '../../../shared/enterprise'
 import type { JobUsage } from '../../../shared/printing'
 import type { Cycle, OverAction, UsageMeter, UsageUnit } from '../../../shared/usage'
-import { all, first, parseJson } from '../../lib/db'
-import { cycleAt } from '../usage/cycles'
+import { all, first, parseJson, type SqlValue } from '../../lib/db'
+import type { WriteGuard } from '../hooks'
+import { cycleAt, type CycleSpan } from '../usage/cycles'
 
 export interface BudgetRow {
   id: string
@@ -40,19 +41,23 @@ export const budgetRows = (env: Env, workspaceId: string, costCenterId: string |
 
 const COLUMN: Record<Budget['unit'], string> = { pages: 'pages', cost: 'cost_micros' }
 
+const usedSql = (workspaceId: string, budget: Budget, span: CycleSpan): [string, SqlValue[]] => [
+  `SELECT COALESCE(SUM(${COLUMN[budget.unit]}), 0) AS used FROM usage_entries WHERE workspace_id = ? AND cost_center_id = ? AND at >= ? AND at < ?`,
+  [workspaceId, budget.costCenterId, span.start, span.end],
+]
+
 /** The budget's current cycle, counting jobs still waiting or printing. */
 export async function budgetMeter(env: Env, workspaceId: string, budget: Budget, timeZone: string, at = Date.now()): Promise<UsageMeter> {
   const span = cycleAt(budget.cycle, timeZone, at)
-  const row = await first<{ used: number }>(
-    env.DB,
-    `SELECT COALESCE(SUM(${COLUMN[budget.unit]}), 0) AS used FROM usage_entries WHERE workspace_id = ? AND cost_center_id = ? AND at >= ? AND at < ?`,
-    workspaceId,
-    budget.costCenterId,
-    span.start,
-    span.end,
-  )
-  const used = row?.used ?? 0
+  const [sql, params] = usedSql(workspaceId, budget, span)
+  const used = (await first<{ used: number }>(env.DB, sql, ...params))?.used ?? 0
   return { unit: budget.unit, used, amount: budget.amount, left: Math.max(0, budget.amount - used), start: span.start, end: span.end }
+}
+
+/** The budget still has room for `need` in this cycle when the job is stored. */
+export function budgetRoom(workspaceId: string, budget: Budget, span: CycleSpan, need: number): WriteGuard {
+  const [sql, params] = usedSql(workspaceId, budget, span)
+  return { sql: `(${sql}) + ? <= ?`, params: [...params, need, budget.amount] }
 }
 
 /** How much one job adds to a count. */
