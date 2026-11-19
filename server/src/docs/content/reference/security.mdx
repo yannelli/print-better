@@ -1,6 +1,6 @@
-Print Better stores its data in your Cloudflare account and on your devices. The sections below cover what each place holds, how devices prove who they are, how long documents are kept, and what network sharing exposes.
+Print Better stores its data in your Cloudflare account and on your devices.
 
-## What is stored where
+## What Is Stored Where
 
 | Place | What it holds |
 | --- | --- |
@@ -12,15 +12,15 @@ Print Better stores its data in your Cloudflare account and on your devices. The
 
 The server encrypts SSO client secrets, the Resend API key, and the Resend webhook secret with AES-GCM before it stores them. The key comes from `APP_SECRET`.
 
-## Passwords and passkeys
+## Passwords and Passkeys
 
 - The server hashes passwords with scrypt (N=2^15, r=8, p=3). The input is an HMAC-SHA256 of the password keyed with `AUTH_PEPPER`.
-- After 10 failed attempts for one account in 15 minutes, the server refuses that account's sign-ins until the 15 minutes pass. Each network address also has a limit.
+- After 10 failed attempts for 1 account in 15 minutes, the server refuses that account's sign-ins until the 15 minutes pass. Each network address also has a limit.
 - Passkeys are bound to the server's hostname. The server keeps only their public keys.
 - Recovery codes are single use and stored as hashes.
 - Single sign-on uses the authorization code flow with PKCE and a nonce.
 
-See [Sign-in](/docs/self-hosting/sign-in).
+See [Sign-In](/docs/self-hosting/sign-in).
 
 ## Sessions
 
@@ -44,7 +44,7 @@ Every key, code, and token is random, shown once, and stored as a SHA-256 hash.
 | `pbp_` | Password reset link. |
 | `pbv_` | Email verification link. |
 
-## Token scopes
+## Token Scopes
 
 | Scope | Allows |
 | --- | --- |
@@ -52,16 +52,16 @@ Every key, code, and token is random, shown once, and stored as a SHA-256 hash.
 | `print` | Printing, test pages, and canceling, retrying, and deleting jobs. |
 | `write` | Every other change. |
 
-- Personal API tokens hold all three scopes. They can be limited to one workspace and given an end date.
+- Personal API tokens hold all 3 scopes. They can be limited to 1 workspace and given an end date.
 - AI assistants hold the scopes listed on the consent page when you chose **Allow**.
 - OAuth tokens work only with the MCP server. The REST API refuses them.
 - An OAuth refresh token changes on every use. Reusing an old one disconnects the app.
 - A token acts as the person who made it. Their role and printer permissions still apply.
 - Tokens can't change passwords, passkeys, sessions, or recovery codes, and can't create other tokens. Those need a browser session.
 
-## How devices authenticate
+## How Devices Authenticate
 
-A device gets its key in one of two ways:
+A device gets its key in 1 of 2 ways:
 
 - **Setup code.** **Add a device** creates a `pbe_` code that works once, for 24 hours. Raspberry Pi codes work for 7 days. The install command trades it for a device key.
 - **Device code.** The device shows an 8-letter code for 10 minutes. A workspace owner or admin checks the code in the browser and approves it.
@@ -89,9 +89,9 @@ The job record stays in the list without its file. Deleting a finished job delet
 
 When you print a web address, the server fetches it and stores the result like any other document.
 
-## Email to print
+## Email to Print
 
-Email to print is off until all three of these are done:
+Email to print is off until all 3 of these are done:
 
 - A server admin sets up receiving.
 - A workspace turns it on.
@@ -99,21 +99,21 @@ Email to print is off until all three of these are done:
 
 The server refuses mail that fails DMARC, and mail from senders who aren't allowed. Members must send from a verified email. See [Email](/docs/self-hosting/email#which-mail-is-refused).
 
-## Network sharing
+## Network Sharing
 
 **Share printers on the local network** is off by default. When it is on for a device and for a printer, the device runs an IPP print server on port 8631 and announces the printer with Bonjour.
 
-<Callout type="warning" title="Anyone on the network can print">
+<Callout type="warning" title="Anyone on the Network Can Print">
 
-A shared printer takes jobs from anyone on the same network, with no sign-in. [Printer access](/docs/extensions/printer-access) rules don't apply to it. Share only on networks you trust.
+A shared printer takes jobs from anyone on the same network, with no sign-in. [Printer Access](/docs/extensions/printer-access) rules don't apply to it. Share only on networks you trust.
 
 </Callout>
 
-Jobs that arrive this way show in the device's job history. See [Share on your network](/docs/printers/lan-sharing).
+Jobs that arrive this way show in the device's job history. See [Share on Your Network](/docs/printers/lan-sharing).
 
 The printers a Mac or Linux computer adds to its print window use a separate print server on `127.0.0.1:8632`. It accepts connections only from that computer and is never announced.
 
-## Raspberry Pi setup files
+## Raspberry Pi Setup Files
 
 The web app writes the Pi's setup files in your browser. Your Wi-Fi password and the Pi's password never reach the server.
 
@@ -121,12 +121,12 @@ The setup turns on SSH and gives the Pi user `sudo` without a password. Set a st
 
 ## Updates
 
-Devices download updates only from the server they are paired with, with their own key. Each download must match the size and SHA-256 checksum the server lists. On a Mac, it must also carry a valid signature from the same Developer ID team as the installed app. See [Automatic updates](/docs/devices/updates#how-updates-are-checked).
+Devices download updates only from the server they are paired with, with their own key. Each download must match the size and SHA-256 checksum the server lists. On a Mac, it must also carry a valid signature from the same Developer ID team as the installed app. See [Automatic Updates](/docs/devices/updates#how-updates-are-checked).
 
-## Activity log
+## Activity Log
 
 Every change is recorded with who made it: a person, a token, a device, an email sender, or the server itself. Workspace owners and admins can read it. See [Activity](/docs/workspaces/activity).
 
-## Report a security problem
+## Report a Security Problem
 
 Report problems privately, as described in `SECURITY.md` in the Print Better repository. Don't open a public issue.

@@ -19,9 +19,14 @@ To add a page: add it to `nav.ts`, create the MDX file, and run `pnpm --dir serv
 ## Page shape
 
 - Do not write a `#` heading, frontmatter, or `export const meta`. The site shows the title and description from `nav.ts` above the page.
-- Start with one short paragraph that gives the answer or the first action. Don't open with "This page explains".
-- Use `##` for sections and `###` for subsections, in sentence case. Both appear in the "On this page" list.
-- End task pages with a "Next steps" section that uses `<Cards>`, when there is an obvious next page.
+- Start with the answer or the first action, or go straight to the first section. The description from `nav.ts` already sits above the page, so skip intros that only announce what the page covers.
+- Use `##` for sections and `###` for subsections. Both appear in the "On this page" list.
+- Use Title Case for page and group titles in `nav.ts`, headings, `<Steps>` step headings, and `title` attributes on `<Callout>` and `<Card>`:
+  - Lowercase a, an, the, and, but, or, for, nor, as, at, by, in, of, on, to, up, via, and vs, unless the word comes first or last: "Set up Email to Print", "What You Don't Need to Back Up".
+  - Code stays exact: `printbetter`, `wrangler.jsonc`.
+  - Heading ids stay lowercase, so the case doesn't change anchors.
+- Link text that names a page or heading uses its Title Case title: `[Printer Discovery](/docs/devices/discovery)`.
+- End task pages with a "Next Steps" section that uses `<Cards>`, when there is an obvious next page.
 
 ## Components
 
@@ -43,11 +48,11 @@ Leave a blank line after an opening component tag and before the closing tag, so
 ```mdx
 <Steps>
 
-### Open the Devices screen
+### Open the Devices Screen
 
 Select **Devices** in the sidebar.
 
-### Add the computer
+### Add the Computer
 
 Select **Add a device** and follow the steps.
 
@@ -64,7 +69,7 @@ Select **Add a device** and follow the steps.
 
 ## Links
 
-- Docs pages: `/docs/printers/add`, with an optional `#heading-id`. Heading ids are the lowercase heading text with dashes, for example `## Text cap` is `#text-cap`.
+- Docs pages: `/docs/printers/add`, with an optional `#heading-id`. Heading ids are the lowercase heading text with dashes, for example `## Text Cap` is `#text-cap`.
 - Workspace screens: `/printers`, `/jobs`, `/devices`, `/devices/add`, `/members`, `/settings`. Each one opens that screen in the reader's current or last-used workspace, and sends signed-out readers to sign-in first.
 - Account and admin screens: `/account`, `/admin`, `/connect`.
 - Other sites: full `https://` URLs. They open in a new tab.
@@ -72,18 +77,25 @@ Select **Add a device** and follow the steps.
 ## Writing rules
 
 - US English. Second person ("you"). Present tense. Active voice. Contractions are fine.
+- Terse and structured: headings, lists, tables, and code blocks, with very little prose.
 - Lead with the answer or the action. The first sentence of a page or section says what happens or what to do.
 - Name buttons, fields, settings, and screens exactly as the app shows them, in bold. Check the strings in `server/src`. Quote commands, paths, and error text exactly.
 - Write procedures as numbered steps, one action per step: "Select **Add printer**." Use `<Steps>` for a whole task and a numbered list for a short one.
-- Put prerequisites before the first step, under a heading such as "Before you start" or "Requirements".
+- Put prerequisites before the first step, under a heading such as "Before You Start" or "Requirements".
 - Put an exception beside the step it affects. When you know what the reader sees after a step, say it.
-- One topic per paragraph, one to three sentences. A one-sentence paragraph is fine.
+- No fixed paragraph or sentence limits. Vary the structure, and merge short paragraphs that belong together.
 - Put countable things one per line: options, conditions, files, places to look. Introduce each list with a line that ends in a colon.
-- Sentences: 20 words or fewer for instructions, 25 or fewer for descriptions.
-- No em dashes or en dashes. Ranges use "to" or a hyphen: "2 to 32 characters".
-- Use digits for counts, times, sizes, and versions.
+- No em dashes or en dashes. The dash is a spaced hyphen ( - ). Ranges use "to" or a hyphen: "2 to 32 characters".
+- Numbers as digits: "3 secrets", "every 6 hours", "2 printers". Fixed phrases ("one-time", "two-sided"), UI labels, quoted messages, and code stay as they are. Use "around" for a general figure.
 - State limits and consequences flat: "The link works for 1 hour."
-- No marketing and no filler. Don't write "simply", "just", "easy", "seamless", "robust", "powerful", "leverage", "streamline", "it's important to note", or "best" as a bare claim.
+- Casual and plain, never corporate. No marketing, hedges, or filler. Don't write "simply", "just", "easy", "seamless", "robust", "powerful", "leverage", "streamline", "it's important to note", "it's worth noting", or "best" as a bare claim.
+- Cut:
+  - Sentences that restate what the reader already sees: the heading, a table or list right below, a badge, a count.
+  - Instructions for controls the reader can figure out.
+  - "X, not Y" or "instead of" lines that correct a mistake the reader never made.
+  - Answers to questions nobody asked.
+  - Intros that only announce what the page covers.
+  - A closing line repeated in the same spot on every section or page.
 - End after the expected result or the open problem. No closing summary, slogan, or offer of more help.
 - Write only what the code does today. Do not describe planned features.
 - No real people, hostnames, IP addresses, emails, server URLs, or ids. Use examples such as "Office laser", "Front desk Mac", `alex@example.com`, and `https://your-print-better.example`.

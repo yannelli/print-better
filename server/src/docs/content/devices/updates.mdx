@@ -1,6 +1,6 @@
 Macs and Linux devices update from your own server. A new version reaches them only after a server admin publishes it.
 
-## How a device finds an update
+## How a Device Finds an Update
 
 A device asks the server it is paired with for the newest version:
 
@@ -8,11 +8,11 @@ A device asks the server it is paired with for the newest version:
 - Every 6 hours after that, within 30 minutes either way.
 - When you ask for an update.
 
-Devices only move to a newer version. They never install an older one.
+Devices only move to a newer version.
 
-To publish a new version, see [Update the devices](/docs/self-hosting/updates-and-backups#update-the-devices).
+To publish a new version, see [Update the Devices](/docs/self-hosting/updates-and-backups#update-the-devices).
 
-## Install updates automatically
+## Install Updates Automatically
 
 **Install updates automatically** is on by default. With it on, a device installs a new version in the background and restarts Print Better. It first waits up to 30 minutes for the jobs it is working on to finish.
 
@@ -21,7 +21,7 @@ With it off, the device still checks, but it installs only when you ask. Turn it
 - On the device's page in the web app, under **Settings**.
 - On the device, with `printbetter config set autoUpdate off` or the switch on its status page.
 
-## Update now
+## Update Now
 
 The **Devices** page marks devices that are behind with **Update available**. To update one right away:
 
@@ -34,7 +34,7 @@ The device downloads the new version, installs it, and restarts. Printing pauses
 
 You can also run the install command from **Add a device** again. It installs the newest version and keeps the connection.
 
-## How updates are checked
+## How Updates Are Checked
 
 Before a device installs anything, it checks the download:
 
@@ -45,7 +45,7 @@ Before a device installs anything, it checks the download:
 
 If any check fails, the current version stays in place. The error shows in `printbetter status`, `printbetter doctor`, the status page, and the **Updates** line of a checkup.
 
-## Linux system service
+## Linux System Service
 
 The system service runs as the `printbetter` user, which can't replace `/usr/local/bin/printbetter`. A small updater does that part as root:
 
@@ -62,26 +62,26 @@ Installs from before version 0.1.2 don't have the updater yet. The checkup repor
 sudo printbetter service install --system
 ```
 
-## When a device won't update itself
+## When a Device Won't Update Itself
 
 A device only installs on request, and never by itself, when:
 
 - **Install updates automatically** is off.
 - It runs a development build.
 
-It can't update itself at all when the program isn't inside `Print Better.app` on a Mac. In that case, run the install command again. See [Updates don't install](/docs/reference/troubleshooting#updates-dont-install).
+It can't update itself at all when the program isn't inside `Print Better.app` on a Mac. In that case, run the install command again. See [Updates Don't Install](/docs/reference/troubleshooting#updates-dont-install).
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/devices/manage" title="Manage devices">
+<Card href="/docs/devices/manage" title="Manage Devices">
 
 See each device's version and update it.
 
 </Card>
 
-<Card href="/docs/self-hosting/updates-and-backups" title="Updates and backups">
+<Card href="/docs/self-hosting/updates-and-backups" title="Updates and Backups">
 
 Publish new client versions from your Mac.
 

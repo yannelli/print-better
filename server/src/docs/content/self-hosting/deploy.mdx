@@ -1,16 +1,14 @@
-Deploy Print Better to your own Cloudflare account. At the end you have a running server, client downloads that devices can install, and your first account.
-
 ## Requirements
 
 - A Cloudflare account on the **Workers Paid** plan. The server hashes passwords with scrypt, which needs more CPU time than the Free plan allows.
 - Node.js 22.12 or later, pnpm, `git`, `jq`, and `openssl`. Wrangler, Cloudflare's command line tool, installs inside `server/`.
-- To build the client downloads: a Mac with Rust, `zig`, `cargo-zigbuild`, and Developer ID certificates. See [Publish the client downloads](#publish-the-client-downloads).
+- To build the client downloads: a Mac with Rust, `zig`, `cargo-zigbuild`, and Developer ID certificates. See [Publish the Client Downloads](#publish-the-client-downloads).
 
-## Deploy the server
+## Deploy the Server
 
 <Steps>
 
-### Get the code
+### Get the Code
 
 Clone the [Print Better repository](https://github.com/yannelli/print-better) and open its folder in a terminal.
 
@@ -21,7 +19,7 @@ pnpm --dir server install
 pnpm --dir server exec wrangler login
 ```
 
-### Run the deploy script
+### Run the Deploy Script
 
 ```sh
 scripts/deploy.sh
@@ -49,7 +47,7 @@ The deploy script fills each secret with a random value. Cloudflare never shows 
 | `APP_SECRET` | Encrypts stored secrets: SSO client secrets, the Resend API key, and the webhook secret. | Enter those secrets again in **Server admin**. |
 | `AUTH_PEPPER` | Mixed into every password hash. | Every password stops working. People sign in with a passkey or SSO, or a server admin sends reset links. |
 
-<Callout type="warning" title="Keep a copy of APP_SECRET and AUTH_PEPPER">
+<Callout type="warning" title="Keep a Copy of APP_SECRET and AUTH_PEPPER">
 
 Copy both values from `~/.config/print-better/secrets.env` to a password manager. The script saves them only when it creates them.
 
@@ -62,9 +60,9 @@ openssl rand -base64 48 | tr -d '/+=\n' | cut -c1-48
 pnpm --dir server exec wrangler secret put APP_SECRET
 ```
 
-Run the two commands once for `APP_SECRET` and once for `AUTH_PEPPER`. Paste a new random value at each prompt, and store both values somewhere safe.
+Run the 2 commands once for `APP_SECRET` and once for `AUTH_PEPPER`. Paste a new random value at each prompt, and store both values somewhere safe.
 
-## Open your server
+## Open Your Server
 
 Open the setup link the script printed. It looks like `https://your-print-better.example/setup?token=...`. Follow the steps in [Quickstart](/docs/quickstart#create-your-account).
 
@@ -82,7 +80,7 @@ After setup, the token has no use. You can delete it:
 pnpm --dir server exec wrangler secret delete SETUP_TOKEN
 ```
 
-## Publish the client downloads
+## Publish the Client Downloads
 
 The install commands and **Add a device** download the client from your own R2 bucket. Publish once after the first deploy, and again for each new client version.
 
@@ -114,7 +112,7 @@ macOS devices accept only updates signed by the same Developer ID team as the in
 
 </Callout>
 
-## Use your own domain
+## Use Your Own Domain
 
 Add a custom domain in the Cloudflare dashboard, under the `print-better` Worker's **Settings**, then **Domains & Routes**. Or add it to `server/wrangler.jsonc` and deploy again:
 
@@ -126,7 +124,7 @@ Choose the final domain before anyone registers a passkey. A passkey works only 
 
 Paired devices keep using the address they paired with. Leave the `workers.dev` address on, or pair those devices again after the switch.
 
-## Next steps
+## Next Steps
 
 <Cards>
 

@@ -1,8 +1,6 @@
-Each computer and Raspberry Pi in your workspace has a page where you can check its health, change its settings, rename it, or remove it.
-
 Workspace owners and admins can change devices. Members can see them, but the controls are turned off with the note **Only admins can change these.**
 
-## The Devices page
+## The Devices Page
 
 Open [Devices](/devices) in the sidebar. Each row shows:
 
@@ -12,27 +10,25 @@ Open [Devices](/devices) in the sidebar. Each row shows:
 - When it was last seen, if it is offline.
 - Its Print Better version, and **Update available** when a newer version is published.
 
-Select a device to open its page. To add one, select **Add a device**.
-
-## A device's page
+## A Device's Page
 
 | Section | What it shows |
 | --- | --- |
 | **Printers** | Printers this device can reach, added or **Found, not added yet**. |
-| **Printers on this computer** | Macs and Linux computers only. Which workspace printers its print window shows, and its default printer. See [From your computer's print window](/docs/printing/print-window). |
+| **Printers on this computer** | Macs and Linux computers only. Which workspace printers its print window shows, and its default printer. See [From Your Computer's Print Window](/docs/printing/print-window). |
 | **Tools** | Look for printers, run a checkup, read the log, restart, and update. |
 | **Settings** | Pause, network sharing, automatic updates, the menu bar icon, and detailed logs. |
 | **New printers** | What to do when the device finds a printer it hasn't seen before. |
 | **Where to look for printers** | Which discovery methods the device uses. |
 | **About this device** | **Computer name**, **System**, **Print Better version**, **Last seen**, and **Added**. |
 
-## Rename a device
+## Rename a Device
 
 1. Select **Rename** at the top of the device's page.
 2. Enter a **Name** that says where it is, such as "Office Mac".
 3. Select **Save name**.
 
-## Check a device's health
+## Check a Device's Health
 
 The **Tools** section works while the device is online. Each tool waits up to 20 seconds for the device to answer.
 
@@ -42,7 +38,7 @@ The **Tools** section works while the device is online. Each tool waits up to 20
 | **Run a checkup** | **Run checkup** | Tests the connection, the clock, storage, discovery, and each printer. |
 | **Show recent activity log** | **Show log** | Shows the last 500 log lines. Select **Copy log** or **Download** to share them. |
 | **Restart the app** | **Restart** | Restarts Print Better on the device. Waiting jobs are kept. |
-| **Update to** a new version | **Update now** | Shown when an update is available. See [Automatic updates](/docs/devices/updates). |
+| **Update to** a new version | **Update now** | Shown when an update is available. See [Automatic Updates](/docs/devices/updates). |
 
 The checkup runs the same checks as `printbetter doctor` on the device:
 
@@ -58,19 +54,19 @@ The checkup runs the same checks as `printbetter doctor` on the device:
 | Remote printers | The printers from your other devices are in this computer's print window. |
 | Updates | The device can install updates, and the last check worked. |
 
-## Change a device's settings
+## Change a Device's Settings
 
-Changes are sent to the device right away. You can also change them on the device itself. See [Command line](/docs/reference/cli#settings).
+Changes are sent to the device right away. You can also change them on the device itself. See [Command Line](/docs/reference/cli#settings).
 
 | Setting | What it does |
 | --- | --- |
 | **Pause printing** | Holds new jobs on the device until you turn it off. |
-| **Share printers on the local network** | Lets phones and computers nearby print to this device's shared printers without Print Better. See [Share on your network](/docs/printers/lan-sharing). |
+| **Share printers on the local network** | Lets phones and computers nearby print to this device's shared printers without Print Better. See [Share on Your Network](/docs/printers/lan-sharing). |
 | **Install updates automatically** | Installs new versions in the background. Print Better restarts on its own. |
 | **Show icon in the menu bar** | Macs only. Shows the Print Better icon. |
 | **Detailed activity log** | Writes more detail to the log. Turn it on only while tracking down a problem. |
 
-## New printers
+## New Printers
 
 Under **Add new printers automatically**, choose one:
 
@@ -79,9 +75,9 @@ Under **Add new printers automatically**, choose one:
 - **Add every printer found**
 - **Ask me first**: New printers wait until you add them.
 
-See [Printer discovery](/docs/devices/discovery#new-printers).
+See [Printer Discovery](/docs/devices/discovery#new-printers).
 
-## Remove a device
+## Remove a Device
 
 Select **Remove** at the top of the device's page, then **Remove device**. The server then:
 
@@ -93,17 +89,17 @@ If the device is online, Print Better on it forgets the connection and removes t
 
 If the device was offline, it learns about the removal when it next connects. Its status shows **Removed from Print Better**. Run `printbetter unpair` on the device before you connect it again.
 
-## The status page on the device
+## The Status Page on the Device
 
 Each device has its own status page at `http://127.0.0.1:47631`. Open it in a browser on that device, or choose **Open status page** in the menu bar icon.
 
 The page shows the connection, the printers, recent jobs, and the same settings. Under **Help and troubleshooting**, you can **Run checks**, **Show recent log**, or **Disconnect this computer**.
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/devices/discovery" title="Printer discovery">
+<Card href="/docs/devices/discovery" title="Printer Discovery">
 
 How devices find printers, and how to turn methods on and off.
 

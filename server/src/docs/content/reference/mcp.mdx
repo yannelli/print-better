@@ -1,6 +1,6 @@
-The tables below list every tool the built-in MCP server offers, with the scope each one needs. For a guided start, see [With AI assistants](/docs/printing/ai-assistants).
+For a guided start, see [With AI Assistants](/docs/printing/ai-assistants).
 
-## The server address
+## The Server Address
 
 ```text
 https://your-print-better.example/mcp
@@ -10,7 +10,7 @@ The **Connect AI** page in the web app shows the same address and the steps for 
 
 Tools call the same code as the web app and the REST API, so the same roles and permissions apply.
 
-## Connect an assistant
+## Connect an Assistant
 
 <Tabs>
 
@@ -56,11 +56,11 @@ Authorization: Bearer pbt_...
 
 </Tabs>
 
-## Signing in
+## Signing In
 
 Assistants sign in with OAuth. When one connects, Print Better opens a page that asks whether to let the app use Print Better, and lists what the app will be able to do.
 
-1. Under **Which workspace can it use?**, choose one workspace or **All my workspaces**.
+1. Under **Which workspace can it use?**, choose 1 workspace or **All my workspaces**.
 2. Choose **Allow** or **Don't allow**.
 
 - The access token lasts 1 hour. The refresh token lasts 30 days and changes on every use.
@@ -79,9 +79,9 @@ The MCP server accepts only bearer tokens, never the browser cookie. It takes pe
 | `print` | Print documents on your printers | `print`, `print_test_page`, `cancel_job`, `retry_job`. |
 | `write` | Change settings, devices and people | Every other tool that changes something. |
 
-Personal API tokens hold all three. When an assistant asks for none of them, it gets all three. A missing scope returns `403` with `insufficient_scope`, so the assistant can ask for more.
+Personal API tokens hold all 3. When an assistant asks for none of them, it gets all 3. A missing scope returns `403` with `insufficient_scope`, so the assistant can ask for more.
 
-## Which workspace a tool uses
+## Which Workspace a Tool Uses
 
 A tool picks its workspace in this order:
 
@@ -93,7 +93,7 @@ A tool picks its workspace in this order:
 
 Start with `get_setup_status`. It returns a checklist for the workspace and the next tool to call.
 
-### Account and workspaces
+### Account and Workspaces
 
 | Tool | Scope | What it does |
 | --- | --- | --- |
@@ -139,16 +139,16 @@ Start with `get_setup_status`. It returns a checklist for the workspace and the 
 | `cancel_job` | `print` | Cancels an unfinished job. Members cancel their own; admins any job. |
 | `retry_job` | `print` | Prints a failed or canceled job again, while its document is still stored. |
 
-### Server admin
+### Server Admin
 
 | Tool | Scope | What it does |
 | --- | --- | --- |
 | `get_instance_settings` | `read` | Server admins: name, sign-up, sign-in, and email settings. Secrets show only whether they are set. |
 | `update_instance_settings` | `write` | Server admins: changes those settings. A string sets a secret, `null` clears it. |
 
-### Printer access
+### Printer Access
 
-These tools need the [Printer access](/docs/extensions/printer-access) extension. They are listed once a server admin makes it available. Until a workspace owner turns it on, each call fails with a message that says how to turn it on.
+These tools need the [Printer Access](/docs/extensions/printer-access) extension. They are listed once a server admin makes it available. Until a workspace owner turns it on, each call fails with a message that says how to turn it on.
 
 | Tool | Scope | What it does |
 | --- | --- | --- |
@@ -167,15 +167,15 @@ These tools need the [Printer access](/docs/extensions/printer-access) extension
 | `revoke_printer_access` | `write` | Removes a grant. |
 | `explain_printer_access` | `read` | Explains why someone has their permissions on a printer. |
 
-## Results and errors
+## Results and Errors
 
-Each result has structured content and two text blocks: a short summary, then the same data as JSON.
+Each result has structured content and 2 text blocks: a short summary, then the same data as JSON.
 
 When a tool can't do what you asked, the result is marked as an error with a plain message, such as "Choose a printer". The assistant can read it and try again.
 
 Every change a tool makes appears in the workspace's activity log.
 
-## Protocol details
+## Protocol Details
 
 - Transport: streamable HTTP at `POST /mcp`, stateless, with JSON responses.
 - Protocol versions: `2026-07-28`, plus `2025-11-25`, `2025-06-18`, and `2025-03-26` through `initialize`.

@@ -3,7 +3,7 @@ Your server can send email and receive email. Both are optional and off by defau
 - Sending email delivers invites, reset links, and printer alerts.
 - Receiving email lets people print by sending a document to a printer's own address.
 
-## Without email
+## Without Email
 
 The server works without email. Without it:
 
@@ -12,7 +12,7 @@ The server works without email. Without it:
 - People can't verify their email address.
 - Email to print is not available.
 
-## What the server sends
+## What the Server Sends
 
 | Email | Sent to | When |
 | --- | --- | --- |
@@ -21,13 +21,13 @@ The server works without email. Without it:
 | Email verification | The account's email | After sign-up with an email, after an email change, or from **Send verification email**. The link works for 24 hours. |
 | Printer alert | Workspace owners and admins who have an email | An added printer needs a person, for example it is out of paper, jammed, or out of toner. At most once per printer every 12 hours. |
 
-## Set up sending
+## Set up Sending
 
 1. Open **Server admin**, then **Email**.
 2. Under **Sending email**, choose a provider in **How to send email**.
 3. Enter **Send from**, for example `Print Better <print@example.com>`. The address must belong to a domain you set up with your email provider.
 
-## Send with Resend
+## Send With Resend
 
 <Steps>
 
@@ -35,21 +35,21 @@ The server works without email. Without it:
 
 In Resend, verify your domain. Create an API key with sending access.
 
-### Enter the key
+### Enter the Key
 
 Choose **Resend**. Enter **Send from** and paste the **Resend API key**. Select **Save changes**.
 
 </Steps>
 
-## Send with Cloudflare
+## Send With Cloudflare
 
 <Steps>
 
-### Prepare your domain
+### Prepare Your Domain
 
 In the Cloudflare dashboard, set up your domain for Email Sending.
 
-### Add the binding
+### Add the Binding
 
 Add this line to `server/wrangler.jsonc`, then run `scripts/deploy.sh`:
 
@@ -63,37 +63,37 @@ Choose **Cloudflare Email**. Enter **Send from** and select **Save changes**. Th
 
 </Steps>
 
-## Set up email to print
+## Set up Email to Print
 
-Email to print needs three things turned on:
+Email to print needs 3 things turned on:
 
 - The server receives mail.
 - A workspace allows it.
 - A printer has an address.
 
-## Receive with Cloudflare Email Routing
+## Receive With Cloudflare Email Routing
 
 <Steps>
 
-### Route the mail to the Worker
+### Route the Mail to the Worker
 
-In the Cloudflare dashboard, turn on Email Routing for your domain. Add a catch-all rule, or one rule per address, with the action **Send to a Worker** and the Worker `print-better`.
+In the Cloudflare dashboard, turn on Email Routing for your domain. Add a catch-all rule, or 1 rule per address, with the action **Send to a Worker** and the Worker `print-better`.
 
-### Choose Email Routing in Server admin
+### Choose Email Routing in Server Admin
 
 In **Server admin**, then **Email**, go to **Receiving email**. Under **How email arrives**, choose **Cloudflare Email Routing**. Enter the **Email domain for printers**, for example `print.example.com`, and select **Save changes**.
 
 </Steps>
 
-## Receive with Resend
+## Receive With Resend
 
 <Steps>
 
-### Enter the Resend API key
+### Enter the Resend API Key
 
 Resend receiving uses the API key from sending. Under **Sending email**, choose **Resend** and enter the **Resend API key**.
 
-### Set up a receiving domain in Resend
+### Set up a Receiving Domain in Resend
 
 Add Resend's MX records for the domain that will receive mail. Add a webhook for the `email.received` event with this address:
 
@@ -103,7 +103,7 @@ https://your-print-better.example/api/hooks/resend
 
 **Server admin** shows it as **Webhook address to give Resend**.
 
-### Choose Resend in Server admin
+### Choose Resend in Server Admin
 
 Under **How email arrives**, choose **Resend**. Enter the **Email domain for printers**.
 
@@ -111,21 +111,21 @@ Paste the **Webhook signing secret** from Resend. It starts with `whsec_`. Selec
 
 </Steps>
 
-## Turn it on for a workspace and a printer
+## Turn It On for a Workspace and a Printer
 
-1. In **Settings** > [**Email to print**](/settings/email), turn on **Allow printing by email**. Choose who may send. See [Workspace settings](/docs/workspaces/settings).
+1. In **Settings** > [**Email to print**](/settings/email), turn on **Allow printing by email**. Choose who may send. See [Workspace Settings](/docs/workspaces/settings).
 2. On a printer's page, under **Sharing**, turn on **Print by email**. Enter an **Email name for this printer**, such as `kitchen`, and select **Save name**.
 
-People then send documents to that name at your printer domain, for example `kitchen@print.example.com`. See [By email](/docs/printing/email).
+People then send documents to that name at your printer domain, for example `kitchen@print.example.com`. See [By Email](/docs/printing/email).
 
-## What prints
+## What Prints
 
 - Attachments in PDF, JPEG, PNG, or plain text, up to 10 per message.
 - Inline images, such as logos in a signature, are skipped.
 - Each attachment must fit the workspace's upload limit.
 - A message with no printable attachment prints its text body instead.
 
-## Which mail is refused
+## Which Mail Is Refused
 
 The server refuses a message when:
 
@@ -134,21 +134,21 @@ The server refuses a message when:
 - No added printer has that address with **Print by email** on, in a workspace that allows it.
 - Nothing in the message can print.
 
-With Cloudflare Email Routing, the server rejects the message, so the sender gets a bounce with the reason. With Resend, the reason appears in the Worker's logs. See [Email to print is refused](/docs/reference/troubleshooting#email-to-print-is-refused).
+With Cloudflare Email Routing, the server rejects the message, so the sender gets a bounce with the reason. With Resend, the reason appears in the Worker's logs. See [Email to Print Is Refused](/docs/reference/troubleshooting#email-to-print-is-refused).
 
-With the [Printer access](/docs/extensions/printer-access) extension active, a member also needs permission to print to that printer. Senders who aren't members can print only where Everyone may print.
+With the [Printer Access](/docs/extensions/printer-access) extension active, a member also needs permission to print to that printer. Senders who aren't members can print only where Everyone may print.
 
-## Next steps
+## Next Steps
 
 <Cards>
 
-<Card href="/docs/printing/email" title="Print by email">
+<Card href="/docs/printing/email" title="Print by Email">
 
 Send documents to a printer's address.
 
 </Card>
 
-<Card href="/docs/workspaces/settings" title="Workspace settings">
+<Card href="/docs/workspaces/settings" title="Workspace Settings">
 
 Choose who may print by email in each workspace.
 

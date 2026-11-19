@@ -1,4 +1,4 @@
-The tables below list every REST endpoint on your server, grouped by area. For a guided start, see [With the API](/docs/printing/api).
+For a guided start, see [With the API](/docs/printing/api).
 
 ## Basics
 
@@ -15,9 +15,9 @@ curl https://your-print-better.example/api/workspaces \
   -H "Authorization: Bearer $PRINTBETTER_TOKEN"
 ```
 
-Create a token under **Your account**, then **Apps and tokens**. See [API tokens](/docs/workspaces/tokens).
+Create a token under **Your account**, then **Apps and tokens**. See [API Tokens](/docs/workspaces/tokens).
 
-Tokens start with `pbt_`. A token can be limited to one workspace and can expire.
+Tokens start with `pbt_`. A token can be limited to 1 workspace and can expire.
 
 The web app uses a session cookie instead. Requests with that cookie that change something must send an `Origin` header that matches the server.
 
@@ -31,7 +31,7 @@ OAuth tokens from AI assistants (`pbo_`) work only with the [MCP server](/docs/r
 | `print` | Creating, uploading, canceling, retrying, and deleting jobs, and test pages. |
 | `write` | Every other change. |
 
-Personal API tokens hold all three scopes. A missing scope returns `403` with the code `insufficient_scope`.
+Personal API tokens hold all 3 scopes. A missing scope returns `403` with the code `insufficient_scope`.
 
 The **Scope** column in the tables also uses these values:
 
@@ -48,7 +48,7 @@ Many endpoints also need a role in the workspace:
 
 The tables mark these endpoints with **Admins** or **Owners**. **Server admins** are the accounts that can open **Server admin**.
 
-With the [Printer access](/docs/extensions/printer-access) extension active, each printer's permissions replace the admin rule for printers and jobs. Printers and jobs you can't see are left out of lists and return `404`.
+With the [Printer Access](/docs/extensions/printer-access) extension active, each printer's permissions replace the admin rule for printers and jobs. Printers and jobs you can't see are left out of lists and return `404`.
 
 ## Errors
 
@@ -79,13 +79,13 @@ Errors use the HTTP status and a JSON body:
 
 Pass `?limit=` for the page size (50 by default, 200 at most). Pass `nextCursor` back as `?cursor=` to get the next page. When `nextCursor` is `null`, there are no more pages.
 
-## Two-step upload
+## Two-Step Upload
 
 Send small documents inline as `text`, `url`, or `base64`. For larger files, create the job first and then upload the file.
 
 <Steps>
 
-### Create the job
+### Create the Job
 
 ```sh
 curl -X POST https://your-print-better.example/api/workspaces/$WS/jobs \
@@ -96,7 +96,7 @@ curl -X POST https://your-print-better.example/api/workspaces/$WS/jobs \
 
 The response holds the job, with status `uploading`, and an absolute `uploadUrl`.
 
-### Upload the file
+### Upload the File
 
 ```sh
 curl -X PUT "$UPLOAD_URL" \
@@ -113,11 +113,11 @@ Uploads have these limits:
 
 - Types: `application/pdf`, `image/jpeg`, `image/png`, and `text/plain`.
 - Size: The workspace's upload limit, 50 MB by default.
-- Time: An upload that never finishes fails after an hour.
+- Time: An upload that never finishes fails after 1 hour.
 
-Job options are listed in [Job options](/docs/reference/job-options).
+Job options are listed in [Job Options](/docs/reference/job-options).
 
-## Server and sign-in
+## Server and Sign-In
 
 | Method | Path | Scope | Purpose |
 | --- | --- | --- | --- |
@@ -140,7 +140,7 @@ Job options are listed in [Job options](/docs/reference/job-options).
 | POST | `/auth/reset/request` | none | Emails a password reset link. |
 | POST | `/auth/reset/confirm` | none | Sets a new password from a reset link. |
 
-## Your account
+## Your Account
 
 | Method | Path | Scope | Purpose |
 | --- | --- | --- | --- |
@@ -160,7 +160,7 @@ Job options are listed in [Job options](/docs/reference/job-options).
 | POST | `/me/tokens` | session | Creates an API token. The response holds it once. |
 | DELETE | `/me/tokens/:id` | `write` | Deletes a token, or disconnects an app. |
 
-## Workspaces and members
+## Workspaces and Members
 
 | Method | Path | Scope | Purpose |
 | --- | --- | --- | --- |
@@ -222,7 +222,7 @@ Job options are listed in [Job options](/docs/reference/job-options).
 | POST | `/workspaces/:ws/jobs/:id/retry` | `print` | Prints a failed or canceled job again. Members retry their own. |
 | DELETE | `/workspaces/:ws/jobs/:id` | `print` | Admins: deletes a finished job and its document. |
 
-## Server admin
+## Server Admin
 
 | Method | Path | Scope | Purpose |
 | --- | --- | --- | --- |
@@ -242,9 +242,9 @@ Job options are listed in [Job options](/docs/reference/job-options).
 | GET | `/workspaces/:ws/extensions` | `read` | Extensions in this workspace: available, enabled, active. |
 | PATCH | `/workspaces/:ws/extensions/:id` | `write` | Owners: turns an available extension on or off. |
 
-## Printer access
+## Printer Access
 
-These endpoints need the [Printer access](/docs/extensions/printer-access) extension turned on. While it is off, they return `404 extension_inactive`, except `GET /access/subject`. All paths start with `/workspaces/:ws`.
+These endpoints need the [Printer Access](/docs/extensions/printer-access) extension turned on. While it is off, they return `404 extension_inactive`, except `GET /access/subject`. All paths start with `/workspaces/:ws`.
 
 | Method | Path | Scope | Purpose |
 | --- | --- | --- | --- |
@@ -268,13 +268,13 @@ These endpoints need the [Printer access](/docs/extensions/printer-access) exten
 | PATCH | `/printers/:id/access` | `write` | Sets a printer's Everyone role. Needs `access` on it. |
 | POST | `/printers/:id/access/grants` | `write` | Grants a role on one printer. Needs `access` on it. |
 
-## Other endpoints
+## Other Endpoints
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | POST | `/api/hooks/resend` | Receives email from Resend for email to print. Checks the webhook signature. |
 | GET | `/install.sh` | The install script for Macs and Linux. |
 | GET | `/dl/latest.json`, `/dl/:version/:file` | Client downloads. |
-| POST | `/mcp` | The MCP server. See [MCP tools](/docs/reference/mcp). |
+| POST | `/mcp` | The MCP server. See [MCP Tools](/docs/reference/mcp). |
 
 Devices use their own endpoints under `/api/client/`, with a `pbc_` device key. They are for `printbetter` only.

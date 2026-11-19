@@ -1,4 +1,4 @@
-One program, `printbetter`, runs the background service, the menu bar icon, and every command below.
+A single program, `printbetter`, runs the background service, the menu bar icon, and every command below.
 
 Most commands talk to the running service at `http://127.0.0.1:47631`. `status` and `printers` need it. The other commands also work when the service is stopped.
 
@@ -149,13 +149,13 @@ When only the machine-wide service exists, `start`, `stop`, `restart`, and `stat
 
 `config set` changes a setting on this device. While the service runs, the change applies at once and syncs to the server. When the service is stopped, it is saved and syncs on the next connection.
 
-If a setting changes in two places, the most recent change wins.
+If a setting changes in 2 places, the most recent change wins.
 
 | Key | Values | Default | Meaning |
 | --- | --- | --- | --- |
 | `paused` | `on`, `off` | `off` | Holds new jobs on this device. |
 | `tray` | `on`, `off` | `on` | Shows the menu bar icon. |
-| `lanSharing` | `on`, `off` | `off` | Shares added printers on the local network. See [Share on your network](/docs/printers/lan-sharing). |
+| `lanSharing` | `on`, `off` | `off` | Shares added printers on the local network. See [Share on Your Network](/docs/printers/lan-sharing). |
 | `autoAdd` | `inherit`, `smart`, `all`, `none` | `inherit` | What to do with new printers. `inherit` follows the workspace. |
 | `discovery.mdns` | `on`, `off` | `on` | Looks for printers with Bonjour. |
 | `discovery.snmp` | `on`, `off` | `on` | Looks for older network printers with SNMP. |
@@ -169,7 +169,7 @@ If a setting changes in two places, the most recent change wins.
 
 `on` and `off` also accept `true`, `false`, `yes`, `no`, `1`, and `0`.
 
-## Exit codes
+## Exit Codes
 
 | Code | Meaning |
 | --- | --- |
@@ -179,7 +179,7 @@ If a setting changes in two places, the most recent change wins.
 | `3` | This device isn't paired. |
 | `4` | Print Better isn't running, for commands that need the service. |
 
-## Environment variables
+## Environment Variables
 
 | Variable | What it does |
 | --- | --- |
@@ -188,14 +188,14 @@ If a setting changes in two places, the most recent change wins.
 | `PRINTBETTER_PORT` | Moves the status page and local API from port 47631. |
 | `PRINTBETTER_REMOTE_PORT` | Moves the local print server for print-window printers from port 8632. |
 
-## Internal commands
+## Internal Commands
 
-Two more commands are for Print Better's own use:
+These 2 commands are for Print Better's own use:
 
 - `tray-ui` runs the menu bar icon for the machine-wide macOS service.
 - `update-helper` is the root updater that `printbetter-update.service` runs on Linux.
 
-## Install script options
+## Install Script Options
 
 The install command runs `install.sh` from your server. Add these options after `sh -s --`.
 
