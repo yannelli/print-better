@@ -99,6 +99,33 @@ struct PrintSessionTests {
         #expect(session.error == "You can't print to this printer from this iPhone.")
     }
 
+    @Test func showsWhyTheWorkspaceRefusedADocument() async throws {
+        let refusal = #"{"error":{"code":"policy_blocked","message":"Color printing is off on weekends"}}"#
+        let session = await session(["GET /api/client/printers": (200, Fixtures.printers), "POST /api/client/jobs": (403, refusal)])
+        let document = try await note()
+        session.use(document, folder: document.fileURL.deletingLastPathComponent())
+        await session.send()
+        #expect(session.stage == .editing)
+        #expect(session.error == "Color printing is off on weekends")
+    }
+
+    @Test func showsAHeldJobAsWaitingAndLetsItBeCanceled() async throws {
+        let held = Fixtures.job("held", message: "Waiting to be released at the printer").replacingOccurrences(of: "\"completedAt\":null", with: #""completedAt":null,"held":{"kind":"release","until":1}"#)
+        let session = await session([
+            "GET /api/client/printers": (200, Fixtures.printers),
+            "POST /api/client/jobs": (201, #"{"job":\#(Fixtures.job("uploading")),"uploadUrl":"https://your-print-better.example/x"}"#),
+            "PUT /api/client/jobs/job_1/file": (200, #"{"job":\#(held)}"#),
+            "GET /api/client/jobs/job_1": (200, #"{"job":\#(held)}"#),
+        ])
+        let document = try await note()
+        session.use(document, folder: document.fileURL.deletingLastPathComponent())
+        await session.send()
+        let job = try #require(session.sentJob)
+        #expect(job.status == .held && job.canCancel && !job.status.isMoving)
+        #expect(job.status().label == "Waiting")
+        #expect(job.status().detail == "Waiting to be released at the printer. An owner or admin can release it in the web app.")
+    }
+
     @Test func tellsTheAppWhenThisIPhoneWasRemoved() async {
         let removed = Flag()
         let session = PrintSession(client: StubServer.client(["GET /api/client/printers": (401, #"{"error":{"code":"invalid_token","message":"Unknown"}}"#)]))

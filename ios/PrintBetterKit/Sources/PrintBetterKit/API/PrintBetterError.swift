@@ -39,6 +39,7 @@ public enum PrintBetterError: Error, Equatable, Sendable, LocalizedError {
     private static func words(status: Int, code: String, message: String) -> String {
         switch code {
         case "printer_access_denied": "You can't print to this printer from this \(ThisDevice.model)."
+        case "policy_blocked", "cost_center_invalid": message.isEmpty ? "Your workspace's print rules stopped this document." : message
         case "printer_not_found": "This printer isn't available anymore. Pull down on the printer list to refresh it."
         case "too_large": "This document is too big to print. \(message)."
         case "unsupported_type": "Print Better can print PDFs, photos and text."

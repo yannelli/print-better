@@ -48,6 +48,16 @@ struct ModelTests {
         #expect(job.status() == StatusWords("Printed with a problem", .warn, detail: "Toner is low"))
     }
 
+    @Test func decodesAHeldJobAsWaitingForAnOwnerOrAdmin() throws {
+        let held = jobJSON
+            .replacingOccurrences(of: #""status":"completed","statusMessage":"Toner is low""#, with: #""status":"held","statusMessage":"Waiting for approval""#)
+            .replacingOccurrences(of: #""requestedBy":null"#, with: #""requestedBy":null,"held":{"kind":"approval","until":1763574400000,"reasons":["Over the limit Monthly pages"]}"#)
+        let job = try JSONDecoder().decode(JobEnvelope.self, from: Data(held.utf8)).job
+        #expect(job.status == .held && job.held?.kind == .approval)
+        #expect(job.canCancel && !job.status.isMoving)
+        #expect(job.status() == StatusWords("Waiting", .neutral, detail: "Waiting for approval. An owner or admin can approve it in the web app."))
+    }
+
     @Test func encodesOnlyTheOptionsSomeoneSet() throws {
         let data = try JSONEncoder().encode(JobOptions(copies: 3, sides: .twoSidedShortEdge, fit: .actualSize))
         let object = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])

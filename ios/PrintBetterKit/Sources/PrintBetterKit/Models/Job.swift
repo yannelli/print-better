@@ -1,10 +1,23 @@
 import Foundation
 
 public enum JobStatus: String, LenientEnum {
-    case uploading, queued, dispatched, printing, completed, failed, canceled, unknown
+    case uploading, queued, held, dispatched, printing, completed, failed, canceled, unknown
     public static let fallback = JobStatus.unknown
 
     public var isFinished: Bool { self == .completed || self == .failed || self == .canceled }
+
+    /// On its way to the printer: not finished, and not held until someone approves or releases it.
+    public var isMoving: Bool { !isFinished && self != .held }
+}
+
+/// Why a `held` job waits. Device jobs have no member, so only owners and admins can approve or release them.
+public struct JobHold: Codable, Sendable, Hashable {
+    public enum Kind: String, LenientEnum {
+        case approval, release, unknown
+        public static let fallback = Kind.unknown
+    }
+
+    public var kind: Kind
 }
 
 /// A print job as the server reports it. Times are Unix epoch milliseconds.
@@ -25,6 +38,8 @@ public struct Job: Codable, Sendable, Hashable, Identifiable {
     public var updatedAt: Double
     public var completedAt: Double?
     public var sourceClientName: String?
+    /// Present while `status` is `held`.
+    public var held: JobHold?
 
     public init(
         id: String, printerId: String?, printerName: String?, title: String, status: JobStatus, statusMessage: String? = nil,
@@ -45,6 +60,7 @@ public struct Job: Codable, Sendable, Hashable, Identifiable {
         self.updatedAt = self.createdAt
         self.completedAt = nil
         self.sourceClientName = nil
+        self.held = nil
     }
 
     public var created: Date { Date(timeIntervalSince1970: createdAt / 1000) }

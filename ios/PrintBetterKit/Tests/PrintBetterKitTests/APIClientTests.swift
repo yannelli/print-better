@@ -67,6 +67,10 @@ struct APIClientTests {
         }
         let error = PrintBetterError.server(status: 403, code: "printer_access_denied", message: "")
         #expect(error.localizedDescription == "You can't print to this printer from this iPhone.")
+        let blocked = PrintBetterError.server(status: 403, code: "policy_blocked", message: "Color printing is off on weekends")
+        #expect(blocked.localizedDescription == "Color printing is off on weekends")
+        let costCenter = PrintBetterError.server(status: 400, code: "cost_center_invalid", message: "The cost center Marketing is turned off")
+        #expect(costCenter.localizedDescription == "The cost center Marketing is turned off")
     }
 
     @Test func reportsARemovedDeviceAsRevoked() async throws {

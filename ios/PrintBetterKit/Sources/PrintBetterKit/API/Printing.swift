@@ -35,8 +35,8 @@ extension APIClient {
         return envelope.job
     }
 
-    /// Every change to a job until it finishes. Phones have no socket, so this polls.
-    public func follow(jobId: String, every interval: Duration = .seconds(2)) -> AsyncThrowingStream<Job, any Error> {
+    /// Every change to a job until it finishes. Phones have no socket, so this polls, less often while the job is held.
+    public func follow(jobId: String, every interval: Duration = .seconds(2), whileHeld heldInterval: Duration = .seconds(15)) -> AsyncThrowingStream<Job, any Error> {
         AsyncThrowingStream { continuation in
             let task = Task {
                 var last: Job?
@@ -54,7 +54,7 @@ extension APIClient {
                         continuation.finish(throwing: error)
                         return
                     }
-                    try? await Task.sleep(for: interval)
+                    try? await Task.sleep(for: last?.status == .held ? heldInterval : interval)
                 }
                 continuation.finish()
             }

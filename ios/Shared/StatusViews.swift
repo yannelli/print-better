@@ -52,7 +52,7 @@ struct JobStatusCard: View {
                 Image(systemName: words.tone.symbol)
                     .font(.title2)
                     .foregroundStyle(words.tone.color)
-                    .symbolEffect(.pulse, isActive: !job.status.isFinished)
+                    .symbolEffect(.pulse, isActive: job.status.isMoving)
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text(words.label).font(.headline)
@@ -65,7 +65,7 @@ struct JobStatusCard: View {
                 }
             }
             .accessibilityElement(children: .combine)
-            if !job.status.isFinished {
+            if job.status.isMoving {
                 ProgressView().progressViewStyle(.linear).accessibilityLabel("In progress")
             }
             if job.canCancel, let onCancel {

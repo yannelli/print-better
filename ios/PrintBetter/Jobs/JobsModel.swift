@@ -16,7 +16,7 @@ final class JobsModel {
         self.client = client
     }
 
-    var hasActiveJobs: Bool { jobs.contains { !$0.status.isFinished } }
+    var hasActiveJobs: Bool { jobs.contains { $0.status.isMoving } }
 
     func load() async {
         do {

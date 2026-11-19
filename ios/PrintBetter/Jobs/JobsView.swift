@@ -1,7 +1,7 @@
 import PrintBetterKit
 import SwiftUI
 
-/// Recent jobs from this device. Refreshes every few seconds while one is still waiting or printing.
+/// Recent jobs from this device. Refreshes every few seconds while one is on its way to the printer.
 struct JobsView: View {
     let jobs: JobsModel
     let printers: [Printer]

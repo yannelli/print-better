@@ -41,6 +41,7 @@ The app version comes from `client/Cargo.toml`, like the other clients.
 - The phone has no WebSocket. It polls `GET /api/client/printers` and `GET /api/client/jobs` while those screens are open, and `GET /api/client/jobs/:id` while a job it sent is running.
 - Printing: `POST /api/client/jobs`, then `PUT` the file to this server. Photos are sent as JPEG, several photos become one PDF with a photo on each page, scans become a PDF, and Safari pages become a PDF laid out by WebKit's print layout.
 - The share extension and the Shortcuts action read the token from the shared Keychain item, so they work without opening the app.
+- A job that Enterprise controls holds for approval or release shows as waiting, with the server's message and who can act on it: a device's jobs have no member, so only owners and admins can approve or release them. The app checks a held job every 15 seconds. A refusal (`403 policy_blocked`, `400 cost_center_invalid`) shows the server's message, in the app and in the share sheet.
 - The app pairs with `os: ios` on an iPhone and `os: ipados` on an iPad, so the web app names, and shows an icon for, the right one. Its own text names the device the same way, from `UIDevice.current.model`.
 
 ## Signing

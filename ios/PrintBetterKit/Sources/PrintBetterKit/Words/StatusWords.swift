@@ -47,6 +47,7 @@ extension Job {
                 return StatusWords("Waiting", .neutral, detail: message ?? "Waiting for \(printer.clientName) to come online.")
             }
             return StatusWords("Waiting", .neutral, detail: message)
+        case .held: return StatusWords("Waiting", .neutral, detail: heldDetail(message))
         case .dispatched: return StatusWords("Sending to printer", .info, detail: message)
         case .printing: return StatusWords("Printing", .info, detail: message)
         case .completed:
@@ -55,6 +56,18 @@ extension Job {
         case .failed: return StatusWords("Didn't print", .bad, detail: message)
         case .canceled: return StatusWords("Canceled", .neutral, detail: message)
         }
+    }
+
+    /// "Waiting for approval. An owner or admin can approve it in the web app."
+    private func heldDetail(_ message: String?) -> String? {
+        let who: String? = switch held?.kind {
+        case .approval: "An owner or admin can approve it in the web app."
+        case .release: "An owner or admin can release it in the web app."
+        case .unknown, nil: nil
+        }
+        let said = message.map { $0.hasSuffix(".") ? $0 : "\($0)." }
+        let detail = [said, who].compactMap(\.self).joined(separator: " ")
+        return detail.isEmpty ? nil : detail
     }
 }
 
