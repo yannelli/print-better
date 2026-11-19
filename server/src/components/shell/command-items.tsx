@@ -19,6 +19,7 @@ import {
   Users,
 } from 'lucide-react'
 import { useLocation } from 'wouter'
+import { usePages } from '@/extensions/slot'
 import { useSession } from '@/hooks/auth'
 import { useClients } from '@/hooks/devices'
 import { usePrinters } from '@/hooks/printers'
@@ -42,6 +43,7 @@ export function useCommandItems(ws: string): CommandItem[] {
   const session = useSession().data
   const printers = usePrinters(ws).data ?? []
   const clients = useClients(ws).data ?? []
+  const pages = usePages(ws)
   const go = (path: string) => () => navigate(path)
 
   const items: CommandItem[] = [
@@ -54,6 +56,7 @@ export function useCommandItems(ws: string): CommandItem[] {
     { id: 'nav-home', group: 'Go to', label: 'Home', icon: House, run: go(wsHref(ws)) },
     { id: 'nav-printers', group: 'Go to', label: 'Printers', icon: Printer, run: go(wsHref(ws, '/printers')) },
     { id: 'nav-jobs', group: 'Go to', label: 'Print jobs', keywords: 'history queue', icon: ListChecks, run: go(wsHref(ws, '/jobs')) },
+    ...pages.flatMap(({ nav }) => (nav ? [{ id: `nav-${nav.href}`, group: 'Go to', label: nav.label, icon: nav.icon, run: go(wsHref(ws, nav.href)) }] : [])),
     { id: 'nav-devices', group: 'Go to', label: 'Devices', keywords: 'computers clients', icon: LaptopMinimal, run: go(wsHref(ws, '/devices')) },
     { id: 'nav-members', group: 'Go to', label: 'Members', keywords: 'people users invites', icon: Users, run: go(wsHref(ws, '/members')) },
     { id: 'nav-settings', group: 'Go to', label: 'Workspace settings', icon: Settings, run: go(wsHref(ws, '/settings')) },

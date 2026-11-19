@@ -16,6 +16,8 @@ function upsert<T extends WithId>(list: T[] | undefined, item: T, prepend = fals
 
 const without = <T extends WithId>(list: T[] | undefined, id: string) => list?.filter((x) => x.id !== id)
 
+export const refreshUsage = (qc: QueryClient, ws: string) => qc.invalidateQueries({ queryKey: qk.usage(ws) })
+
 export function putPrinter(qc: QueryClient, ws: string, printer: Printer) {
   qc.setQueryData<Printer[]>(qk.printers(ws), (list) => upsert(list, printer))
   qc.setQueryData(qk.printer(ws, printer.id), printer)

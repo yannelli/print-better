@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { PING, PING_INTERVAL_MS, PONG, type UiEvent } from '@shared/protocol'
 import { eventsUrl } from './api/workspaces'
-import { dropClient, dropPrinter, putClient, putJob, putPrinter, putWorkspace, refreshAccess } from './cache'
+import { dropClient, dropPrinter, putClient, putJob, putPrinter, putWorkspace, refreshAccess, refreshUsage } from './cache'
 import { qk } from './query'
 
 export type LiveStatus = 'connecting' | 'live' | 'retrying' | 'off'
@@ -39,6 +39,8 @@ export function applyEvent(qc: QueryClient, ws: string, event: UiEvent) {
       return putWorkspace(qc, event.workspace)
     case 'access':
       return refreshAccess(qc, ws)
+    case 'usage':
+      return refreshUsage(qc, ws)
   }
 }
 

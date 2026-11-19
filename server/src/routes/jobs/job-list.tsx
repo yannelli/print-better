@@ -1,6 +1,7 @@
 import type { Job } from '@shared/types'
 import { StatusPill } from '@/components/status'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Slot } from '@/extensions/slot'
 import { bytes, dateTime, plural, timeAgo } from '@/lib/format'
 import { jobOrigin, jobStatus } from '@/lib/words'
 import { JobActions } from './job-actions'
@@ -59,6 +60,7 @@ export function JobTable({ ws, jobs }: { ws: string; jobs: Job[] }) {
                 <div className="flex flex-col">
                   <span className="truncate font-medium">{title(job)}</span>
                   <span className="text-sm text-muted-foreground">{sizeLine(job)}</span>
+                  <Slot name="jobMeta" props={{ ws, job }} />
                 </div>
               </TableCell>
               <TableCell className="max-w-48 truncate">{job.printerName ?? 'Removed printer'}</TableCell>
@@ -91,6 +93,7 @@ export function JobCards({ ws, jobs }: { ws: string; jobs: Job[] }) {
             <span className="text-sm text-muted-foreground">
               {job.printerName ?? 'Removed printer'}, {sizeLine(job)}
             </span>
+            <Slot name="jobMeta" props={{ ws, job }} />
           </div>
           <Status job={job} />
           <When job={job} />

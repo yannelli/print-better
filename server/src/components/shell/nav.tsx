@@ -2,6 +2,7 @@ import { BookOpen, Bot, House, LaptopMinimal, ListChecks, type LucideIcon, Print
 import { Link } from 'wouter'
 import { usePathname } from 'wouter/use-browser-location'
 import { StatusDot } from '@/components/status'
+import { usePages } from '@/extensions/slot'
 import { useUser } from '@/hooks/auth'
 import { usePrinters } from '@/hooks/printers'
 import { cn } from '@/lib/utils'
@@ -18,11 +19,13 @@ interface NavItem {
 
 function useNavItems(ws: string): { main: NavItem[]; more: NavItem[] } {
   const user = useUser()
+  const pages = usePages(ws).flatMap(({ nav }) => (nav ? [{ label: nav.label, icon: nav.icon, href: wsHref(ws, nav.href) }] : []))
   return {
     main: [
       { label: 'Home', icon: House, href: wsHref(ws), exact: true },
       { label: 'Printers', icon: Printer, href: wsHref(ws, '/printers'), badge: 'attention' },
       { label: 'Print jobs', icon: ListChecks, href: wsHref(ws, '/jobs') },
+      ...pages,
       { label: 'Devices', icon: LaptopMinimal, href: wsHref(ws, '/devices') },
       { label: 'Members', icon: Users, href: wsHref(ws, '/members') },
       { label: 'Settings', icon: Settings, href: wsHref(ws, '/settings') },
