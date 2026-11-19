@@ -167,6 +167,30 @@ These tools need the [Printer Access](/docs/extensions/printer-access) extension
 | `revoke_printer_access` | `write` | Removes a grant. |
 | `explain_printer_access` | `read` | Explains why someone has their permissions on a printer. |
 
+### Print Rules and Limits
+
+These tools need the [Print Rules and Limits](/docs/extensions/print-rules-and-limits) extension. They are listed once a server admin makes it available. Until a workspace owner turns it on, each call fails with a message that says how to turn it on.
+
+| Tool | Scope | What it does |
+| --- | --- | --- |
+| `list_print_rules` | `read` | Admins: rules, top to bottom. |
+| `create_print_rule` | `write` | Admins: adds a rule at the bottom. |
+| `update_print_rule` | `write` | Admins: changes a rule. |
+| `delete_print_rule` | `write` | Admins: deletes a rule. |
+| `reorder_print_rules` | `write` | Admins: sets the order, with every rule id once. |
+| `list_print_limits` | `read` | Admins: limits with this cycle's counts. |
+| `create_print_limit` | `write` | Admins: adds a limit. |
+| `update_print_limit` | `write` | Admins: changes a limit. |
+| `delete_print_limit` | `write` | Admins: deletes a limit. |
+| `add_limit_allowance` | `write` | Admins: gives an extra amount for this cycle. |
+| `get_my_usage` | `read` | The limits that count your jobs, with what's left. |
+| `get_usage` | `read` | Admins: every limit's counts, this cycle or the last. |
+| `get_prices` | `read` | The currency, time zone, and prices. |
+| `set_prices` | `write` | Admins: changes them. |
+| `preview_print_job` | `print` | What would happen to a job sent now. Nothing is printed. |
+
+A job a rule or limit refuses fails with its message, from `print` too.
+
 ## Results and Errors
 
 Each result has structured content and 2 text blocks: a short summary, then the same data as JSON.
