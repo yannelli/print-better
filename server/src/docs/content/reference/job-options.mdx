@@ -116,9 +116,9 @@ The server accepts any valid value, even one the printer lacks. The device decid
 - Over IPP, which most network printers use, the device sends only values the printer says it supports. It leaves out the rest, and the printer uses its own setting. For example, `two-sided-long-edge` on a one-sided printer prints on one side.
 - Trays and paper types reach the printer only when it lists them.
 - `color` on a black-and-white printer prints in black and white.
-- When the device converts a document into the printer's own format, `quality` sets the sharpness: about 150 dpi for `draft`, 300 for `normal`, and 600 for `high`, as close as the printer allows.
+- When the device converts a document into the printer's own format, `quality` sets the sharpness. It aims for 150 dpi for `draft`, 300 for `normal`, and 600 for `high`, as close as the printer allows.
 
-Copies and page ranges are never dropped, because that would change what prints. If the printer can't apply them, the device makes the copies or picks the pages itself. If it can't do that either, the job stops with a message such as **This printer can't print selected pages or extra copies over this connection.**
+Copies and page ranges are never dropped, because that would change what prints. If the printer can't apply them, the device makes the copies or picks the pages itself. If it can't do that either, the job stops and says why. For example: **This printer can't print selected pages or extra copies over this connection.**
 
 ## Next steps
 
