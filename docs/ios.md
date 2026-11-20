@@ -14,7 +14,7 @@ scripts/make-ios-icon.sh                              # re-renders the app icon,
 The app version comes from `client/Cargo.toml`, like the other clients.
 
 ## Requirements
-- Xcode 26 or later and XcodeGen (`brew install xcodegen`). Uploads need a release Xcode or the current beta: App Store Connect turns down builds from an older beta (error 90534).
+- Xcode 26 or later and XcodeGen (`brew install xcodegen`). Uploads need a release Xcode or the current beta: App Store Connect turns down builds from an older beta (error 90534). `release-ios.sh --upload` stops on a beta unless `ALLOW_BETA_XCODE=1`.
 - For a device build or a release: a paid Apple Developer team, with `APPLE_TEAM_ID` exported before the project is generated.
 - For the app unit tests on a simulator: Developer Mode on the Mac (`DevToolsSecurity -status`). While it's off, the test runner never connects and `xcodebuild test` stops with "The test runner hung before establishing connection". Turn it on with `sudo DevToolsSecurity -enable`.
 
@@ -33,7 +33,7 @@ The app version comes from `client/Cargo.toml`, like the other clients.
 |---|---|
 | App | `dev.yannelli.printbetter.ios` |
 | Share extension | `dev.yannelli.printbetter.ios.share` |
-| Keychain group | `<team ID>.dev.yannelli.printbetter.shared`, holds the device token for the app and the share extension |
+| Keychain group | `<team ID>.dev.yannelli.printbetter.shared`, holds the device token and the preferences (printer list, last printer) for the app and the share extension. There's no App Group: the App Store Connect API can't create one |
 | URL scheme | `printbetter://pair?server=<origin>&token=pbe_…`, the QR code under **Devices > Add a device > iPhone or iPad** |
 
 ## How it talks to the server
@@ -51,9 +51,10 @@ Release builds sign manually with an Apple Distribution certificate and 2 App St
 | Variable | Use |
 |---|---|
 | `APPLE_TEAM_ID` | Team for signing; XcodeGen writes it into the project |
-| `ASC_KEY_ID` | The key ID. Optional while `~/.appstoreconnect/private_keys/` holds one key: the script reads it from the file name |
+| `ASC_KEY_ID` | The key ID, for `--upload`. Optional while `~/.appstoreconnect/private_keys/` holds one key: the script reads it from the file name |
 | `ASC_ISSUER_ID` | The issuer ID, from **Users and Access > Integrations > App Store Connect API**. Needed for `--upload` |
 | `APP_PROFILE`, `SHARE_PROFILE` | Profile names for the app and the share extension. Default `PB iOS App Store` and `PB iOS Share App Store` |
+| `ALLOW_BETA_XCODE` | Set to `1` to upload from the current beta Xcode |
 | `BUILD_NUMBER` | `CFBundleVersion`. Defaults to the UTC date and time, such as `20261119.153012`, so each upload has a higher number |
 | `SIMULATOR` | Simulator for `build-ios.sh` (default `iPhone 17 Pro`) |
 

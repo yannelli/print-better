@@ -35,6 +35,8 @@ pub struct IppJob {
 pub enum IppBody {
     File(PathBuf),
     Bytes(Vec<u8>),
+    /// A file streamed between a prefix and a suffix, such as a PJL header and trailer.
+    Wrapped { head: Vec<u8>, path: PathBuf, tail: Vec<u8> },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

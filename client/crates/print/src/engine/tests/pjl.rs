@@ -1,4 +1,4 @@
-//! HP printers print a PDF with their own duplex default whatever `sides` says (seen on a LaserJet Pro
+//! HP LaserJets print a PDF with their own duplex default whatever `sides` says (seen on a LaserJet Pro
 //! M404), so the job's sides go in a PJL header around an auto-detected document.
 
 use super::{PDF, document, engine};
@@ -12,6 +12,7 @@ use crate::model::{Capabilities, JobOptions, PrinterReport, PrinterStatus, Route
 
 const HP: &str = "HP LaserJet Pro M404-M405";
 const OTHER: &str = "Brother HL-L2350DW";
+const HP_INKJET: &str = "HP OfficeJet Pro 9010 series";
 const PJL_AUTO: &[&str] = &["application/pdf", "application/vnd.hp-PCL", "application/octet-stream"];
 
 /// The Print-Job a printer with `make_model` and `formats`, defaulting to two-sided, received.
@@ -66,11 +67,15 @@ fn sides(sides: Sides) -> JobOptions {
 
 fn wrapped(doc: &[u8], duplex: &str) -> bool {
     let text = String::from_utf8_lossy(doc);
-    text.starts_with("\x1b%-12345X@PJL JOB") && text.contains(duplex) && text.contains("@PJL ENTER LANGUAGE=PDF\r\n%PDF")
+    let pdf = String::from_utf8_lossy(PDF);
+    text.starts_with("\x1b%-12345X@PJL JOB")
+        && text.contains(duplex)
+        && text.contains(&format!("@PJL ENTER LANGUAGE=PDF\r\n{pdf}\x1b%-12345X@PJL EOJ"))
+        && text.ends_with("\r\n\x1b%-12345X")
 }
 
 #[tokio::test]
-async fn an_hp_always_gets_the_sides_in_pjl() {
+async fn a_laserjet_always_gets_the_sides_in_pjl() {
     let (format, _, doc) = sent(HP, PJL_AUTO, sides(Sides::OneSided)).await;
     assert_eq!(format, "application/octet-stream");
     assert!(wrapped(&doc, "@PJL SET DUPLEX=OFF\r\n"), "{}", String::from_utf8_lossy(&doc));
@@ -95,12 +100,12 @@ async fn no_sides_asked_leaves_the_pdf_plain() {
 }
 
 #[tokio::test]
-async fn other_pjl_printers_get_it_only_when_the_job_differs_from_their_default() {
-    let (format, _, doc) = sent(OTHER, PJL_AUTO, sides(Sides::OneSided)).await;
-    assert_eq!(format, "application/octet-stream");
-    assert!(wrapped(&doc, "@PJL SET DUPLEX=OFF\r\n"));
-    let (format, _, doc) = sent(OTHER, PJL_AUTO, sides(Sides::TwoSidedLongEdge)).await;
-    assert_eq!((format.as_str(), doc.as_slice()), ("application/pdf", PDF));
+async fn other_printers_get_plain_pdf_and_ipp_sides() {
+    for make_model in [OTHER, HP_INKJET] {
+        let (format, attrs, doc) = sent(make_model, PJL_AUTO, sides(Sides::OneSided)).await;
+        assert_eq!((format.as_str(), doc.as_slice()), ("application/pdf", PDF), "{make_model}");
+        assert!(attrs.contains(&"sides".to_string()), "{make_model}: {attrs:?}");
+    }
 }
 
 #[tokio::test]

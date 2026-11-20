@@ -27,14 +27,15 @@ const CHUNK: usize = 64 << 10;
 #[derive(Clone)]
 pub enum Doc {
     Bytes(Bytes),
-    File(PathBuf),
+    File { head: Bytes, path: PathBuf, tail: Bytes },
 }
 
 impl From<IppBody> for Doc {
     fn from(body: IppBody) -> Doc {
         match body {
             IppBody::Bytes(b) => Doc::Bytes(Bytes::from(b)),
-            IppBody::File(p) => Doc::File(p),
+            IppBody::File(path) => Doc::File { head: Bytes::new(), path, tail: Bytes::new() },
+            IppBody::Wrapped { head, path, tail } => Doc::File { head: head.into(), path, tail: tail.into() },
         }
     }
 }
@@ -209,27 +210,31 @@ impl Progress {
     }
 }
 
-/// IPP message followed by the document, streamed from disk in chunks.
+/// IPP message followed by the document, streamed from disk in chunks between its own head and tail.
 struct ReqBody {
     head: Option<Bytes>,
     data: Option<Bytes>,
     file: Option<tokio::fs::File>,
     remaining: u64,
+    tail: Option<Bytes>,
     buf: Vec<u8>,
     progress: Arc<Progress>,
 }
 
 impl ReqBody {
     async fn open(head: Vec<u8>, doc: Option<&Doc>, progress: Arc<Progress>) -> Result<ReqBody> {
-        let mut body = ReqBody { head: Some(head.into()), data: None, file: None, remaining: 0, buf: Vec::new(), progress };
+        let mut body =
+            ReqBody { head: Some(head.into()), data: None, file: None, remaining: 0, tail: None, buf: Vec::new(), progress };
         match doc {
             None => {}
             Some(Doc::Bytes(b)) => body.data = Some(b.clone()),
-            Some(Doc::File(path)) => {
+            Some(Doc::File { head, path, tail }) => {
                 let file = tokio::fs::File::open(path).await?;
                 body.remaining = file.metadata().await?.len();
                 body.file = Some(file);
                 body.buf = vec![0; CHUNK];
+                body.data = Some(head.clone()).filter(|b| !b.is_empty());
+                body.tail = Some(tail.clone()).filter(|b| !b.is_empty());
             }
         }
         Ok(body)
@@ -237,7 +242,7 @@ impl ReqBody {
 
     fn len(&self) -> u64 {
         let bytes = |b: &Option<Bytes>| b.as_ref().map_or(0, |b| b.len() as u64);
-        bytes(&self.head) + bytes(&self.data) + self.remaining
+        bytes(&self.head) + bytes(&self.data) + self.remaining + bytes(&self.tail)
     }
 }
 
@@ -251,7 +256,9 @@ impl Body for ReqBody {
         if let Some(b) = this.head.take().or_else(|| this.data.take()) {
             return Poll::Ready(Some(Ok(Frame::data(b))));
         }
-        let Some(file) = this.file.as_mut().filter(|_| this.remaining > 0) else { return Poll::Ready(None) };
+        let Some(file) = this.file.as_mut().filter(|_| this.remaining > 0) else {
+            return Poll::Ready(this.tail.take().map(|b| Ok(Frame::data(b))));
+        };
         let want = usize::try_from(this.remaining).unwrap_or(usize::MAX).min(this.buf.len());
         let mut read = ReadBuf::new(&mut this.buf[..want]);
         match Pin::new(file).poll_read(cx, &mut read) {
@@ -268,7 +275,7 @@ impl Body for ReqBody {
     }
 
     fn is_end_stream(&self) -> bool {
-        self.head.is_none() && self.data.is_none() && self.remaining == 0
+        self.head.is_none() && self.data.is_none() && self.remaining == 0 && self.tail.is_none()
     }
 
     fn size_hint(&self) -> SizeHint {
