@@ -103,12 +103,10 @@ impl Attempt<'_> {
         // A CUPS queue counts pages from its own filters, which often don't match the paper.
         let expected = if cups { None } else { count_expected(prepared, &attrs).await };
         let wrapper = if pjl_sides { pjl::wrap(prepared.format, &self.doc.name, &prepared.options) } else { None };
+        let path = prepared.path.clone();
         let (format, body) = match wrapper {
-            Some((head, tail)) => {
-                let file = tokio::fs::read(&prepared.path).await?;
-                ("application/octet-stream".to_string(), IppBody::Bytes([head, file, tail].concat()))
-            }
-            None => (prepared.format.mime().to_string(), IppBody::File(prepared.path.clone())),
+            Some((head, tail)) => ("application/octet-stream".to_string(), IppBody::Wrapped { head, path, tail }),
+            None => (prepared.format.mime().to_string(), IppBody::File(path)),
         };
         let job = IppJob { name: self.doc.name.clone(), user: self.engine.opts.requesting_user.clone(), format, options: prepared.options.clone() };
         self.emit(PrintEvent::Submitting { route: self.route.kind });

@@ -136,15 +136,14 @@ impl Target {
     }
 }
 
-/// Office printers that speak PCL or PostScript also understand PJL.
-/// Whether to state the job's sides in a PJL header around an auto-detected document. HP printers print
-/// a PDF with their own duplex default whatever `sides` says, so they always get one; others when it differs.
+/// Whether to state the job's sides in a PJL header around an auto-detected document. HP LaserJets print
+/// a PDF with their own duplex default whatever `sides` says; other printers keep IPP `sides` alone.
 pub(crate) fn pjl_sides(attrs: &PrinterAttrs, o: &JobOptions) -> bool {
-    let Some(sides) = o.sides else { return false };
-    let hp = attrs.make_model.as_deref().is_some_and(|m| m.starts_with("HP ") || m.starts_with("Hewlett"));
-    attrs.auto_sense && speaks_pjl(&attrs.capabilities) && (hp || attrs.sides_default != Some(sides))
+    let laserjet = attrs.make_model.as_deref().is_some_and(|m| m.to_ascii_lowercase().contains("laserjet"));
+    o.sides.is_some() && laserjet && attrs.auto_sense && speaks_pjl(&attrs.capabilities)
 }
 
+/// Office printers that speak PCL or PostScript also understand PJL.
 fn speaks_pjl(caps: &Capabilities) -> bool {
     caps.formats.iter().any(|f| {
         let f = f.to_ascii_lowercase();
