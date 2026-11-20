@@ -4,6 +4,8 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ## [Unreleased]
 
+## [0.1.10] - 2026-11-20
+
 ### Changed
 
 - **printing:** Only HP LaserJets get the PJL duplex header from 0.1.9, since that's the printer line seen ignoring `sides`. Other printers, HP inkjets included, get the PDF with IPP `sides` as before 0.1.8, so a printer whose PJL can't switch to PDF never gets the header. The wrong-sides warning still flags any printer that ignores `sides`.
