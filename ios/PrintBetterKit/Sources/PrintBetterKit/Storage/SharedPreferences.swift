@@ -1,44 +1,49 @@
 import Foundation
 
-/// Non-secret state the app and the share extension both use, in the App Group's defaults.
+/// Non-secret state the app and the share extension both use, kept in one item of their shared Keychain
+/// group: they have no App Group, so neither can read the other's defaults.
 public struct SharedPreferences: Sendable {
-    private let suiteName: String?
-
-    public init(appGroup: String?) {
-        self.suiteName = appGroup
+    private struct Values: Codable {
+        var lastPrinterId: String?
+        var identity: ClientIdentity?
+        var printers: [Printer]?
     }
 
-    private var defaults: UserDefaults {
-        suiteName.flatMap(UserDefaults.init(suiteName:)) ?? .standard
+    private let store: any SecretStore
+
+    public init(store: any SecretStore) {
+        self.store = store
     }
 
     /// The printer someone printed to last, picked first next time.
     public var lastPrinterId: String? {
-        get { defaults.string(forKey: "lastPrinterId") }
-        nonmutating set { defaults.set(newValue, forKey: "lastPrinterId") }
+        get { values.lastPrinterId }
+        nonmutating set { update { $0.lastPrinterId = newValue } }
     }
 
     public var identity: ClientIdentity? {
-        get { decoded(ClientIdentity.self, "identity") }
-        nonmutating set { encode(newValue, "identity") }
+        get { values.identity }
+        nonmutating set { update { $0.identity = newValue } }
     }
 
     /// The last printer list, so a sheet shows printers at once and refreshes them in place.
     public var printers: [Printer] {
-        get { decoded([Printer].self, "printers") ?? [] }
-        nonmutating set { encode(newValue, "printers") }
+        get { values.printers ?? [] }
+        nonmutating set { update { $0.printers = newValue } }
     }
 
     public func clear() {
-        for key in ["lastPrinterId", "identity", "printers"] { defaults.removeObject(forKey: key) }
+        try? store.remove()
     }
 
-    private func decoded<T: Decodable>(_ type: T.Type, _ key: String) -> T? {
-        defaults.data(forKey: key).flatMap { try? JSONDecoder().decode(type, from: $0) }
+    private var values: Values {
+        (try? store.read()).flatMap { try? JSONDecoder().decode(Values.self, from: $0) } ?? Values()
     }
 
-    private func encode(_ value: (some Encodable)?, _ key: String) {
-        guard let value, let data = try? JSONEncoder().encode(value) else { return defaults.removeObject(forKey: key) }
-        defaults.set(data, forKey: key)
+    private func update(_ change: (inout Values) -> Void) {
+        var values = values
+        change(&values)
+        guard let data = try? JSONEncoder().encode(values) else { return }
+        try? store.write(data)
     }
 }
