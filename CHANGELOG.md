@@ -4,6 +4,16 @@ Versions follow [Semantic Versioning](https://semver.org/). Commits follow [Conv
 
 ## [Unreleased]
 
+### Changed
+
+- **printing:** Only HP LaserJets get the PJL duplex header from 0.1.9, since that's the printer line seen ignoring `sides`. Other printers, HP inkjets included, get the PDF with IPP `sides` as before 0.1.8, so a printer whose PJL can't switch to PDF never gets the header. The wrong-sides warning still flags any printer that ignores `sides`.
+
+### Fixed
+
+- **printing:** A PDF with a PJL header streams from disk again. 0.1.9 read the whole file into memory, twice, before sending it.
+- **iPhone:** The share extension starts on the printer last used in the app, and **Unpair** clears its printer list too. The printer list and last printer now live in the shared Keychain group with the device token, since the app has no App Group.
+- **scripts:** `release-ios.sh` exports an IPA without an App Store Connect key, and stops before archiving when `--upload` runs on a beta Xcode, which App Store Connect turns down with error 90534.
+
 ## [0.1.9] - 2026-11-19
 
 ### Fixed
